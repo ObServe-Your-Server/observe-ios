@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build and Test default scheme using iPhone 14 Simulator
+    name: Build and Test default scheme using custom iPhone simulator
     runs-on: macos-14
 
     steps:
@@ -19,6 +19,14 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Boot iOS Simulator
+        run: |
+          RUNTIME=$(xcrun simctl list runtimes | grep "iOS 17.4" | awk -F '[()]' '{print $2}' | head -1)
+          DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-14"
+          UDID=$(xcrun simctl create "CI-iPhone14" "$DEVICE_TYPE" "$RUNTIME")
+          xcrun simctl boot "$UDID"
+          echo "SIMULATOR_UDID=$UDID" >> $GITHUB_ENV
 
       - name: Set Default Scheme
         run: |
@@ -35,10 +43,6 @@ jobs:
         env:
           scheme: ${{ 'default' }}
         run: |
-          device_name="iPhone 14"
-          os_version="17.4"
-          destination="platform=iOS Simulator,OS=$os_version,name=$device_name"
-
           if [ "$scheme" = "default" ]; then scheme=$(cat default); fi
           if ls -A | grep -iE '\.xcworkspace$' > /dev/null; then
             filetype_parameter="workspace"
@@ -47,23 +51,14 @@ jobs:
             filetype_parameter="project"
             file_to_build=$(ls -A | grep -iE '\.xcodeproj$' | head -1)
           fi
-
           file_to_build=$(echo "$file_to_build" | awk '{$1=$1;print}')
-          echo "📦 Building $filetype_parameter: $file_to_build on $device_name ($os_version) with scheme: $scheme"
-
-          xcodebuild build-for-testing \
-            -scheme "$scheme" \
-            -"$filetype_parameter" "$file_to_build" \
-            -destination "$destination"
+          echo "📦 Building $filetype_parameter: $file_to_build with scheme: $scheme"
+          xcodebuild build-for-testing -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -destination "id=$SIMULATOR_UDID"
 
       - name: Test
         env:
           scheme: ${{ 'default' }}
         run: |
-          device_name="iPhone 14"
-          os_version="17.4"
-          destination="platform=iOS Simulator,OS=$os_version,name=$device_name"
-
           if [ "$scheme" = "default" ]; then scheme=$(cat default); fi
           if ls -A | grep -iE '\.xcworkspace$' > /dev/null; then
             filetype_parameter="workspace"
@@ -72,11 +67,6 @@ jobs:
             filetype_parameter="project"
             file_to_build=$(ls -A | grep -iE '\.xcodeproj$' | head -1)
           fi
-
           file_to_build=$(echo "$file_to_build" | awk '{$1=$1;print}')
-          echo "🧪 Testing $filetype_parameter: $file_to_build on $device_name ($os_version) with scheme: $scheme"
-
-          xcodebuild test-without-building \
-            -scheme "$scheme" \
-            -"$filetype_parameter" "$file_to_build" \
-            -destination "$destination"
+          echo "🧪 Testing $filetype_parameter: $file_to_build with scheme: $scheme"
+          xcodebuild test-without-building -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -destination "id=$SIMULATOR_UDID"
