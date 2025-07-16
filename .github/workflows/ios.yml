@@ -22,7 +22,7 @@ jobs:
 
       - name: Boot iOS Simulator
         run: |
-          RUNTIME=$(xcrun simctl list runtimes | grep "iOS 17.4" | awk -F '[()]' '{print $2}' | head -1)
+          RUNTIME=$(xcrun simctl list runtimes | grep "iOS 17.4" | grep -o "com.apple.CoreSimulator.SimRuntime.iOS-17-4")
           DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-14"
           UDID=$(xcrun simctl create "CI-iPhone14" "$DEVICE_TYPE" "$RUNTIME")
           xcrun simctl boot "$UDID"
