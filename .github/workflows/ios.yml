@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build and Test default scheme using custom iPhone simulator
+    name: Build and Test default scheme using existing iPhone simulator
     runs-on: macos-14
 
     steps:
@@ -20,35 +20,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Boot iOS Simulator
-        id: boot-sim
+      - name: Find available iPhone Simulator
         run: |
-          echo "🔍 Searching runtime..."
-          RUNTIME=$(xcrun simctl list runtimes | grep -o "com.apple.CoreSimulator.SimRuntime.iOS-17-4" | head -1)
-          if [ -z "$RUNTIME" ]; then
-            echo "❌ Could not find iOS 17.4 runtime."
+          UDID=$(xcrun simctl list devices available | grep -E "iPhone 14 .* (Booted|Shutdown)" | grep "iOS 17.4" | awk -F '[()]' '{print $2}' | head -1)
+          if [ -z "$UDID" ]; then
+            echo "❌ No available iPhone 14 simulator with iOS 17.4 found."
             exit 1
           fi
-
-          DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-14"
-          echo "📱 Creating iPhone 14 simulator with runtime: $RUNTIME"
-          UDID=$(xcrun simctl create "CI-iPhone14" "$DEVICE_TYPE" "$RUNTIME")
-
-          echo "🚀 Booting simulator $UDID"
-          xcrun simctl boot "$UDID"
-
-          echo "⏳ Waiting for simulator to become available..."
-          timeout=30
-          while ! xcrun simctl list devices | grep "$UDID" | grep -q "Booted"; do
-            sleep 1
-            timeout=$((timeout - 1))
-            if [ $timeout -le 0 ]; then
-              echo "❌ Simulator did not boot in time"
-              exit 1
-            fi
-          done
-
-          echo "✅ Simulator is ready: $UDID"
+          echo "✅ Using available simulator: $UDID"
+          xcrun simctl boot "$UDID" || true
           echo "SIMULATOR_UDID=$UDID" >> $GITHUB_ENV
           echo "$UDID" > simulator_udid.txt
 
@@ -95,12 +75,11 @@ jobs:
           echo "🧪 Testing $filetype_parameter: $file_to_build with scheme: $scheme"
           xcodebuild test-without-building -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -destination "id=$SIMULATOR_UDID"
 
-      - name: Shutdown & delete simulator
+      - name: Shutdown simulator
         if: always()
         run: |
           if [ -f simulator_udid.txt ]; then
             UDID=$(cat simulator_udid.txt)
-            echo "🧹 Shutting down and deleting simulator $UDID"
+            echo "🛑 Shutting down simulator $UDID"
             xcrun simctl shutdown "$UDID" || true
-            xcrun simctl delete "$UDID" || true
           fi
