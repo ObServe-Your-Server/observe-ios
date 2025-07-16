@@ -21,12 +21,36 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Boot iOS Simulator
+        id: boot-sim
         run: |
-          RUNTIME=$(xcrun simctl list runtimes | grep "iOS 17.4" | grep -o "com.apple.CoreSimulator.SimRuntime.iOS-17-4")
+          echo "🔍 Searching runtime..."
+          RUNTIME=$(xcrun simctl list runtimes | grep -o "com.apple.CoreSimulator.SimRuntime.iOS-17-4" | head -1)
+          if [ -z "$RUNTIME" ]; then
+            echo "❌ Could not find iOS 17.4 runtime."
+            exit 1
+          fi
+
           DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-14"
+          echo "📱 Creating iPhone 14 simulator with runtime: $RUNTIME"
           UDID=$(xcrun simctl create "CI-iPhone14" "$DEVICE_TYPE" "$RUNTIME")
+
+          echo "🚀 Booting simulator $UDID"
           xcrun simctl boot "$UDID"
+
+          echo "⏳ Waiting for simulator to become available..."
+          timeout=30
+          while ! xcrun simctl list devices | grep "$UDID" | grep -q "Booted"; do
+            sleep 1
+            timeout=$((timeout - 1))
+            if [ $timeout -le 0 ]; then
+              echo "❌ Simulator did not boot in time"
+              exit 1
+            fi
+          done
+
+          echo "✅ Simulator is ready: $UDID"
           echo "SIMULATOR_UDID=$UDID" >> $GITHUB_ENV
+          echo "$UDID" > simulator_udid.txt
 
       - name: Set Default Scheme
         run: |
@@ -70,3 +94,13 @@ jobs:
           file_to_build=$(echo "$file_to_build" | awk '{$1=$1;print}')
           echo "🧪 Testing $filetype_parameter: $file_to_build with scheme: $scheme"
           xcodebuild test-without-building -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -destination "id=$SIMULATOR_UDID"
+
+      - name: Shutdown & delete simulator
+        if: always()
+        run: |
+          if [ -f simulator_udid.txt ]; then
+            UDID=$(cat simulator_udid.txt)
+            echo "🧹 Shutting down and deleting simulator $UDID"
+            xcrun simctl shutdown "$UDID" || true
+            xcrun simctl delete "$UDID" || true
+          fi
