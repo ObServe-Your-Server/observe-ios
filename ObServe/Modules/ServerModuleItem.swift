@@ -4,12 +4,19 @@
 //
 //  Created by Daniel Schatz on 19.07.25.
 //
-import SwiftUI
+import SwiftData
 
-struct ServerModuleItem: Identifiable {
-    let id = UUID()
-    let name: String
-    let ip: String
-    let port: String
-    let mac: String
+@Model
+class ServerModuleItem {
+    var name: String
+    var ip: String
+    var port: String
+    var mac: String
+
+    init(name: String, ip: String, port: String, mac: String) {
+        self.name = name
+        self.ip = ip
+        self.port = port
+        self.mac = mac
+    }
 }

@@ -6,10 +6,12 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct OverView: View {
+    @Environment(\.modelContext) private var modelContext
     @State private var showAddServer = false
-    @State private var servers: [ServerModuleItem] = []
+    @Query private var servers: [ServerModuleItem]
         
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -36,7 +38,7 @@ struct OverView: View {
                 AddServerOverlay(
                     onDismiss: { showAddServer = false },
                     onConnect: { newServer in
-                        servers.append(newServer)
+                        modelContext.insert(newServer)
                         showAddServer = false
                     }
                 )

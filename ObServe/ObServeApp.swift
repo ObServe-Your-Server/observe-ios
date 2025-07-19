@@ -12,7 +12,7 @@ import SwiftData
 struct ObServeApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            //Item.self,
+            ServerModuleItem.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
