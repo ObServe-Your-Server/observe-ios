@@ -12,7 +12,7 @@ struct OverView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var showAddServer = false
     @Query private var servers: [ServerModuleItem]
-        
+
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
@@ -23,7 +23,7 @@ struct OverView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 20)
-                    
+
                     // Add button
                     AddMachineButton {
                             showAddServer = true
@@ -43,7 +43,7 @@ struct OverView: View {
                     }
                 )
             }
-            
+
         }
     }
 }

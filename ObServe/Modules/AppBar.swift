@@ -9,7 +9,7 @@ import SwiftUI
 
 struct AppBar: View {
     var machineCount: Int
-    
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
