@@ -39,6 +39,7 @@ struct OverView: View {
                     onDismiss: { showAddServer = false },
                     onConnect: { newServer in
                         modelContext.insert(newServer)
+                        try? modelContext.save()
                         showAddServer = false
                     }
                 )
