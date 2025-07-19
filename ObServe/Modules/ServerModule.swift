@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ServerModule: View {
     var name: String = "SERVER NAME"
+    @State private var isOn = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -17,9 +18,9 @@ struct ServerModule: View {
                     Text(name)
                         .foregroundColor(.white)
                     Circle()
-                        .fill(Color("ShutDown"))
+                        .fill(Color(isOn ? "Green" : "Red"))
                         .frame(width: 10, height: 10)
-                        .shadow(color: Color("ShutDown").opacity(1.2), radius: 10)
+                        .shadow(color: Color(isOn ? "Green" : "Red").opacity(1.2), radius: 10)
                 }
                 .padding(10)
                 .background(Color.black)
@@ -29,9 +30,9 @@ struct ServerModule: View {
                     DateLabel(label: "LAST RUNTIME", date: "20.05.25")
 
                     HStack(spacing: 12) {
-                        PowerButton()
+                        PowerButton(isOn: $isOn)
                             .frame(maxWidth: .infinity)
-                        RegularButton(Label: "SCHEDULE", color: "OnGoing")
+                        RegularButton(Label: "SCHEDULE", color: "Orange")
                             .frame(maxWidth: .infinity)
                         RegularButton(Label: "MANAGE", color: "Gray")
                             .frame(maxWidth: .infinity)

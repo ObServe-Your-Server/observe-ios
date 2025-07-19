@@ -8,20 +8,29 @@
 import SwiftUI
 
 struct PowerButton: View {
+    @Binding var isOn: Bool
+
     var body: some View {
         Button(action: {
-            // Später Später
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isOn.toggle()
+            }
         }) {
             ZStack {
-                Text("START UP")
-                    .foregroundColor(Color("StartUp"))
+                Text(isOn ? "SHUT DOWN" : "START UP")
+                    .foregroundColor(Color(isOn ? "Red" : "Green"))
                     .font(.system(size: 12))
                     .padding(.horizontal, 7)
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
-                    .overlay(RoundedRectangle(cornerRadius: 0)
-                            .stroke(Color("StartUp").opacity(0.3), lineWidth: 1))
-                    .overlay(FocusCorners(color: Color("StartUp"), size: 8, thickness: 1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 0)
+                            .stroke(Color(isOn ? "Red" : "Green").opacity(0.3), lineWidth: 1)
+                    )
+                    .overlay(
+                        FocusCorners(color: Color(isOn ? "Red" : "Green"), size: 8, thickness: 1)
+                    )
+                    .transition(.opacity)
             }
         }
     }

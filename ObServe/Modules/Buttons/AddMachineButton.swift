@@ -1,5 +1,5 @@
 //
-//  AddMaschineKnopf.swift
+//  AddMachineButton.swift
 //  ObServe
 //
 //  Created by Daniel Schatz on 19.07.25.
