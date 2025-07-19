@@ -81,7 +81,6 @@ struct AddServerView: View {
             }
         }
         .padding(24)
-        .background(Color.black)
     }
 }
 
@@ -104,7 +103,6 @@ struct AddServerOverlay: View {
                 RoundedRectangle(cornerRadius: 0)
                     .stroke(Color.white, lineWidth: 1)
             )
-            .shadow(radius: 24)
         }
     }
 }
