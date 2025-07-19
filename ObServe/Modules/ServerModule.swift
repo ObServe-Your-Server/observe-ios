@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ServerModule: View {
     var name: String = "SERVER NAME"
+    var onDelete: (() -> Void)? = nil
     @State private var isOn = false
 
     var body: some View {
@@ -34,7 +35,9 @@ struct ServerModule: View {
                             .frame(maxWidth: .infinity)
                         RegularButton(Label: "SCHEDULE", color: "Orange")
                             .frame(maxWidth: .infinity)
-                        RegularButton(Label: "MANAGE", color: "Gray")
+                        RegularButton(Label: "MANAGE", action: {
+                            onDelete?()
+                        }, color: "Gray")
                             .frame(maxWidth: .infinity)
                     }
                 }
