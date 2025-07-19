@@ -14,6 +14,7 @@ struct PowerButton: View {
         Button(action: {
             withAnimation(.easeInOut(duration: 0.3)) {
                 isOn.toggle()
+                Haptics.click()
             }
         }) {
             ZStack {

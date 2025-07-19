@@ -19,28 +19,42 @@ struct OverView: View {
                 AppBar(machineCount: servers.count)
                 ScrollView {
                     VStack(spacing: 0) {
-                        ForEach(servers) { server in
-                            ServerModule(
-                                name: server.name,
-                                onDelete: {
-                                    modelContext.delete(server)
-                                    try? modelContext.save()
-                                }
-                            )
+                        if servers.isEmpty {
+                            VStack(spacing: 0) {
+                                Rectangle()
+                                    .frame(height: 60)
+                                    .opacity(0)
+                                Image("NoMachines")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(.horizontal, 100)
+
+                                Rectangle()
+                                    .fill(Color("Gray"))
+                                    .frame(width: 2, height: 200)
+                            }
+                        } else {
+                            ForEach(servers) { server in
+                                ServerModule(
+                                    name: server.name,
+                                    onDelete: {
+                                        modelContext.delete(server)
+                                        try? modelContext.save()
+                                    }
+                                )
+                            }
+                        }
+
+                        AddMachineButton {
+                            showAddServer = true
                         }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 20)
-
-                    // Add button
-                    AddMachineButton {
-                            showAddServer = true
-                    }
                 }
             }
             .background(Color.black.edgesIgnoringSafeArea(.all))
 
-            // Overlay and AddServerView
             if showAddServer {
                 AddServerOverlay(
                     onDismiss: { showAddServer = false },

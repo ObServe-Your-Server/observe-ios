@@ -13,7 +13,7 @@ struct AppBar: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(machineCount) MACHINES")
+                Text("\(machineCount) \(machineCount == 1 ? "MACHINE" : "MACHINES")")
                 Button(action: {
                     // Später Später
                 }) {
