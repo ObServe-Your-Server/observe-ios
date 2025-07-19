@@ -8,25 +8,30 @@
 import SwiftUI
 
 struct AddServerView: View {
+    var onCancel: () -> Void
+    var onConnect: (ServerModuleItem) -> Void
+    
+    @State private var name = ""
+    @State private var ip = ""
+    @State private var port = ""
+    @State private var mac = ""
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("NEW MACHINE")
-                    .font(.title2)
                     .foregroundColor(.white)
                 Spacer()
-                Button("CANCEL") { /* dismiss action */ }
+                Button("CANCEL") { onCancel() }
                     .foregroundColor(.gray)
-                    .fontWeight(.bold)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
                     .background(Color.black.opacity(0.5))
             }
             VStack(alignment: .leading, spacing: 12) {
                 Text("NAME")
-                    .font(.caption)
                     .foregroundColor(.gray)
-                TextField("SERVER 1", text: .constant(""))
+                TextField("SERVER 1", text: $name)
                     .textFieldStyle(PlainTextFieldStyle())
                     .padding(8)
                     .background(Color.black.opacity(0.7))
@@ -35,9 +40,8 @@ struct AddServerView: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("IP v4")
-                        .font(.caption)
                         .foregroundColor(.gray)
-                    TextField("00.000.000.00", text: .constant(""))
+                    TextField("00.000.000.00", text: $ip)
                         .textFieldStyle(PlainTextFieldStyle())
                         .padding(8)
                         .background(Color.black.opacity(0.7))
@@ -45,9 +49,8 @@ struct AddServerView: View {
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     Text("PORT")
-                        .font(.caption)
                         .foregroundColor(.gray)
-                    TextField("0000", text: .constant(""))
+                    TextField("0000", text: $port)
                         .textFieldStyle(PlainTextFieldStyle())
                         .padding(8)
                         .background(Color.black.opacity(0.7))
@@ -56,9 +59,8 @@ struct AddServerView: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text("MAC")
-                    .font(.caption)
                     .foregroundColor(.gray)
-                TextField("00.00.00.00.00.00", text: .constant(""))
+                TextField("00.00.00.00.00.00", text: $mac)
                     .textFieldStyle(PlainTextFieldStyle())
                     .padding(8)
                     .background(Color.black.opacity(0.7))
@@ -68,34 +70,37 @@ struct AddServerView: View {
                 Image(systemName: "exclamationmark")
                     .foregroundColor(.white)
                 Text("A connection is only possible if the software is correctly setup on the desktop")
-                    .font(.caption2)
                     .foregroundColor(.gray)
             }
             HStack {
                 Spacer()
-                Button("CONNECT") { /* connect action */ }
+                Button("CONNECT") {
+                                    let newServer = ServerModuleItem(name: name, ip: ip, port: port, mac: mac)
+                                    onConnect(newServer)
+                    }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 10)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
                     .background(Color.blue)
             }
         }
-        .padding(24)
+        .padding(12)
     }
 }
 
 struct AddServerOverlay: View {
     var onDismiss: () -> Void
+    var onConnect: (ServerModuleItem) -> Void
 
     var body: some View {
         ZStack {
             Color.clear
-                .background(.ultraThinMaterial)
+                .background(.ultraThinMaterial.opacity(0.8))
                 .ignoresSafeArea()
                 .onTapGesture { onDismiss() }
             VStack {
-                AddServerView()
-                    .padding(0)
+                            AddServerView(onCancel: onDismiss, onConnect: onConnect)
+                                .padding(0)
             }
             .frame(width: 360, height: 420)
             .background(Color.black)
@@ -108,5 +113,5 @@ struct AddServerOverlay: View {
 }
 
 #Preview {
-    AddServerOverlay(onDismiss: {})
+    AddServerOverlay(onDismiss: {}, onConnect: { _ in })
 }

@@ -13,7 +13,6 @@ struct AddMachineButton: View {
     var body: some View {
         Button(action: action) {
             Text("ADD MACHINE")
-                .font(.system(size: 20, weight: .regular, design: .default))
                 .foregroundColor(Color.gray.opacity(0.7))
                 .frame(maxWidth: .infinity)
                 .frame(height: 40)

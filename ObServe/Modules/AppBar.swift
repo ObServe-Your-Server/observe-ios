@@ -8,10 +8,12 @@
 import SwiftUI
 
 struct AppBar: View {
+    var machineCount: Int
+    
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("0 MACHINES")
+                Text("\(machineCount) MACHINES")
                 Button(action: {
                     // Später Später
                 }) {
@@ -60,5 +62,5 @@ struct AppBar: View {
 }
 
 #Preview {
-    AppBar()
+    AppBar(machineCount: 0)
 }

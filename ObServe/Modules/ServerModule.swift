@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct ServerModule: View {
+    var name: String = "SERVER NAME"
+    
     var body: some View {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 0)
@@ -16,7 +18,7 @@ struct ServerModule: View {
                 .padding(.vertical, 25)
 
             HStack {
-                Text("SERVER NAME")
+                Text(name)
                     .foregroundColor(.white)
                 Circle()
                     .fill(Color.green)

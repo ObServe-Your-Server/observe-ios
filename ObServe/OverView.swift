@@ -9,32 +9,37 @@ import SwiftUI
 
 struct OverView: View {
     @State private var showAddServer = false
+    @State private var servers: [ServerModuleItem] = []
+        
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Main content
             VStack(spacing: 0) {
-                AppBar()
+                AppBar(machineCount: servers.count)
                 ScrollView {
                     VStack(spacing: 20) {
-                        ServerModule()
+                        ForEach(servers) { server in ServerModule(name: server.name)}
                         Spacer()
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 10)
+                    
+                    // Add button
+                    AddMachineButton {
+                            showAddServer = true
+                    }
                 }
             }
             .background(Color.black.edgesIgnoringSafeArea(.all))
-            
-            // Add button
-            AddMachineButton {
-                    showAddServer = true
-            }
 
             // Overlay and AddServerView
             if showAddServer {
-                AddServerOverlay {
-                    showAddServer = false
-                }
+                AddServerOverlay(
+                    onDismiss: { showAddServer = false },
+                    onConnect: { newServer in
+                        servers.append(newServer)
+                        showAddServer = false
+                    }
+                )
             }
             
         }
