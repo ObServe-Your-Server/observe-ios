@@ -14,7 +14,6 @@ struct AddServerView: View {
     @State private var name = ""
     @State private var ip = ""
     @State private var port = ""
-    @State private var mac = ""
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -22,69 +21,60 @@ struct AddServerView: View {
                 Text("NEW MACHINE")
                     .foregroundColor(.white)
                 Spacer()
-                Button("CANCEL") { onCancel() }
-                    .foregroundColor(.gray)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.black.opacity(0.5))
+                RegularButton(Label: "CANCEL", action: onCancel, color: "Gray")
+                    .frame(maxWidth: 100)
             }
             VStack(alignment: .leading, spacing: 12) {
                 Text("NAME")
                     .foregroundColor(.gray)
+                    .font(.system(size: 9))
                 TextField("SERVER 1", text: $name)
                     .textFieldStyle(PlainTextFieldStyle())
                     .padding(8)
                     .background(Color.black.opacity(0.7))
                     .foregroundColor(.white)
+                    .overlay(RoundedRectangle(cornerRadius: 0)
+                        .stroke(Color(.gray).opacity(0.3), lineWidth: 1))
             }
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("IP v4")
                         .foregroundColor(.gray)
+                        .font(.system(size: 9))
                     TextField("00.000.000.00", text: $ip)
                         .textFieldStyle(PlainTextFieldStyle())
                         .padding(8)
                         .background(Color.black.opacity(0.7))
                         .foregroundColor(.white)
+                        .overlay(RoundedRectangle(cornerRadius: 0)
+                            .stroke(Color(.gray).opacity(0.3), lineWidth: 1))
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     Text("PORT")
                         .foregroundColor(.gray)
+                        .font(.system(size: 9))
                     TextField("42000", text: $port)
                         .textFieldStyle(PlainTextFieldStyle())
                         .padding(8)
                         .background(Color.black.opacity(0.7))
                         .foregroundColor(.white)
+                        .overlay(RoundedRectangle(cornerRadius: 0)
+                            .stroke(Color(.gray).opacity(0.3), lineWidth: 1))
                 }
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                Text("MAC")
-                    .foregroundColor(.gray)
-                TextField("00.00.00.00.00.00", text: $mac)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .padding(8)
-                    .background(Color.black.opacity(0.7))
-                    .foregroundColor(.white)
             }
             HStack {
                 Image(systemName: "exclamationmark")
                     .foregroundColor(.white)
-                Text("A connection is only possible if the software is correctly setup on the desktop")
-                    .foregroundColor(.gray)
-            }
-            HStack {
+                Text("connection only possible if the software is correctly setup on desktop")
+                    .foregroundColor(.gray).font(.system(size: 10))
                 Spacer()
-                Button("CONNECT") {
-                                    let newServer = ServerModuleItem(name: name, ip: ip, port: port, mac: mac)
-                                    onConnect(newServer)
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.blue)
+                RegularButton(Label: "CONNECT", action: {
+                    let newServer = ServerModuleItem(name: name.isEmpty ? "SERVER" : name, ip: ip.isEmpty ? "00.000.000.00" : ip, port: port.isEmpty ? "42000" : port)
+                    onConnect(newServer)
+                }, color: "Blue").frame(maxWidth: 100)
             }
         }
-        .padding(12)
+        .padding(20)
     }
 }
 
@@ -102,7 +92,7 @@ struct AddServerOverlay: View {
                             AddServerView(onCancel: onDismiss, onConnect: onConnect)
                                 .padding(0)
             }
-            .frame(width: 360, height: 420)
+            .frame(width: 360)
             .background(Color.black)
             .overlay(
                 RoundedRectangle(cornerRadius: 0)

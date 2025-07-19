@@ -11,12 +11,10 @@ class ServerModuleItem {
     var name: String
     var ip: String
     var port: String
-    var mac: String
 
-    init(name: String, ip: String, port: String, mac: String) {
+    init(name: String, ip: String, port: String) {
         self.name = name
         self.ip = ip
         self.port = port
-        self.mac = mac
     }
 }

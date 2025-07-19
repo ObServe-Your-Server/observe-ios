@@ -19,7 +19,15 @@ struct OverView: View {
                 AppBar(machineCount: servers.count)
                 ScrollView {
                     VStack(spacing: 0) {
-                        ForEach(servers) { server in ServerModule(name: server.name)}
+                        ForEach(servers) { server in
+                            ServerModule(
+                                name: server.name,
+                                onDelete: {
+                                    modelContext.delete(server)
+                                    try? modelContext.save()
+                                }
+                            )
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 20)
