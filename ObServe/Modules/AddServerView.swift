@@ -81,7 +81,29 @@ struct AddServerView: View {
             }
         }
         .padding(24)
-        .background(Color.black)
+    }
+}
+
+struct AddServerOverlay: View {
+    var onDismiss: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.clear
+                .background(.ultraThinMaterial)
+                .ignoresSafeArea()
+                .onTapGesture { onDismiss() }
+            VStack {
+                AddServerView()
+                    .padding(0)
+            }
+            .frame(width: 360, height: 420)
+            .background(Color.black)
+            .overlay(
+                RoundedRectangle(cornerRadius: 0)
+                    .stroke(Color.white, lineWidth: 1)
+            )
+        }
     }
 }
 
