@@ -50,7 +50,7 @@ struct AddServerView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("PORT")
                         .foregroundColor(.gray)
-                    TextField("0000", text: $port)
+                    TextField("42000", text: $port)
                         .textFieldStyle(PlainTextFieldStyle())
                         .padding(8)
                         .background(Color.black.opacity(0.7))

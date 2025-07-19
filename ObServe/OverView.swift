@@ -18,12 +18,11 @@ struct OverView: View {
             VStack(spacing: 0) {
                 AppBar(machineCount: servers.count)
                 ScrollView {
-                    VStack(spacing: 20) {
+                    VStack(spacing: 0) {
                         ForEach(servers) { server in ServerModule(name: server.name)}
-                        Spacer()
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, 20)
                     
                     // Add button
                     AddMachineButton {
