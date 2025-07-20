@@ -16,7 +16,7 @@ struct ServerModule: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 16) {
                 Spacer().frame(height: 12)
-                
+
                 if isOn {
                     MetricsView()
                 } else {
