@@ -11,15 +11,21 @@ struct ServerModule: View {
     var name: String = "SERVER NAME"
     var onDelete: (() -> Void)? = nil
     @State private var isOn = false
+    private let serverID = UUID()
+    @StateObject private var metricsModel = MetricsService.shared.registerServer(id: UUID())
 
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 16) {
                 Spacer().frame(height: 12)
 
-                HStack(spacing: 16) {
-                    DateLabel(label: "LAST RUNTIME", date: "20.05.25")
-                    DateLabel(label: "LAST RUNTIME", date: "20.05.25")
+                if isOn {
+                    MetricsView(model: metricsModel)
+                } else {
+                    HStack(spacing: 16) {
+                        DateLabel(label: "LAST RUNTIME", date: "20.05.25")
+                        DateLabel(label: "RUNTIME DURATION", date: "204 : 22 : 10")
+                    }
                 }
 
                 HStack(spacing: 12) {
@@ -27,10 +33,18 @@ struct ServerModule: View {
                         .frame(maxWidth: .infinity)
                     RegularButton(Label: "SCHEDULE", color: "Orange")
                         .frame(maxWidth: .infinity)
-                    RegularButton(Label: "MANAGE", action: {
-                        onDelete?()
-                    }, color: "Gray")
+                    
+                    if !isOn {
+                        RegularButton(Label: "MANAGE", action: {
+                            onDelete?()
+                        }, color: "Gray")
                         .frame(maxWidth: .infinity)
+                    } else {
+                        RegularButton(Label: "RESTART", action: {
+                            onDelete?()
+                        }, color: "Blue")
+                        .frame(maxWidth: .infinity)
+                    }
                 }
             }
             .padding(.horizontal, 20)
