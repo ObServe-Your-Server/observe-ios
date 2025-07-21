@@ -8,12 +8,23 @@
 import SwiftUI
 
 struct ServerModule: View {
-    var name: String = "SERVER NAME"
+    @Environment(\.modelContext) private var modelContext
+    @Bindable var server: ServerModuleItem
     var onDelete: (() -> Void)? = nil
     @State private var isOn = false
+    
     private let serverID = UUID()
     @StateObject private var metricsModel = MetricsService.shared.registerServer(id: UUID())
 
+    private var lastRuntimeString: String {
+        guard let lastRuntime = server.lastRuntime else {
+            return "N/A"
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd.MM.yyyy"
+        return formatter.string(from: lastRuntime)
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 16) {
@@ -23,7 +34,7 @@ struct ServerModule: View {
                     MetricsView(model: metricsModel)
                 } else {
                     HStack(spacing: 16) {
-                        DateLabel(label: "LAST RUNTIME", date: "20.05.25")
+                        DateLabel(label: "LAST RUNTIME", date: lastRuntimeString)
                         DateLabel(label: "RUNTIME DURATION", date: "204 : 22 : 10")
                     }
                 }
@@ -55,7 +66,7 @@ struct ServerModule: View {
             )
             .overlay(alignment: .topLeading) {
                 HStack {
-                    Text(name)
+                    Text(server.name)
                         .foregroundColor(.white)
                     Circle()
                         .fill(Color(isOn ? "Green" : "Red"))
@@ -69,10 +80,17 @@ struct ServerModule: View {
             }
         }
         .padding(.vertical, 20)
+        .onChange(of: isOn) { newValue in
+            if newValue {
+                server.lastRuntime = Date()
+                try? modelContext.save()
+            }
+        }
     }
 }
 
 #Preview {
-    ServerModule()
+    let sampleServer = ServerModuleItem(name: "Test Server", ip: "192.168.1.1", port: "8080", date: Date())
+    ServerModule(server: sampleServer)
         .background(Color.black)
 }

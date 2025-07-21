@@ -36,7 +36,7 @@ struct OverView: View {
                         } else {
                             ForEach(servers) { server in
                                 ServerModule(
-                                    name: server.name,
+                                    server: server,
                                     onDelete: {
                                         modelContext.delete(server)
                                         try? modelContext.save()

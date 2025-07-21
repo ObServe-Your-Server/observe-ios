@@ -69,7 +69,12 @@ struct AddServerView: View {
                     .foregroundColor(.gray).font(.system(size: 10))
                 Spacer()
                 RegularButton(Label: "CONNECT", action: {
-                    let newServer = ServerModuleItem(name: name.isEmpty ? "SERVER" : name, ip: ip.isEmpty ? "00.000.000.00" : ip, port: port.isEmpty ? "42000" : port)
+                    let newServer = ServerModuleItem(
+                        name: name.isEmpty ? "SERVER" : name,
+                        ip: ip.isEmpty ? "00.000.000.00" : ip,
+                        port: port.isEmpty ? "42000" : port,
+                        date: nil
+                    )
                     onConnect(newServer)
                 }, color: "Blue").frame(maxWidth: 100)
             }
