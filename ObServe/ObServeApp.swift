@@ -12,7 +12,7 @@ import SwiftData
 struct ObServeApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            ServerModuleItem.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +25,8 @@ struct ObServeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            OverView()
+                .environment(\.font, .custom("IBM Plex Sans", size: 17))
         }
         .modelContainer(sharedModelContainer)
     }
