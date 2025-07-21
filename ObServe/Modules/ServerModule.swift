@@ -66,9 +66,15 @@ struct ServerModule: View {
                         }, color: "Gray")
                         .frame(maxWidth: .infinity)
                     } else {
-                        RegularButton(Label: "RESTART", action: {
-                            onDelete?()
-                        }, color: "Blue")
+                        CoolButton(
+                            action: {
+                                // Simulate a restart action
+                                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                                onDelete?()
+                            },
+                            text: "RESTART",
+                            color: "Blue"
+                        )
                         .frame(maxWidth: .infinity)
                     }
                 }
