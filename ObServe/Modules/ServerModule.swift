@@ -25,6 +25,16 @@ struct ServerModule: View {
         return formatter.string(from: lastRuntime)
     }
     
+    private var runtimeDurationString: String {
+        guard let duration = server.runtimeDuration else {
+            return "00:00:00"
+        }
+        let hours = Int(duration) / 3600
+        let minutes = (Int(duration) % 3600) / 60
+        let seconds = Int(duration) % 60
+        return String(format: "%02d : %02d : %02d", hours, minutes, seconds)
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 16) {
@@ -34,8 +44,8 @@ struct ServerModule: View {
                     MetricsView(model: metricsModel)
                 } else {
                     HStack(spacing: 16) {
-                        DateLabel(label: "LAST RUNTIME", date: lastRuntimeString)
-                        DateLabel(label: "RUNTIME DURATION", date: "204 : 22 : 10")
+                        DateLabel(label: "LAST RUNTIME", date: lastRuntimeString) //should fetch from backend
+                        DateLabel(label: "RUNTIME DURATION", date: runtimeDurationString) //should fetch from backend
                     }
                 }
 
@@ -83,14 +93,30 @@ struct ServerModule: View {
         .onChange(of: isOn) { newValue in
             if newValue {
                 server.lastRuntime = Date()
+                server.runtimeDuration = server.runtimeDuration ?? 0
+                try? modelContext.save()
+            } else {
+                let uptimeSeconds = parseUptime(metricsModel.uptime)
+                server.runtimeDuration = (server.runtimeDuration ?? 0) + uptimeSeconds
                 try? modelContext.save()
             }
         }
     }
+    
+    private func parseUptime(_ uptime: String) -> TimeInterval {
+        let components = uptime.split(separator: ":").map { $0.trimmingCharacters(in: .whitespaces) }
+        guard components.count == 3,
+              let hours = Int(components[0]),
+              let minutes = Int(components[1]),
+              let seconds = Int(components[2]) else {
+            return 0
+        }
+        return TimeInterval(hours * 3600 + minutes * 60 + seconds)
+    }
 }
 
 #Preview {
-    let sampleServer = ServerModuleItem(name: "Test Server", ip: "192.168.1.1", port: "8080", date: Date())
+    let sampleServer = ServerModuleItem(name: "Test Server", ip: "192.168.1.1", port: "8080")
     ServerModule(server: sampleServer)
         .background(Color.black)
 }

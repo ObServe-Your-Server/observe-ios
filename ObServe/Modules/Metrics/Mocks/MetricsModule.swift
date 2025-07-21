@@ -13,7 +13,7 @@ class MetricsModel: ObservableObject {
     private var uptimeSeconds: Int
 
     init() {
-        uptimeSeconds = Int.random(in: 0..<(24 * 60 * 60))
+        uptimeSeconds = 0
         uptime = Self.formatUptime(uptimeSeconds)
         memory = Double.random(in: 20...96)
         cpu = Double.random(in: 0...100)
