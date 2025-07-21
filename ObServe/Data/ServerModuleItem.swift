@@ -9,9 +9,10 @@ import SwiftUI
 
 @Model
 class ServerModuleItem {
-    var name: String
-    var ip: String
-    var port: String
+    var id: UUID = UUID()
+    var name: String = ""
+    var ip: String = ""
+    var port: String = ""
     var lastRuntime: Date?
     var runtimeDuration: TimeInterval?
 

@@ -13,11 +13,11 @@ struct MetricsView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 16) {
                 DateLabel(label: "UPTIME", date: model.uptime)
-                UpdateLabel(label: "MEMORY", value: model.memory, max: 96.00, unit: "GB", decimalPlaces: 2, showPercent: true)
+                UpdateLabel(label: "MEMORY", value: model.memory, max: model.maxMemory, unit: "GB", decimalPlaces: 2, showPercent: true)
             }
             HStack(spacing: 16) {
                 UpdateLabel(label: "CPU USAGE", value: model.cpu, unit: "%", decimalPlaces: 0, showPercent: true)
-                UpdateLabel(label: "STORAGE", value: model.storage, max: 2, unit: "TB", decimalPlaces: 2,showPercent: true, )
+                UpdateLabel(label: "STORAGE", value: model.storage, max: model.maxStorage, unit: "TB", decimalPlaces: 2, showPercent: true, )
             }
             HStack(spacing: 16) {
                 UpdateLabel(label: "PING", value: model.ping, unit: "ms", decimalPlaces: 0)

@@ -13,8 +13,13 @@ struct ServerModule: View {
     var onDelete: (() -> Void)? = nil
     @State private var isOn = false
     
-    private let serverID = UUID()
-    @StateObject private var metricsModel = MetricsService.shared.registerServer(id: UUID())
+    @StateObject private var metricsModel: MetricsModel
+
+    init(server: ServerModuleItem, onDelete: (() -> Void)? = nil) {
+        self._server = Bindable(wrappedValue: server)
+        self.onDelete = onDelete
+        _metricsModel = StateObject(wrappedValue: MetricsService.shared.registerServer(id: server.id))
+    }
 
     private var lastRuntimeString: String {
         guard let lastRuntime = server.lastRuntime else {
@@ -100,6 +105,7 @@ struct ServerModule: View {
                 server.runtimeDuration = (server.runtimeDuration ?? 0) + uptimeSeconds
                 try? modelContext.save()
             }
+            metricsModel.resetUptime()
         }
     }
     
