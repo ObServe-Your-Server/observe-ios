@@ -46,7 +46,7 @@ struct ServerModule: View {
                 Spacer().frame(height: 12)
 
                 if isOn {
-                    MetricsView(model: metricsModel)
+                    MetricsView(model: metricsModel, server: server)
                 } else {
                     HStack(spacing: 16) {
                         DateLabel(label: "LAST RUNTIME", date: lastRuntimeString) //should fetch from backend
