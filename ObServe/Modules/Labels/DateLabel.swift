@@ -20,6 +20,8 @@ struct DateLabel: View {
                 
                 Text(date)
                     .foregroundColor(.white)
+                    .contentTransition(.numericText())
+                    .animation(.easeInOut, value: date)
             }
             Spacer()
         }

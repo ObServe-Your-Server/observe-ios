@@ -27,14 +27,12 @@ struct CoolButton: View {
             }
         }) {
             ZStack {
-                if !isPerformingTask && !isCompleted {
-                    Text(text)
-                        .foregroundColor(Color(color))
-                        .font(.system(size: 12))
-                }
-                if isPerformingTask && !isCompleted {
-                    DotProgressView()
-                }
+                Text(text)
+                    .foregroundColor(Color(color))
+                    .font(.system(size: 12))
+                    .opacity((!isPerformingTask && !isCompleted) ? 1 : 0)
+                DotProgressView()
+                    .opacity((isPerformingTask && !isCompleted) ? 1 : 0)
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 7)
@@ -44,7 +42,6 @@ struct CoolButton: View {
                     .stroke(Color(color).opacity(0.3), lineWidth: 1)
             )
         }
-        .opacity(isPerformingTask ? 0.5 : 1)
         .disabled(isPerformingTask || isCompleted)
     }
 }

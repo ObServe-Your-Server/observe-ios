@@ -22,6 +22,8 @@ struct UpdateLabel: View {
     var decimalPlaces: Int = 2
     var showPercent: Bool = false
 
+    @State private var oldValue: Double = 0.0
+    
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
@@ -31,12 +33,21 @@ struct UpdateLabel: View {
                 
                 Text("\(formatValue(value, decimalPlaces: decimalPlaces))\((max == 0) ? "" : " / \(formatValue(max))")\(unit.isEmpty ? "" : " \(unit)")")
                         .foregroundColor(.white)
+                        .contentTransition(.numericText(countsDown: value < oldValue))
+                        .animation(.easeInOut, value: value)
                 
                 if showPercent {
                     PercentLabel(value: value, maximum: (max==0) ? 100 : max)
+                        .animation(.easeInOut, value: value)
                 }
             }
             Spacer()
+        }
+        .onAppear {
+            oldValue = value
+        }
+        .onChange(of: value) { newValue in
+            oldValue = newValue
         }
     }
 }

@@ -34,19 +34,25 @@ struct OverView: View {
                                     .frame(width: 2, height: 200)
                             }
                         } else {
-                            ForEach(servers) { server in
-                                ServerModule(
-                                    server: server,
-                                    onDelete: {
-                                        modelContext.delete(server)
-                                        try? modelContext.save()
-                                    }
-                                )
+                            withAnimation {
+                                ForEach(servers) { server in
+                                    ServerModule(
+                                        server: server,
+                                        onDelete: {
+                                            withAnimation {
+                                                modelContext.delete(server)
+                                                try? modelContext.save()
+                                            }
+                                        }
+                                    )
+                                }
                             }
                         }
 
                         AddMachineButton {
-                            showAddServer = true
+                            withAnimation {
+                                showAddServer = true
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -57,11 +63,13 @@ struct OverView: View {
 
             if showAddServer {
                 AddServerOverlay(
-                    onDismiss: { showAddServer = false },
+                    onDismiss: { withAnimation { showAddServer = false } },
                     onConnect: { newServer in
                         modelContext.insert(newServer)
                         try? modelContext.save()
-                        showAddServer = false
+                        withAnimation {
+                            showAddServer = false
+                        }
                     }
                 )
             }
