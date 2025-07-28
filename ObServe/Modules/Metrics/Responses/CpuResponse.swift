@@ -1,6 +1,6 @@
 import Foundation
 
-struct MetricResponse: Decodable {
+struct CpuResponse: Decodable {
     struct Entry: Identifiable {
         let id = UUID()
         let timestamp: Double

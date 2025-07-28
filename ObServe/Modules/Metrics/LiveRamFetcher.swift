@@ -1,24 +1,23 @@
-//
-//  LiveMetricsFetcher.swift
-//  ObServe
-//
-//  Created by Daniel Schatz on 28.07.25.
-//
-
 import Foundation
 import Combine
 
-class LiveMetricsFetcher: ObservableObject {
-    @Published var entries: [CpuResponse.Entry] = []
+class LiveRamFetcher: ObservableObject {
+    @Published var entries: [LiveRamFetcher.RamEntry] = []
     @Published var error: String?
 
     private var timer: Timer?
     private let interval: TimeInterval = 3
-    private let windowSize: Int = 60  // seconds to look back
-
+    private let windowSize: Int = 60
+    
     private let ip: String
     private let port: String
     private let networkService: NetworkService
+    
+    struct RamEntry: Identifiable {
+        let id = UUID()
+        let timestamp: Double
+        let value: Double
+    }
     
     init(ip: String, port: String) {
         self.ip = ip
@@ -27,39 +26,42 @@ class LiveMetricsFetcher: ObservableObject {
     }
     
     func start() {
-        fetch() // initial load
-        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+        fetch()
+        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true, block: { [weak self] _ in
             self?.fetch()
-        }
+        })
     }
-
+    
     func stop() {
         timer?.invalidate()
         timer = nil
     }
-
+    
     private func fetch() {
         let now = Int(Date().timeIntervalSince1970)
         let start = now - windowSize
         let end = now
-        let endpoint = "/metrics/cpu/usage-in-percent"
+        let endpoint = "/metrics/ram/used-memory-in-gb"
         let queryItems = [
             URLQueryItem(name: "startTime", value: "\(start)"),
             URLQueryItem(name: "endTime", value: "\(end)"),
             URLQueryItem(name: "interval", value: "5")
         ]
-        networkService.fetch(endpoint: endpoint, queryItems: queryItems) { [weak self] (result: Result<CpuResponse, Error>) in
+        networkService.fetch(endpoint: endpoint, queryItems: queryItems) { [weak self] (result: Result<RamResponse, Error>) in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let response):
-                    self?.entries = response.metrics
+                    let allEntries = response.data.result.flatMap { result in
+                        result.values.map { RamEntry(timestamp: $0.timestamp, value: $0.value) }
+                    }
+                    self?.entries = allEntries
                 case .failure(let error):
                     self?.error = error.localizedDescription
                 }
             }
         }
     }
-
+    
     deinit {
         stop()
     }
