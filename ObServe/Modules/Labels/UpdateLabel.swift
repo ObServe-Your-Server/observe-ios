@@ -14,6 +14,15 @@ func formatValue(_ value: Double, decimalPlaces: Int = 2) -> String {
     return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
 }
 
+func formatDuration(_ seconds: Double) -> String {
+    let totalSeconds = Int(seconds)
+    let days = totalSeconds / 86400
+    let hours = (totalSeconds % 86400) / 3600
+    let minutes = (totalSeconds % 3600) / 60
+    let secs = totalSeconds % 60
+    return String(format: "%02d : %02d : %02d : %02d", days, hours, minutes, secs)
+}
+
 struct UpdateLabel: View {
     var label: String
     var value: Double = 0.0
@@ -30,12 +39,17 @@ struct UpdateLabel: View {
                 Text(label)
                     .foregroundColor(Color.gray)
                     .font(.system(size: 12, weight: .medium))
-                
-                Text("\(formatValue(value, decimalPlaces: decimalPlaces))\((max == 0) ? "" : " / \(formatValue(max))")\(unit.isEmpty ? "" : " \(unit)")")
+                if label.uppercased() == "UPTIME" {
+                    Text(formatDuration(value))
                         .foregroundColor(.white)
                         .contentTransition(.numericText(countsDown: value < oldValue))
                         .animation(.easeInOut, value: value)
-                
+                } else {
+                    Text("\(formatValue(value, decimalPlaces: decimalPlaces))\((max == 0) ? "" : " / \(formatValue(max))")\(unit.isEmpty ? "" : " \(unit)")")
+                        .foregroundColor(.white)
+                        .contentTransition(.numericText(countsDown: value < oldValue))
+                        .animation(.easeInOut, value: value)
+                }
                 if showPercent {
                     PercentLabel(value: value, maximum: (max==0) ? 100 : max)
                         .animation(.easeInOut, value: value)

@@ -12,11 +12,23 @@ struct OverView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var showAddServer = false
     @Query private var servers: [ServerModuleItem]
-
+    @State private var sortType: AppBar.SortType = .all
+    
+    var filteredServers: [ServerModuleItem] {
+        switch sortType {
+            case .all:
+                return servers
+            case .online:
+                return servers.filter { $0.isOn }
+            case .offline:
+                return servers.filter { !$0.isOn }
+        }
+    }
+    
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                AppBar(machineCount: servers.count)
+                AppBar(machineCount: filteredServers.count, selectedSortType: $sortType)
                 ScrollView {
                     VStack(spacing: 0) {
                         if servers.isEmpty {
@@ -35,7 +47,7 @@ struct OverView: View {
                             }
                         } else {
                             withAnimation {
-                                ForEach(servers) { server in
+                                ForEach(filteredServers) { server in
                                     ServerModule(
                                         server: server,
                                         onDelete: {
