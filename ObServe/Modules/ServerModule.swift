@@ -12,13 +12,16 @@ struct ServerModule: View {
     @Bindable var server: ServerModuleItem
     var onDelete: (() -> Void)? = nil
     @State private var isOn = false
+    @State private var isCheckingHealth = true
     
     @StateObject private var metricsManager: MetricsManager
+    private let networkService: NetworkService
 
     init(server: ServerModuleItem, onDelete: (() -> Void)? = nil) {
         self._server = Bindable(wrappedValue: server)
         self.onDelete = onDelete
         _metricsManager = StateObject(wrappedValue: MetricsManager(server: server))
+        self.networkService = NetworkService(ip: server.ip, port: server.port)
     }
 
     private var lastRuntimeString: String {
@@ -40,12 +43,34 @@ struct ServerModule: View {
         return String(format: "%02d : %02d : %02d", hours, minutes, seconds)
     }
     
+    private func performHealthCheck() {
+        print("Starting health check for server: \(server.name) at \(server.ip):\(server.port)")
+        isCheckingHealth = true
+        networkService.checkHealth { isHealthy in
+            print("Health check result for \(self.server.name): \(isHealthy)")
+            DispatchQueue.main.async {
+                self.isOn = isHealthy
+                self.isCheckingHealth = false
+            }
+        }
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 16) {
                 Spacer().frame(height: 12)
 
-                if isOn {
+                if isCheckingHealth {
+                    HStack {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("Checking server status...")
+                            .foregroundColor(.white.opacity(0.7))
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 20)
+                } else if isOn {
                     MetricsViewSimplified(metricsManager: metricsManager)
                 } else {
                     HStack(spacing: 16) {
@@ -57,14 +82,17 @@ struct ServerModule: View {
                 HStack(spacing: 12) {
                     PowerButton(isOn: $isOn)
                         .frame(maxWidth: .infinity)
+                        .disabled(isCheckingHealth)
                     RegularButton(Label: "SCHEDULE", color: "Orange")
                         .frame(maxWidth: .infinity)
+                        .disabled(isCheckingHealth)
                     
                     if !isOn {
                         RegularButton(Label: "MANAGE", action: {
                             onDelete?()
                         }, color: "Gray")
                         .frame(maxWidth: .infinity)
+                        .disabled(isCheckingHealth)
                     } else {
                         CoolButton(
                             action: {
@@ -76,6 +104,7 @@ struct ServerModule: View {
                             color: "Blue"
                         )
                         .frame(maxWidth: .infinity)
+                        .disabled(isCheckingHealth)
                     }
                 }
             }
@@ -90,9 +119,9 @@ struct ServerModule: View {
                     Text(server.name)
                         .foregroundColor(.white)
                     Circle()
-                        .fill(Color(isOn ? "Green" : "Red"))
+                        .fill(Color(isCheckingHealth ? "Orange" : (isOn ? "Green" : "Red")))
                         .frame(width: 10, height: 10)
-                        .shadow(color: Color(isOn ? "Green" : "Red").opacity(3), radius: 10)
+                        .shadow(color: Color(isCheckingHealth ? "Orange" : (isOn ? "Green" : "Red")).opacity(3), radius: 10)
                 }
                 .padding(10)
                 .background(Color.black)
@@ -102,9 +131,7 @@ struct ServerModule: View {
         }
         .padding(.vertical, 20)
         .onAppear {
-            if isOn {
-                metricsManager.startFetching()
-            }
+            performHealthCheck()
         }
         .onDisappear {
             metricsManager.stopFetching()

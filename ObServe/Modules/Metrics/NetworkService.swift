@@ -23,6 +23,30 @@ class NetworkService {
         return components?.url
     }
     
+    func checkHealth(completion: @escaping (Bool) -> Void) {
+        // Build URL without the base path for health-check endpoint
+        let healthURL = "http://\(ip):\(port)/health-check"
+        guard let url = URL(string: healthURL) else {
+            completion(false)
+            return
+        }
+        
+        let task = URLSession.shared.dataTask(with: url) { _, response, error in
+            if let error = error {
+                completion(false)
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                let isHealthy = httpResponse.statusCode == 200
+                completion(isHealthy)
+            } else {
+                completion(false)
+            }
+        }
+        task.resume()
+    }
+    
     func fetch<T: Decodable>(endpoint: String, queryItems: [URLQueryItem] = [], completion: @escaping (Result<T, Error>) -> Void) {
         guard let url = buildURL(endpoint: endpoint, queryItems: queryItems) else {
             completion(.failure(NSError(domain: "Invalid URL", code: 0)))
