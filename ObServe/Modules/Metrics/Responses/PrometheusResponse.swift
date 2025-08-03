@@ -1,13 +1,16 @@
 import Foundation
 
-struct UptimeResponse: Decodable {
+// Consolidated response model for Prometheus-style metrics
+struct PrometheusResponse: Decodable {
     struct Result: Decodable {
         let metric: [String: String]
-        let values: [UptimeValue]
+        let values: [PrometheusValue]
     }
-    struct UptimeValue: Decodable {
+    
+    struct PrometheusValue: Decodable {
         let timestamp: Double
         let value: Double
+        
         init(from decoder: Decoder) throws {
             var container = try decoder.unkeyedContainer()
             self.timestamp = try container.decode(Double.self)
@@ -15,10 +18,20 @@ struct UptimeResponse: Decodable {
             self.value = Double(valueString) ?? 0
         }
     }
+    
     struct Data: Decodable {
         let resultType: String
         let result: [Result]
     }
+    
     let status: String
     let data: Data
 }
+
+// Type aliases for existing response types to maintain compatibility
+typealias NetworkInResponse = PrometheusResponse
+typealias NetworkOutResponse = PrometheusResponse
+typealias RamResponse = PrometheusResponse
+typealias TotalDiskResponse = PrometheusResponse
+typealias TotalRamResponse = PrometheusResponse
+typealias UptimeResponse = PrometheusResponse

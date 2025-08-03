@@ -28,15 +28,21 @@ class NetworkService {
             completion(.failure(NSError(domain: "Invalid URL", code: 0)))
             return
         }
-        let task = URLSession.shared.dataTask(with: url) { data, _, error in
+        
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
                 completion(.failure(error))
                 return
             }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+            }
+            
             guard let data = data else {
                 completion(.failure(NSError(domain: "No data", code: 0)))
                 return
             }
+            
             do {
                 let decoded = try JSONDecoder().decode(T.self, from: data)
                 completion(.success(decoded))

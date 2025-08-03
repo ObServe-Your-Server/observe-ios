@@ -13,12 +13,12 @@ struct ServerModule: View {
     var onDelete: (() -> Void)? = nil
     @State private var isOn = false
     
-    @StateObject private var metricsModel: MetricsModel
+    @StateObject private var metricsManager: MetricsManager
 
     init(server: ServerModuleItem, onDelete: (() -> Void)? = nil) {
         self._server = Bindable(wrappedValue: server)
         self.onDelete = onDelete
-        _metricsModel = StateObject(wrappedValue: MetricsService.shared.registerServer(id: server.id))
+        _metricsManager = StateObject(wrappedValue: MetricsManager(server: server))
     }
 
     private var lastRuntimeString: String {
@@ -46,7 +46,7 @@ struct ServerModule: View {
                 Spacer().frame(height: 12)
 
                 if isOn {
-                    MetricsView(model: metricsModel, server: server)
+                    MetricsViewSimplified(metricsManager: metricsManager)
                 } else {
                     HStack(spacing: 16) {
                         DateLabel(label: "LAST RUNTIME", date: lastRuntimeString) //should fetch from backend
@@ -101,29 +101,21 @@ struct ServerModule: View {
             }
         }
         .padding(.vertical, 20)
-        .onChange(of: isOn) { newValue in
-            if newValue {
-                server.lastRuntime = Date()
-                server.runtimeDuration = server.runtimeDuration ?? 0
-                try? modelContext.save()
-            } else {
-                let uptimeSeconds = parseUptime(metricsModel.uptime)
-                server.runtimeDuration = (server.runtimeDuration ?? 0) + uptimeSeconds
-                try? modelContext.save()
+        .onAppear {
+            if isOn {
+                metricsManager.startFetching()
             }
-            metricsModel.resetUptime()
         }
-    }
-    
-    private func parseUptime(_ uptime: String) -> TimeInterval {
-        let components = uptime.split(separator: ":").map { $0.trimmingCharacters(in: .whitespaces) }
-        guard components.count == 3,
-              let hours = Int(components[0]),
-              let minutes = Int(components[1]),
-              let seconds = Int(components[2]) else {
-            return 0
+        .onDisappear {
+            metricsManager.stopFetching()
         }
-        return TimeInterval(hours * 3600 + minutes * 60 + seconds)
+        .onChange(of: isOn) { oldValue, newValue in
+            if newValue {
+                metricsManager.startFetching()
+            } else {
+                metricsManager.stopFetching()
+            }
+        }
     }
 }
 
