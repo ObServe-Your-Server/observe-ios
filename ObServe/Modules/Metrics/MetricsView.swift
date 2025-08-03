@@ -13,7 +13,10 @@ struct MetricsView: View {
     @StateObject private var pingFetcher: LivePingFetcher
     @StateObject private var storageFetcher: LiveStorageFetcher
     @StateObject private var diskTotalSizeFetcher: LiveDiskTotalSizeFetcher
+    @StateObject private var uptimeFetcher: LiveUptimeFetcher
     @StateObject private var totalRamFetcher: LiveTotalRamFetcher
+    @StateObject private var networkInFetcher: LiveNetworkInFetcher
+    @StateObject private var networkOutFetcher: LiveNetworkOutFetcher
 
     init(model: MetricsModel, server: ServerModuleItem) {
         self.model = model
@@ -23,6 +26,9 @@ struct MetricsView: View {
         _storageFetcher = StateObject(wrappedValue: LiveStorageFetcher(ip: server.ip, port: server.port))
         _diskTotalSizeFetcher = StateObject(wrappedValue: LiveDiskTotalSizeFetcher(ip: server.ip, port: server.port))
         _totalRamFetcher = StateObject(wrappedValue: LiveTotalRamFetcher(ip: server.ip, port: server.port))
+        _uptimeFetcher = StateObject(wrappedValue: LiveUptimeFetcher(ip: server.ip, port: server.port))
+        _networkInFetcher = StateObject(wrappedValue: LiveNetworkInFetcher(ip: server.ip, port: server.port))
+        _networkOutFetcher = StateObject(wrappedValue: LiveNetworkOutFetcher(ip: server.ip, port: server.port))
     }
     
     var body: some View {
@@ -32,10 +38,16 @@ struct MetricsView: View {
         let avgPing = pingFetcher.entries.isEmpty ? 0 : pingFetcher.entries.map(\.value).reduce(0, +) / Double(pingFetcher.entries.count)
         let avgStorage = storageFetcher.entries.isEmpty ? 0 : storageFetcher.entries.map(\.value).reduce(0, +) / Double(storageFetcher.entries.count)
         let maxStorage = diskTotalSizeFetcher.maxDiskSize ?? 0 // Use max disk size if available
+        let avgNetworkIn = networkInFetcher.entries.isEmpty ? 0 : networkInFetcher.entries.map(\.value).reduce(0, +) / Double(networkInFetcher.entries.count)
+        let avgNetworkOut = networkOutFetcher.entries.isEmpty ? 0 : networkOutFetcher.entries.map(\.value).reduce(0, +) / Double(networkOutFetcher.entries.count)
 
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 16) {
-                DateLabel(label: "UPTIME", date: model.uptime)
+                if let uptime = uptimeFetcher.uptime {
+                    UpdateLabel(label: "UPTIME", value: uptime)
+                } else {
+                    UpdateLabel(label: "UPTIME", value: 0)
+                }
                 UpdateLabel(label: "MEMORY", value: avgRAM, max: maxRAM, unit: "GB", decimalPlaces: 2, showPercent: true)
             }
             HStack(spacing: 16) {
@@ -43,8 +55,11 @@ struct MetricsView: View {
                 UpdateLabel(label: "STORAGE", value: avgStorage, max: maxStorage, unit: "GB", decimalPlaces: 2, showPercent: true)
             }
             HStack(spacing: 16) {
-                UpdateLabel(label: "PING", value: avgPing, unit: "ms", decimalPlaces: 0)
-                UpdateLabel(label: "NETWORK TRAFFIC", value: model.network, unit: "kB/s", decimalPlaces: 0)
+                UpdateLabel(label: "PING", value: avgPing, unit: "MS", decimalPlaces: 0)
+                HStack(spacing: 8) {
+                    UpdateLabel(label: "IN", value: avgNetworkIn, unit: "kB/s", decimalPlaces: 0)
+                    UpdateLabel(label: "OUT", value: avgNetworkOut, unit: "kB/s", decimalPlaces: 0)
+                }
             }
         }
         .alert("CPU Fetch Error", isPresented: .constant(cpuFetcher.error != nil)) {
@@ -77,6 +92,21 @@ struct MetricsView: View {
         } message: {
             Text(totalRamFetcher.error ?? "Unknown error")
         }
+        .alert("Network In Fetch Error", isPresented: .constant(networkInFetcher.error != nil)) {
+            Button("OK") { networkInFetcher.error = nil }
+        } message: {
+            Text(networkInFetcher.error ?? "Unknown error")
+        }
+        .alert("Network Out Fetch Error", isPresented: .constant(networkOutFetcher.error != nil)) {
+            Button("OK") { networkOutFetcher.error = nil }
+        } message: {
+            Text(networkOutFetcher.error ?? "Unknown error")
+        }
+        .alert("Uptime Fetch Error", isPresented: .constant(uptimeFetcher.error != nil)) {
+            Button("OK") { uptimeFetcher.error = nil }
+        } message: {
+            Text(uptimeFetcher.error ?? "Unknown error")
+        }
         .onAppear {
             cpuFetcher.start()
             ramFetcher.start()
@@ -84,12 +114,18 @@ struct MetricsView: View {
             storageFetcher.start()
             diskTotalSizeFetcher.fetch()
             totalRamFetcher.fetch()
+            networkInFetcher.start()
+            networkOutFetcher.start()
+            uptimeFetcher.start()
         }
         .onDisappear {
             cpuFetcher.stop()
             ramFetcher.stop()
             pingFetcher.stop()
             storageFetcher.stop()
+            networkInFetcher.stop()
+            networkOutFetcher.stop()
+            uptimeFetcher.stop()
         }
     }
 }
