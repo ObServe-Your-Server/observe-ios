@@ -11,6 +11,14 @@ struct AppBar: View {
     var machineCount: Int
     @Binding var contentHasScrolled: Bool
     @Binding var showBurgerMenu: Bool
+
+    @Binding var selectedSortType: SortType
+    
+    enum SortType: String, CaseIterable {
+        case all = "ALL"
+        case online = "ON"
+        case offline = "OFF"
+    }
     
     var body: some View {
         HStack {
@@ -18,8 +26,13 @@ struct AppBar: View {
                 Text("\(machineCount) \(machineCount == 1 ? "MACHINE" : "MACHINES")")
                 Button(action: {
                     // Später Später
+                    let allCases = SortType.allCases
+                    if let idx = allCases.firstIndex(of: selectedSortType) {
+                        let nextIdx = (idx + 1) % allCases.count
+                        selectedSortType = allCases[nextIdx]
+                    }
                 }) {
-                    Text("SORT: ALL")
+                    Text("SORT: \(selectedSortType.rawValue)")
                         .font(.system(size: 11))
                         .foregroundColor(.white)
                         .padding(.horizontal, 5)
@@ -75,6 +88,6 @@ struct AppBar: View {
     }
 }
 
-//#Preview {
-//    AppBar(machineCount: 0, contentHasScrolled: false)
-//}
+#Preview {
+    AppBar(machineCount: 0, contentHasScrolled: false, selectedSortType: .constant(.all))
+}

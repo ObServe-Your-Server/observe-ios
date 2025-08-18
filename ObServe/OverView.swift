@@ -13,13 +13,25 @@ struct OverView: View {
     @State private var showAddServer = false
     @State private var showBurgermenu = false
     @Query private var servers: [ServerModuleItem]
-    
+
     @State private var contentHasScrolled = false
+    @State private var sortType: AppBar.SortType = .all
+    
+    var filteredServers: [ServerModuleItem] {
+        switch sortType {
+            case .all:
+                return servers
+            case .online:
+                return servers.filter { $0.isOn }
+            case .offline:
+                return servers.filter { !$0.isOn }
+        }
+    }
     
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                AppBar(machineCount: servers.count, contentHasScrolled: $contentHasScrolled, showBurgerMenu: $showBurgermenu)
+                AppBar(machineCount: filteredServers.count, contentHasScrolled: $contentHasScrolled, showBurgerMenu: $showBurgermenu, selectedSortType: $sortType)
                 ScrollView {
                     scrollDetection
                     VStack(spacing: 0) {
@@ -38,19 +50,25 @@ struct OverView: View {
                                     .frame(width: 2, height: 200)
                             }
                         } else {
-                            ForEach(servers) { server in
-                                ServerModule(
-                                    name: server.name,
-                                    onDelete: {
-                                        modelContext.delete(server)
-                                        try? modelContext.save()
-                                    }
-                                )
+                            withAnimation {
+                                ForEach(filteredServers) { server in
+                                    ServerModule(
+                                        server: server,
+                                        onDelete: {
+                                            withAnimation {
+                                                modelContext.delete(server)
+                                                try? modelContext.save()
+                                            }
+                                        }
+                                    )
+                                }
                             }
                         }
                         
                         AddMachineButton {
-                            showAddServer = true
+                            withAnimation {
+                                showAddServer = true
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -61,11 +79,13 @@ struct OverView: View {
             
             if showAddServer {
                 AddServerOverlay(
-                    onDismiss: { showAddServer = false },
+                    onDismiss: { withAnimation { showAddServer = false } },
                     onConnect: { newServer in
                         modelContext.insert(newServer)
                         try? modelContext.save()
-                        showAddServer = false
+                        withAnimation {
+                            showAddServer = false
+                        }
                     }
                 )
             }
