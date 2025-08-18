@@ -11,7 +11,10 @@ import SwiftData
 struct OverView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var showAddServer = false
+    @State private var showBurgermenu = false
     @Query private var servers: [ServerModuleItem]
+
+    @State private var contentHasScrolled = false
     @State private var sortType: AppBar.SortType = .all
     
     var filteredServers: [ServerModuleItem] {
@@ -28,8 +31,9 @@ struct OverView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                AppBar(machineCount: filteredServers.count, selectedSortType: $sortType)
+                AppBar(machineCount: filteredServers.count, contentHasScrolled: $contentHasScrolled, showBurgerMenu: $showBurgermenu, selectedSortType: $sortType)
                 ScrollView {
+                    scrollDetection
                     VStack(spacing: 0) {
                         if servers.isEmpty {
                             VStack(spacing: 0) {
@@ -40,7 +44,7 @@ struct OverView: View {
                                     .resizable()
                                     .scaledToFit()
                                     .padding(.horizontal, 100)
-
+                                
                                 Rectangle()
                                     .fill(Color("Gray"))
                                     .frame(width: 2, height: 200)
@@ -60,7 +64,7 @@ struct OverView: View {
                                 }
                             }
                         }
-
+                        
                         AddMachineButton {
                             withAnimation {
                                 showAddServer = true
@@ -72,7 +76,7 @@ struct OverView: View {
                 }
             }
             .background(Color.black.edgesIgnoringSafeArea(.all))
-
+            
             if showAddServer {
                 AddServerOverlay(
                     onDismiss: { withAnimation { showAddServer = false } },
@@ -85,11 +89,33 @@ struct OverView: View {
                     }
                 )
             }
-
+            if showBurgermenu {
+                BurgerMenu(onDismiss: { showBurgermenu = false })
+            }
+        }
+    }
+    
+    var scrollDetection: some View {
+        GeometryReader { proxy in
+            let offset = proxy.frame(in: .named("scroll")).minY
+            Color.clear
+                .preference(key: ScrollPreferenceKey.self, value: offset)
+        }
+        .frame(height: 0)
+        .onPreferenceChange(ScrollPreferenceKey.self) { value in
+            withAnimation(.easeInOut(duration: 0.1)) {
+                contentHasScrolled = value < 100
+            }
+        }
+    }
+    
+    struct ScrollPreferenceKey: PreferenceKey {
+        static var defaultValue: CGFloat = 0
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+            value = nextValue()
         }
     }
 }
-
 #Preview {
     OverView()
 }

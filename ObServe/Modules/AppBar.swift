@@ -9,6 +9,9 @@ import SwiftUI
 
 struct AppBar: View {
     var machineCount: Int
+    @Binding var contentHasScrolled: Bool
+    @Binding var showBurgerMenu: Bool
+
     @Binding var selectedSortType: SortType
     
     enum SortType: String, CaseIterable {
@@ -43,7 +46,7 @@ struct AppBar: View {
             }
             Spacer()
             Button(action: {
-                // Später Später
+                showBurgerMenu = true
             }) {
                 VStack(spacing: 7) {
                     Rectangle()
@@ -68,11 +71,23 @@ struct AppBar: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
-        .padding(.bottom, 5)
+        .padding(.bottom, 10)
         .background(Color.black)
+        .overlay(
+            VStack(spacing: 0) {
+                Spacer()
+                if contentHasScrolled {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.3))
+                        .frame(height: 2)
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.2), value: contentHasScrolled)
+                }
+            }
+        )
     }
 }
 
-#Preview {
-    AppBar(machineCount: 0, selectedSortType: .constant(.all))
-}
+//#Preview {
+ //   AppBar(machineCount: 0, contentHasScrolled: false, //selectedSortType: .constant(.all))
+//}
