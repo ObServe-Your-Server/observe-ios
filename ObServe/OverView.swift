@@ -111,9 +111,10 @@ struct OverView: View {
                     .zIndex(4)
                 }
             }
-            .navigationDestination(item: $selectedServer) { server in
+            .fullScreenCover(item: $selectedServer) { server in
                 ServerDetailView(server: server)
                     .toolbar(.hidden, for: .navigationBar)
+                    .background(Color.black.ignoresSafeArea())
             }
             .navigationDestination(item: $settingsRoute) { _ in
                 SettingsOverview()

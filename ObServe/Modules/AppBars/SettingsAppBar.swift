@@ -66,7 +66,7 @@ struct SettingsAppBar: View {
             if contentHasScrolled {
                 Rectangle()
                     .fill(Color.white.opacity(0.3))
-                    .frame(height: 2)
+                    .frame(height: 1)
                     .transition(.opacity)
                     .animation(.easeInOut(duration: 0.2), value: contentHasScrolled)
             }
