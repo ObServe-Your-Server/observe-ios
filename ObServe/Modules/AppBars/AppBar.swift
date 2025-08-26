@@ -79,7 +79,7 @@ struct AppBar: View {
                 if contentHasScrolled {
                     Rectangle()
                         .fill(Color.white.opacity(0.3))
-                        .frame(height: 1)
+                        .frame(height: 2)
                         .transition(.opacity)
                         .animation(.easeInOut(duration: 0.2), value: contentHasScrolled)
                 }
@@ -87,3 +87,7 @@ struct AppBar: View {
         )
     }
 }
+
+//#Preview {
+ //   AppBar(machineCount: 0, contentHasScrolled: false, //selectedSortType: .constant(.all))
+//}
