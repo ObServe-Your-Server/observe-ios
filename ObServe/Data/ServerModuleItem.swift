@@ -14,6 +14,7 @@ class ServerModuleItem {
     var ip: String = ""
     var port: String = ""
     var lastRuntime: Date?
+    var isOn: Bool = false
     var runtimeDuration: TimeInterval?
 
     init(name: String, ip: String, port: String) {

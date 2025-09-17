@@ -7,5 +7,20 @@
 		<string>IBMPlexSans-Italic-VariableFont_wdth,wght.ttf</string>
 		<string>IBMPlexSans-VariableFont_wdth,wght.ttf</string>
 	</array>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>100.103.85.36</key> <!-- or your IP or .local hostname -->
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+            </dict>
+        </dict>
+    </dict>
 </dict>
 </plist>
