@@ -127,8 +127,11 @@ class MetricsManager: ObservableObject {
                     self?.avgCPU = 0.0
                 } else {
                     let sum = entries.map(\.value).reduce(0, +)
-                    let avg = sum / Double(entries.count)
-                    self?.avgCPU = avg
+                    let test = entries.last?.value ?? 0.0
+                    self?.avgCPU = test
+                    // TODO: Fixen
+                    //let avg = sum / Double(entries.count)
+                    //self?.avgCPU = avg
                 }
             }
             .store(in: &cancellables)
@@ -140,8 +143,11 @@ class MetricsManager: ObservableObject {
                     self?.avgRAM = 0.0
                 } else {
                     let sum = entries.map(\.value).reduce(0, +)
-                    let avg = sum / Double(entries.count)
-                    self?.avgRAM = avg
+// TODO: Fixen
+//                    let avg = sum / Double(entries.count)
+//                    self?.avgRAM = avg
+                    let test = entries.last?.value ?? 0.0
+                    self?.avgRAM = test
                 }
             }
             .store(in: &cancellables)
