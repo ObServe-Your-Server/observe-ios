@@ -29,13 +29,15 @@ enum MachineType: String, CaseIterable {
 
 enum OnboardingStep: Int, CaseIterable {
     case machineType = 0
-    case configuration = 1
-    case confirmation = 2
+    case naming = 1
+    case configuration = 2
+    case confirmation = 3
     
     var title: String {
         switch self {
         case .machineType: return "MACHINE TYPE"
-        case .configuration: return "CONFIGURATION"
+        case .naming: return "MACHINE NAME"
+        case .configuration: return "CONNECTION DETAILS"
         case .confirmation: return "CONFIRMATION"
         }
     }
@@ -56,13 +58,13 @@ struct MachineOnboardingModal: View {
     @State private var selectedMachineType: MachineType?
     @State private var name = ""
     @State private var ip = ""
-    @State private var port = "42000"
+    @State private var port = ""
     @State private var connectionStatus: ConnectionStatus = .idle
     @State private var connectionMessage = ""
     
     var body: some View {
         ZStack {
-            Color.black.opacity(0.9)
+            Color.black
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
@@ -80,19 +82,15 @@ struct MachineOnboardingModal: View {
             }
             .frame(maxWidth: 600, maxHeight: 700)
             .background(Color.black)
-            .overlay(
-                RoundedRectangle(cornerRadius: 0)
-                    .stroke(Color.white, lineWidth: 1)
-            )
         }
     }
     
     // MARK: - Header
     private var headerView: some View {
         HStack {
-            Text("ADD NEW MACHINE")
+            Text(currentStep.title)
                 .foregroundColor(.white)
-                .font(.system(size: 16, weight: .bold))
+                .font(.system(size: 18))
             
             Spacer()
             
@@ -162,6 +160,8 @@ struct MachineOnboardingModal: View {
             switch currentStep {
             case .machineType:
                 machineTypeView
+            case .naming:
+                namingView
             case .configuration:
                 configurationView
             case .confirmation:
@@ -175,10 +175,6 @@ struct MachineOnboardingModal: View {
     // Step 1: Machine Type Selection
     private var machineTypeView: some View {
         VStack(spacing: 16) {
-            Text("What type of machine are you adding?")
-                .foregroundColor(.gray)
-                .font(.system(size: 14))
-            
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
                 ForEach(MachineType.allCases, id: \.self) { type in
                     machineTypeCard(type: type)
@@ -198,58 +194,45 @@ struct MachineOnboardingModal: View {
             VStack(spacing: 12) {
                 Image(systemName: type.icon)
                     .font(.system(size: 32))
-                    .foregroundColor(selectedMachineType == type ? .blue : .white)
+                    .foregroundColor(.white)
                 
                 Text(type.rawValue)
-                    .font(.system(size: 12))
-                    .foregroundColor(selectedMachineType == type ? .blue : .gray)
+                    .font(.system(size: 18))
+                    .foregroundColor(selectedMachineType == type ? .white : .gray)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .frame(minHeight: 120)
+            .aspectRatio(1, contentMode: .fit)
             .background(
-                selectedMachineType == type ?
-                Color.blue.opacity(0.1) :
                 Color(red: 15/255, green: 15/255, blue: 15/255)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 0)
-                    .stroke(selectedMachineType == type ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                    .stroke(selectedMachineType == type ? Color.white.opacity(0.6) : Color.gray.opacity(0.3), lineWidth: 1)
             )
         }
         .buttonStyle(PlainButtonStyle())
     }
     
-    // Step 2: Configuration and Connection
-    private var configurationView: some View {
-        VStack(alignment: .leading, spacing: 25) {
-            HStack {
-                Spacer()
-                Text("Configure your \(selectedMachineType?.rawValue.lowercased() ?? "machine")")
-                    .foregroundColor(.gray)
-                    .font(.system(size: 14))
-                Spacer()
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                Text("MACHINE NAME")
-                    .foregroundColor(.gray)
-                    .font(.system(size: 9))
+    // Step 2: Naming
+    private var namingView: some View {
+        VStack(spacing: 32) {
+            Spacer()
+            VStack(spacing: 24) {
+                // Selected machine type display
+                VStack(spacing: 12) {
+                    if let machineType = selectedMachineType {
+                        Image(systemName: machineType.icon)
+                            .font(.system(size: 48))
+                    }
+                }
                 
-                TextField("My \(selectedMachineType?.rawValue ?? "Machine")", text: $name)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .padding(12)
-                    .background(Color(red: 15/255, green: 15/255, blue: 15/255))
-                    .foregroundColor(.white)
-                    .overlay(RoundedRectangle(cornerRadius: 0)
-                        .stroke(Color.gray.opacity(0.3), lineWidth: 1))
-            }
-            
-            HStack(spacing: 16) {
+                // Name input
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("IP ADDRESS")
+                    Text("MACHINE NAME")
                         .foregroundColor(.gray)
-                        .font(.system(size: 9))
+                        .font(.system(size: 12))
                     
-                    TextField("192.168.1.100", text: $ip)
+                    TextField("My \(selectedMachineType?.rawValue ?? "Machine")", text: $name)
                         .textFieldStyle(PlainTextFieldStyle())
                         .padding(12)
                         .background(Color(red: 15/255, green: 15/255, blue: 15/255))
@@ -257,101 +240,99 @@ struct MachineOnboardingModal: View {
                         .overlay(RoundedRectangle(cornerRadius: 0)
                             .stroke(Color.gray.opacity(0.3), lineWidth: 1))
                 }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("PORT")
-                        .foregroundColor(.gray)
-                        .font(.system(size: 9))
-                    
-                    TextField("42000", text: $port)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .padding(12)
-                        .background(Color(red: 15/255, green: 15/255, blue: 15/255))
-                        .foregroundColor(.white)
-                        .overlay(RoundedRectangle(cornerRadius: 0)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1))
-                }
-                .frame(maxWidth: 120)
-            }
-            
-            // Connection Testing Section
-            VStack(spacing: 16) {
-                Button(action: testConnection) {
-                    HStack {
-                        if connectionStatus == .connecting {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(0.8)
-                        } else {
-                            Image(systemName: connectionStatus == .success ? "checkmark" : "wifi")
-                                .foregroundColor(.white)
-                        }
-                        
-                        Text(connectionButtonText)
-                            .foregroundColor(.white)
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(12)
-                    .background(connectionButtonColor)
-                    .overlay(RoundedRectangle(cornerRadius: 0)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1))
-                }
-                .disabled(connectionStatus == .connecting || ip.isEmpty || port.isEmpty)
-                
-                if !connectionMessage.isEmpty {
-                    HStack {
-                        Image(systemName: connectionStatus == .success ? "checkmark.circle" : "exclamationmark.triangle")
-                            .foregroundColor(connectionStatus == .success ? .green : .orange)
-                        
-                        Text(connectionMessage)
-                            .foregroundColor(connectionStatus == .success ? .green : .orange)
-                            .font(.system(size: 10))
-                        
-                        Spacer()
-                    }
-                }
-            }
-            
-            if connectionStatus != .success {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "info.circle")
-                            .foregroundColor(.blue)
-                        Text("Connection Requirements")
-                            .foregroundColor(.blue)
-                            .font(.system(size: 10, weight: .medium))
-                        Spacer()
-                    }
-                    
-                    Text("• ObServe desktop software must be installed and running")
-                        .foregroundColor(.gray)
-                        .font(.system(size: 9))
-                }
-                .padding(12)
-                .background(Color.blue.opacity(0.05))
-                .overlay(RoundedRectangle(cornerRadius: 0)
-                    .stroke(Color.blue.opacity(0.3), lineWidth: 1))
             }
             
             Spacer()
         }
     }
     
-
+    // Step 3: Configuration and Connection
+    private var configurationView: some View {
+        VStack(spacing: 32) {
+            Spacer()
+            
+            VStack(spacing: 24) {
+                // IP Address row
+                HStack(spacing: 0) {
+                    Text("IP")
+                        .foregroundColor(.gray)
+                        .font(.system(size: 12, weight: .medium))
+                        .frame(width: 20, alignment: .leading)
+                    
+                    Rectangle()
+                        .fill(Color(red: 65/255, green: 65/255, blue: 65/255))
+                        .frame(height: 1)
+                        .frame(maxWidth: .infinity)
+                    
+                    TextField("00.000.000.00", text: $ip)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .frame(width: 120)
+                        .background(Color.black)
+                        .foregroundColor(.white)
+                        .font(.system(size: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 0)
+                                .stroke(Color(red: 65/255, green: 65/255, blue: 65/255), lineWidth: 1)
+                        )
+                }
+                
+                // Port row
+                HStack(spacing: 0) {
+                    Text("PORT")
+                        .foregroundColor(.gray)
+                        .font(.system(size: 12, weight: .medium))
+                        .frame(width: 40, alignment: .leading)
+                    
+                    Rectangle()
+                        .fill(Color(red: 65/255, green: 65/255, blue: 65/255))
+                        .frame(height: 1)
+                        .frame(maxWidth: .infinity)
+                    
+                    TextField("0000", text: $port)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .frame(width: 80)
+                        .background(Color.black)
+                        .foregroundColor(.white)
+                        .font(.system(size: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 0)
+                                .stroke(Color(red: 65/255, green: 65/255, blue: 65/255), lineWidth: 1)
+                        )
+                }
+            }
+            .padding(.horizontal, 15)
+            
+                HStack {
+                    Image(systemName: "exclamationmark")
+                        .foregroundColor(.white)
+                    Text("connection only possible if the software is correctly setup on desktop")
+                        .foregroundColor(.gray).font(.system(size: 10))
+                    RegularButton(Label: connectionButtonText, action: {
+                        testConnection()
+                    }, color: "Blue").frame(maxWidth: 110)
+                }.padding(.horizontal, 15)
+            
+            Spacer()
+        }
+    }
     
-    // Step 3: Confirmation
+    // Step 4: Confirmation
     private var confirmationView: some View {
         VStack(spacing: 24) {
             VStack(spacing: 8) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 48))
-                    .foregroundColor(.green)
-                
-                Text("Machine Added Successfully!")
-                    .foregroundColor(.white)
-                    .font(.system(size: 16, weight: .medium))
-                
+                HStack {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 16))
+                        .foregroundColor(Color("Green"))
+                    
+                    Text("SUCCESS!")
+                        .foregroundColor(.white)
+                        .font(.system(size: 16, weight: .medium))
+                }
                 Text("\(name.isEmpty ? "Machine" : name) is now connected and ready to monitor")
                     .foregroundColor(.gray)
                     .font(.system(size: 12))
@@ -377,12 +358,12 @@ struct MachineOnboardingModal: View {
         HStack {
             Text(label.uppercased())
                 .foregroundColor(.gray)
-                .font(.system(size: 9))
+                .font(.system(size: 12))
                 .frame(width: 60, alignment: .leading)
             
             Text(value)
                 .foregroundColor(.white)
-                .font(.system(size: 10))
+                .font(.system(size: 12))
             
             Spacer()
         }
@@ -405,6 +386,7 @@ struct MachineOnboardingModal: View {
     private var nextButtonLabel: String {
         switch currentStep {
         case .machineType: return "NEXT"
+        case .naming: return "NEXT"
         case .configuration: return "FINISH"
         case .confirmation: return "FINISH"
         }
@@ -414,6 +396,8 @@ struct MachineOnboardingModal: View {
         switch currentStep {
         case .machineType:
             return selectedMachineType != nil
+        case .naming:
+            return true // Name can be empty, will use default
         case .configuration:
             return !ip.isEmpty && !port.isEmpty
         case .confirmation:
@@ -423,9 +407,9 @@ struct MachineOnboardingModal: View {
     
     private var connectionButtonText: String {
         switch connectionStatus {
-        case .idle: return "TEST CONNECTION"
+        case .idle: return "TEST CONNECT"
         case .connecting: return "CONNECTING..."
-        case .success: return "CONNECTION SUCCESSFUL"
+        case .success: return "SUCCESS"
         case .failed: return "TRY AGAIN"
         }
     }
@@ -449,8 +433,10 @@ struct MachineOnboardingModal: View {
         switch currentStep {
         case .machineType:
             if selectedMachineType != nil {
-                currentStep = .configuration
+                currentStep = .naming
             }
+        case .naming:
+            currentStep = .configuration
         case .configuration:
             currentStep = .confirmation
         case .confirmation:
@@ -462,17 +448,17 @@ struct MachineOnboardingModal: View {
         connectionStatus = .connecting
         connectionMessage = ""
         
-        // Simulate connection test
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            // This would be replaced with actual connection logic
-            let success = Bool.random() // Simulate random success/failure for demo
-            
-            if success {
-                connectionStatus = .success
-                connectionMessage = "Successfully connected to \(name.isEmpty ? "machine" : name)"
-            } else {
-                connectionStatus = .failed
-                connectionMessage = "Could not establish connection. Check network settings."
+        // Use actual NetworkService to test connection
+        let networkService = NetworkService(ip: ip, port: port)
+        networkService.checkHealth { isHealthy in
+            DispatchQueue.main.async {
+                if isHealthy {
+                    self.connectionStatus = .success
+                    self.connectionMessage = "Successfully connected to \(self.name.isEmpty ? "machine" : self.name)"
+                } else {
+                    self.connectionStatus = .failed
+                    self.connectionMessage = "Could not establish connection. Check network settings."
+                }
             }
         }
     }
