@@ -88,9 +88,9 @@ struct OverView: View {
                 .background(Color.black.ignoresSafeArea())
 
                 if showAddServer {
-                    AddServerOverlay(
+                    MachineOnboardingModal(
                         onDismiss: { withAnimation { showAddServer = false } },
-                        onConnect: { newServer in
+                        onComplete: { newServer, machineType in
                             modelContext.insert(newServer)
                             try? modelContext.save()
                             withAnimation { showAddServer = false }

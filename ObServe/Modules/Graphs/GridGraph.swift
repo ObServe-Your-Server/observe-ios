@@ -10,7 +10,7 @@ struct TimeSeriesGridChart: View {
     // Grid configuration
     private let rows = 10 // 10 percentage levels (0-10%, 10-20%, etc.)
     private let columns = 30 // 30 time ticks
-    private let cellSize: CGFloat = 10
+    private let cellSize: CGFloat = 6
     private let maxHistoryCount = 30
     
     private var cellSpacing: CGFloat {
@@ -31,10 +31,10 @@ struct TimeSeriesGridChart: View {
     
     // Computed properties to help the compiler
     private func calculateActualCellSize(for width: CGFloat) -> CGFloat {
-        let availableWidth = width * 0.6 // Leave more room for labels on both sides
+        let availableWidth = width * 0.55 // Use less width to prevent overflow
         let totalSpacingWidth = CGFloat(columns - 1) * (cellSize * 0.2)
         let calculatedCellSize = (availableWidth - totalSpacingWidth) / CGFloat(columns)
-        return min(cellSize, calculatedCellSize)
+        return min(max(cellSize, calculatedCellSize), cellSize * 1.2) // Smaller maximum cap
     }
     
     private func calculateActualSpacing(for cellSize: CGFloat) -> CGFloat {
