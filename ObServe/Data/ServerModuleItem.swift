@@ -13,13 +13,15 @@ class ServerModuleItem {
     var name: String = ""
     var ip: String = ""
     var port: String = ""
+    var type: String = ""
     var lastRuntime: Date?
     var isOn: Bool = false
     var runtimeDuration: TimeInterval?
 
-    init(name: String, ip: String, port: String) {
+    init(name: String, ip: String, port: String, type: String) {
         self.name = name
         self.ip = ip
         self.port = port
+        self.type = type
     }
 }

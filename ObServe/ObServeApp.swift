@@ -27,6 +27,7 @@ struct ObServeApp: App {
         WindowGroup {
             OverView()
                 .environment(\.font, .custom("IBM Plex Sans", size: 17))
+                .preferredColorScheme(.dark)
         }
         .modelContainer(sharedModelContainer)
     }

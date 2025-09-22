@@ -32,7 +32,9 @@ struct ServerDetailView: View {
                     
                     VStack(spacing: 0) {
                         
-                        // alle Module kommen hie rein!
+                        // Server Management Module
+                        ServerManagementModule(server: server)
+                        
                         Rectangle().fill(.clear).frame(height: 12)
                     }
                     .frame(maxWidth: .infinity)
@@ -64,4 +66,8 @@ struct ServerDetailView: View {
             value = nextValue()
         }
     }
+}
+
+#Preview {
+    ServerDetailView(server: ServerModuleItem(name: "Name filler", ip: "192.168.1.100", port: "8080", type: "Server"))
 }

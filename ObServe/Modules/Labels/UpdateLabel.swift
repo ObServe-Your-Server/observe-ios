@@ -42,6 +42,9 @@ struct UpdateLabel: View {
                 if label.uppercased() == "UPTIME" {
                     Text(formatDuration(value))
                         .foregroundColor(.white)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .minimumScaleFactor(0.8)
                         .contentTransition(.numericText(countsDown: value < oldValue))
                         .animation(.easeInOut, value: value)
                 } else {

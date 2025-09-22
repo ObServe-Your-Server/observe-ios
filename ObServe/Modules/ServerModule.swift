@@ -84,10 +84,6 @@ struct ServerModule: View {
                     PowerButton(isOn: $isOn)
                         .frame(maxWidth: .infinity)
                         .disabled(isCheckingHealth)
-                    RegularButton(Label: "SCHEDULE", color: "Orange")
-                        .frame(maxWidth: .infinity)
-                        .disabled(isCheckingHealth)
-                    
                     if !isOn {
                         RegularButton(Label: "MANAGE", action: {
                             onDelete?()
@@ -148,7 +144,7 @@ struct ServerModule: View {
 }
 
 #Preview {
-    let sampleServer = ServerModuleItem(name: "ObServe", ip: "100.103.85.36", port: "8080")
+    let sampleServer = ServerModuleItem(name: "ObServe", ip: "100.109.12.45", port: "8080", type: "Server")
     ServerModule(server: sampleServer)
         .background(Color.black)
 }

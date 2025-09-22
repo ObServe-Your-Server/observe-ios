@@ -469,7 +469,8 @@ struct MachineOnboardingModal: View {
         let newServer = ServerModuleItem(
             name: name.isEmpty ? "My \(machineType.rawValue)" : name,
             ip: ip.isEmpty ? "192.168.1.100" : ip,
-            port: port.isEmpty ? "42000" : port
+            port: port.isEmpty ? "42000" : port,
+            type: machineType.rawValue
         )
         
         onComplete(newServer, machineType)
