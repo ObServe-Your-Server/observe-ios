@@ -66,9 +66,9 @@ struct NetworkMetricsView: View {
 }
 
 #Preview {
-    let sampleServer = ServerModuleItem(name: "Test Server", ip: "192.168.1.100", port: "8080", type: "Server")
+    let sampleServer = ServerModuleItem(name: "Test Server", ip: "192.168.1.100", port: "8080", apiKey: "preview-key", type: "Server")
     let metricsManager = MetricsManager(server: sampleServer)
-    
+
     NetworkMetricsView(metricsManager: metricsManager)
         .background(Color.black)
 }

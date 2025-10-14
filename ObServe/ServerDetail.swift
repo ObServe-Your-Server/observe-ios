@@ -9,9 +9,8 @@ import SwiftUI
 import SwiftData
 
 struct ServerDetailView: View {
-    
-    //Dateninput später später
-    var server: ServerModuleItem? = nil
+
+    var server: ServerModuleItem
     
     @Environment(\.dismiss) private var dismiss
     @State private var contentHasScrolled = false
@@ -21,7 +20,7 @@ struct ServerDetailView: View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
                 DetailAppBar(
-                    serverName: server?.name ?? "SERVER",
+                    serverName: server.name,
                     contentHasScrolled: $contentHasScrolled,
                     selectedInterval: $selectedInterval,
                     onClose: { dismiss() }
@@ -69,5 +68,5 @@ struct ServerDetailView: View {
 }
 
 #Preview {
-    ServerDetailView(server: ServerModuleItem(name: "Name filler", ip: "192.168.1.100", port: "8080", type: "Server"))
+    ServerDetailView(server: ServerModuleItem(name: "Name filler", ip: "192.168.1.100", port: "8080", apiKey: "preview-key", type: "Server"))
 }

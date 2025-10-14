@@ -11,7 +11,8 @@ struct ServerModule: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var server: ServerModuleItem
     var onDelete: (() -> Void)? = nil
-    @State private var isOn = false
+    @State private var isConnected = false
+    @State private var isHealthy = false
     @State private var isCheckingHealth = true
     
     @StateObject private var metricsManager: MetricsManager
@@ -21,36 +22,33 @@ struct ServerModule: View {
         self._server = Bindable(wrappedValue: server)
         self.onDelete = onDelete
         _metricsManager = StateObject(wrappedValue: MetricsManager(server: server))
-        self.networkService = NetworkService(ip: server.ip, port: server.port)
+        self.networkService = NetworkService(ip: server.ip, port: server.port, apiKey: server.apiKey)
     }
 
-    private var lastRuntimeString: String {
-        guard let lastRuntime = server.lastRuntime else {
+    private var lastConnectedString: String {
+        guard let lastConnected = server.lastConnected else {
             return "N/A"
         }
         let formatter = DateFormatter()
         formatter.dateFormat = "dd.MM.yyyy"
-        return formatter.string(from: lastRuntime)
+        return formatter.string(from: lastConnected)
     }
-    
-    private var runtimeDurationString: String {
-        guard let duration = server.runtimeDuration else {
-            return "00:00:00"
-        }
-        let hours = Int(duration) / 3600
-        let minutes = (Int(duration) % 3600) / 60
-        let seconds = Int(duration) % 60
-        return String(format: "%02d : %02d : %02d", hours, minutes, seconds)
+
+    private var statusString: String {
+        return isHealthy ? "online" : "offline"
     }
     
     private func performHealthCheck() {
         print("Starting health check for server: \(server.name) at \(server.ip):\(server.port)")
         isCheckingHealth = true
-        networkService.checkHealth { isHealthy in
-            print("Health check result for \(self.server.name): \(isHealthy)")
+        networkService.checkHealth { healthy in
+            print("Health check result for \(self.server.name): \(healthy)")
             DispatchQueue.main.async {
-                self.isOn = isHealthy
-                self.server.isOn = isHealthy
+                self.isHealthy = healthy
+                self.server.isHealthy = healthy
+                if healthy && self.isConnected {
+                    self.server.lastConnected = Date()
+                }
                 self.isCheckingHealth = false
             }
         }
@@ -71,20 +69,20 @@ struct ServerModule: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 20)
-                } else if isOn {
+                } else if isConnected {
                     MetricsViewSimplified(metricsManager: metricsManager)
                 } else {
                     HStack(spacing: 16) {
-                        DateLabel(label: "LAST RUNTIME", date: lastRuntimeString) //should fetch from backend
-                        DateLabel(label: "RUNTIME DURATION", date: runtimeDurationString) //should fetch from backend
+                        DateLabel(label: "LAST CONNECTED", date: lastConnectedString)
+                        DateLabel(label: "STATUS", date: statusString)
                     }
                 }
 
                 HStack(spacing: 12) {
-                    PowerButton(isOn: $isOn)
+                    PowerButton(isConnected: $isConnected)
                         .frame(maxWidth: .infinity)
                         .disabled(isCheckingHealth)
-                    if !isOn {
+                    if !isConnected {
                         RegularButton(Label: "MANAGE", action: {
                             onDelete?()
                         }, color: "Gray")
@@ -116,9 +114,9 @@ struct ServerModule: View {
                     Text(server.name)
                         .foregroundColor(.white)
                     Circle()
-                        .fill(Color(isCheckingHealth ? "Orange" : (isOn ? "Green" : "Red")))
+                        .fill(Color(isCheckingHealth ? "Orange" : (isHealthy ? "Green" : "Red")))
                         .frame(width: 10, height: 10)
-                        .shadow(color: Color(isCheckingHealth ? "Orange" : (isOn ? "Green" : "Red")).opacity(3), radius: 10)
+                        .shadow(color: Color(isCheckingHealth ? "Orange" : (isHealthy ? "Green" : "Red")).opacity(3), radius: 10)
                 }
                 .padding(10)
                 .background(Color.black)
@@ -128,14 +126,23 @@ struct ServerModule: View {
         }
         .padding(.vertical, 20)
         .onAppear {
+            isConnected = server.isConnected
+            isHealthy = server.isHealthy
             performHealthCheck()
+            if isConnected {
+                metricsManager.startFetching()
+            }
         }
         .onDisappear {
             metricsManager.stopFetching()
         }
-        .onChange(of: isOn) { oldValue, newValue in
+        .onChange(of: isConnected) { oldValue, newValue in
+            server.isConnected = newValue
             if newValue {
                 metricsManager.startFetching()
+                if isHealthy {
+                    server.lastConnected = Date()
+                }
             } else {
                 metricsManager.stopFetching()
             }
@@ -144,7 +151,7 @@ struct ServerModule: View {
 }
 
 #Preview {
-    let sampleServer = ServerModuleItem(name: "ObServe", ip: "100.109.12.45", port: "8080", type: "Server")
+    let sampleServer = ServerModuleItem(name: "ObServe", ip: "100.109.12.45", port: "8080", apiKey: "preview-key", type: "Server")
     ServerModule(server: sampleServer)
         .background(Color.black)
 }

@@ -14,13 +14,20 @@ func formatValue(_ value: Double, decimalPlaces: Int = 2) -> String {
     return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
 }
 
-func formatDuration(_ seconds: Double) -> String {
+func formatDuration(_ seconds: Double, showDays: Bool = true) -> String {
     let totalSeconds = Int(seconds)
-    let days = totalSeconds / 86400
-    let hours = (totalSeconds % 86400) / 3600
-    let minutes = (totalSeconds % 3600) / 60
-    let secs = totalSeconds % 60
-    return String(format: "%02d : %02d : %02d : %02d", days, hours, minutes, secs)
+    if showDays {
+        let days = totalSeconds / 86400
+        let hours = (totalSeconds % 86400) / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let secs = totalSeconds % 60
+        return String(format: "%02d : %02d : %02d : %02d", days, hours, minutes, secs)
+    } else {
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let secs = totalSeconds % 60
+        return String(format: "%02d : %02d : %02d", hours, minutes, secs)
+    }
 }
 
 struct UpdateLabel: View {
@@ -30,9 +37,10 @@ struct UpdateLabel: View {
     var unit: String = ""
     var decimalPlaces: Int = 2
     var showPercent: Bool = false
+    var showDaysInUptime: Bool = true
 
     @State private var oldValue: Double = 0.0
-    
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
@@ -40,11 +48,10 @@ struct UpdateLabel: View {
                     .foregroundColor(Color.gray)
                     .font(.system(size: 12, weight: .medium))
                 if label.uppercased() == "UPTIME" {
-                    Text(formatDuration(value))
+                    Text(formatDuration(value, showDays: showDaysInUptime))
                         .foregroundColor(.white)
                         .lineLimit(1)
                         .truncationMode(.tail)
-                        .minimumScaleFactor(0.8)
                         .contentTransition(.numericText(countsDown: value < oldValue))
                         .animation(.easeInOut, value: value)
                 } else {

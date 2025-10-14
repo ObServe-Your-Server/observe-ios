@@ -8,13 +8,13 @@
 import SwiftUI
 
 enum MachineType: String, CaseIterable {
-    case server = "Server"
-    case singleBoard = "Single Board"
-    case cube = "Cube"
-    case tower = "Tower"
+    case server = "SERVER"
+    case singleBoard = "SINGLE BOARD"
+    case cube = "CUBE"
+    case tower = "TOWER"
     case vm = "VM"
-    case laptop = "Laptop"
-    
+    case laptop = "LAPTOP"
+
     var icon: String {
         switch self {
         case .server: return "server.rack"
@@ -23,6 +23,18 @@ enum MachineType: String, CaseIterable {
         case .tower: return "desktopcomputer"
         case .vm: return "square.3.layers.3d"
         case .laptop: return "laptopcomputer"
+        }
+    }
+
+    func imageName(isSelected: Bool) -> String {
+        let suffix = isSelected ? "_on" : "_off"
+        switch self {
+        case .server: return "server" + suffix
+        case .singleBoard: return "singleBoard" + suffix
+        case .cube: return "cube" + suffix
+        case .tower: return "tower" + suffix
+        case .vm: return "vm" + suffix
+        case .laptop: return "laptop" + suffix
         }
     }
 }
@@ -59,6 +71,7 @@ struct MachineOnboardingModal: View {
     @State private var name = ""
     @State private var ip = ""
     @State private var port = ""
+    @State private var apiKey = ""
     @State private var connectionStatus: ConnectionStatus = .idle
     @State private var connectionMessage = ""
     
@@ -191,14 +204,25 @@ struct MachineOnboardingModal: View {
         Button(action: {
             selectedMachineType = type
         }) {
+            let isSelected = selectedMachineType == type
+
             VStack(spacing: 12) {
-                Image(systemName: type.icon)
-                    .font(.system(size: 32))
-                    .foregroundColor(.white)
-                
+                ZStack {
+                    Image(type.imageName(isSelected: false))
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .opacity(isSelected ? 0.0 : 1.0)
+
+                    Image(type.imageName(isSelected: true))
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .opacity(isSelected ? 1.0 : 0.0)
+                }
+                .frame(width: 96, height: 96)
+
                 Text(type.rawValue)
                     .font(.system(size: 18))
-                    .foregroundColor(selectedMachineType == type ? .white : .gray)
+                    .foregroundColor(isSelected ? .white : .gray)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .aspectRatio(1, contentMode: .fit)
@@ -207,7 +231,7 @@ struct MachineOnboardingModal: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 0)
-                    .stroke(selectedMachineType == type ? Color.white.opacity(0.6) : Color.gray.opacity(0.3), lineWidth: 1)
+                    .stroke(isSelected ? Color.white.opacity(0.6) : Color.gray.opacity(0.3), lineWidth: 1)
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -221,10 +245,12 @@ struct MachineOnboardingModal: View {
                 // Selected machine type display
                 VStack(spacing: 12) {
                     if let machineType = selectedMachineType {
-                        Image(systemName: machineType.icon)
-                            .font(.system(size: 48))
+                        Image(machineType.imageName(isSelected: false))
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
                     }
                 }
+                .frame(width: 150, height: 150)
                 
                 // Name input
                 VStack(alignment: .leading, spacing: 4) {
@@ -295,6 +321,33 @@ struct MachineOnboardingModal: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .frame(width: 80)
+                        .background(Color.black)
+                        .foregroundColor(.white)
+                        .font(.system(size: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 0)
+                                .stroke(Color(red: 65/255, green: 65/255, blue: 65/255), lineWidth: 1)
+                        )
+                }
+                
+                HStack(spacing: 0) {
+                    Text("API-KEY")
+                        .foregroundColor(.gray)
+                        .font(.system(size: 12, weight: .medium))
+                        .frame(width: 60, alignment: .leading)
+                    
+                    Rectangle()
+                        .fill(Color(red: 65/255, green: 65/255, blue: 65/255))
+                        .frame(height: 1)
+                        .frame(maxWidth: .infinity)
+                    
+                    TextField("goofy-ahh-key", text: $apiKey)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .frame(width: 120)
                         .background(Color.black)
                         .foregroundColor(.white)
                         .font(.system(size: 12))
@@ -399,7 +452,7 @@ struct MachineOnboardingModal: View {
         case .naming:
             return true // Name can be empty, will use default
         case .configuration:
-            return !ip.isEmpty && !port.isEmpty
+            return !ip.isEmpty && !port.isEmpty && !apiKey.isEmpty && connectionStatus == .success
         case .confirmation:
             return true
         }
@@ -447,9 +500,9 @@ struct MachineOnboardingModal: View {
     private func testConnection() {
         connectionStatus = .connecting
         connectionMessage = ""
-        
+
         // Use actual NetworkService to test connection
-        let networkService = NetworkService(ip: ip, port: port)
+        let networkService = NetworkService(ip: ip, port: port, apiKey: apiKey)
         networkService.checkHealth { isHealthy in
             DispatchQueue.main.async {
                 if isHealthy {
@@ -465,14 +518,15 @@ struct MachineOnboardingModal: View {
     
     private func completeOnboarding() {
         guard let machineType = selectedMachineType else { return }
-        
+
         let newServer = ServerModuleItem(
             name: name.isEmpty ? "My \(machineType.rawValue)" : name,
             ip: ip.isEmpty ? "192.168.1.100" : ip,
             port: port.isEmpty ? "42000" : port,
+            apiKey: apiKey,
             type: machineType.rawValue
         )
-        
+
         onComplete(newServer, machineType)
     }
 }

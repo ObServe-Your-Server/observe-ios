@@ -13,12 +13,14 @@ class LiveRamFetcher: BaseLiveFetcher {
     
     override func fetch() {
         let queryItems = createTimeWindowQueryItems()
-        
-        networkService.fetch(endpoint: "/metrics/ram/used-memory-in-gb", queryItems: queryItems) { [weak self] (result: Result<RamResponse, Error>) in
+
+        networkService.fetch(endpoint: "/memory/used-in-gb", queryItems: queryItems) { [weak self] (result: Result<[MemoryResponse], Error>) in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let response):
-                    let entries = self?.processPrometheusResponse(response) ?? []
+                    let entries = response.map {
+                        MetricEntry(timestamp: Double($0.unixTime), value: Double($0.value) ?? 0)
+                    }
                     self?.entries = entries
                     self?.error = nil
                 case .failure(let error):

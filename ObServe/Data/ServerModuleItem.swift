@@ -13,15 +13,17 @@ class ServerModuleItem {
     var name: String = ""
     var ip: String = ""
     var port: String = ""
+    var apiKey: String = ""
     var type: String = ""
-    var lastRuntime: Date?
-    var isOn: Bool = false
-    var runtimeDuration: TimeInterval?
+    var lastConnected: Date?
+    var isConnected: Bool = false
+    var isHealthy: Bool = false
 
-    init(name: String, ip: String, port: String, type: String) {
+    init(name: String, ip: String, port: String, apiKey: String, type: String) {
         self.name = name
         self.ip = ip
         self.port = port
+        self.apiKey = apiKey
         self.type = type
     }
 }

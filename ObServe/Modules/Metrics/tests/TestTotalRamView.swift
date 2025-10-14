@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TestTotalRamView: View {
-    @StateObject private var ramFetcher = LiveTotalRamFetcher(ip: "100.103.85.36", port: "8080")
+    @StateObject private var ramFetcher = LiveTotalRamFetcher(ip: "100.103.85.36", port: "8080", apiKey: "goofy-ass-key")
     
     var body: some View {
         VStack(spacing: 16) {

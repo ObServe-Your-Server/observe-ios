@@ -10,16 +10,16 @@ import Combine
 // Base class for fetchers that need periodic updates
 class BaseLiveFetcher: ObservableObject {
     @Published var error: String?
-    
+
     private var timer: Timer?
     internal let interval: TimeInterval
     internal let windowSize: Int
     internal let networkService: NetworkService
-    
-    init(ip: String, port: String, interval: TimeInterval = 3, windowSize: Int = 60) {
+
+    init(ip: String, port: String, apiKey: String, interval: TimeInterval = 3, windowSize: Int = 60) {
         self.interval = interval
         self.windowSize = windowSize
-        self.networkService = NetworkService(ip: ip, port: port)
+        self.networkService = NetworkService(ip: ip, port: port, apiKey: apiKey)
     }
     
     func start() {
@@ -53,7 +53,7 @@ class BaseLiveFetcher: ObservableObject {
         return [
             URLQueryItem(name: "startTime", value: "\(now - windowSize)"),
             URLQueryItem(name: "endTime", value: "\(now)"),
-            URLQueryItem(name: "interval", value: "5")
+            URLQueryItem(name: "step", value: "5")
         ]
     }
     
@@ -65,12 +65,12 @@ class BaseLiveFetcher: ObservableObject {
 // Base class for one-time fetchers
 class BaseStaticFetcher: ObservableObject {
     @Published var error: String?
-    
+
     internal let networkService: NetworkService
     private var hasFetched = false
-    
-    init(ip: String, port: String) {
-        self.networkService = NetworkService(ip: ip, port: port)
+
+    init(ip: String, port: String, apiKey: String) {
+        self.networkService = NetworkService(ip: ip, port: port, apiKey: apiKey)
     }
     
     func fetchIfNeeded() {

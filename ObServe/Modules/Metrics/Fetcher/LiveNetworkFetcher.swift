@@ -19,15 +19,14 @@ class LiveNetworkFetcher: BaseLiveFetcher {
     
     private func fetchNetworkIn() {
         let queryItems = createTimeWindowQueryItems()
-        
-        networkService.fetch(endpoint: "/metrics/network/in", queryItems: queryItems) { [weak self] (result: Result<NetworkInResponse, Error>) in
+
+        networkService.fetch(endpoint: "/network/in", queryItems: queryItems) { [weak self] (result: Result<[NetworkResponse], Error>) in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let response):
-                    let entries = self?.processPrometheusResponse(response) ?? []
                     // Convert bytes to kilobytes
-                    self?.inEntries = entries.map {
-                        MetricEntry(timestamp: $0.timestamp, value: $0.value / 1024)
+                    self?.inEntries = response.map {
+                        MetricEntry(timestamp: Double($0.unixTime), value: Double($0.value) / 1024)
                     }
                     self?.error = nil
                 case .failure(let error):
@@ -36,18 +35,17 @@ class LiveNetworkFetcher: BaseLiveFetcher {
             }
         }
     }
-    
+
     private func fetchNetworkOut() {
         let queryItems = createTimeWindowQueryItems()
-        
-        networkService.fetch(endpoint: "/metrics/network/out", queryItems: queryItems) { [weak self] (result: Result<NetworkOutResponse, Error>) in
+
+        networkService.fetch(endpoint: "/network/out", queryItems: queryItems) { [weak self] (result: Result<[NetworkResponse], Error>) in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let response):
-                    let entries = self?.processPrometheusResponse(response) ?? []
                     // Convert bytes to kilobytes
-                    self?.outEntries = entries.map {
-                        MetricEntry(timestamp: $0.timestamp, value: $0.value / 1024)
+                    self?.outEntries = response.map {
+                        MetricEntry(timestamp: Double($0.unixTime), value: Double($0.value) / 1024)
                     }
                     self?.error = nil
                 case .failure(let error):
