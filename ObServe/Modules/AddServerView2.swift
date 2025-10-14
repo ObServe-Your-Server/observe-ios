@@ -1,4 +1,4 @@
-//
+ //
 //  MachineOnboardingModal.swift
 //  ObServe
 //
@@ -50,7 +50,7 @@ enum OnboardingStep: Int, CaseIterable {
         case .machineType: return "MACHINE TYPE"
         case .naming: return "MACHINE NAME"
         case .configuration: return "CONNECTION DETAILS"
-        case .confirmation: return "CONFIRMATION"
+        case .confirmation: return "YOUR SETUP"
         }
     }
 }
@@ -74,6 +74,8 @@ struct MachineOnboardingModal: View {
     @State private var apiKey = ""
     @State private var connectionStatus: ConnectionStatus = .idle
     @State private var connectionMessage = ""
+    @State private var contentHasScrolled = false
+    @State private var dummyInterval: DetailAppBar.Interval = .s1
     
     var body: some View {
         ZStack {
@@ -82,10 +84,16 @@ struct MachineOnboardingModal: View {
             
             VStack(spacing: 0) {
                 // Header
-                headerView
-                
-                // Progress Indicator
-                progressIndicator
+                DetailAppBar(
+                    serverName: currentStep.title,
+                    contentHasScrolled: $contentHasScrolled,
+                    selectedInterval: $dummyInterval,
+                    showIntervalSelector: false,
+                    showProgressIndicator: true,
+                    currentStep: currentStep.rawValue,
+                    totalSteps: OnboardingStep.allCases.count,
+                    onClose: onDismiss
+                )
                 
                 // Content
                 contentView
@@ -97,76 +105,7 @@ struct MachineOnboardingModal: View {
             .background(Color.black)
         }
     }
-    
-    // MARK: - Header
-    private var headerView: some View {
-        HStack {
-            Text(currentStep.title)
-                .foregroundColor(.white)
-                .font(.system(size: 18))
-            
-            Spacer()
-            
-            Button(action: onDismiss) {
-                Image(systemName: "xmark")
-                    .foregroundColor(.white)
-                    .font(.system(size: 14))
-            }
-        }
-        .padding(20)
-    }
-    
-    // MARK: - Progress Indicator
-    private var progressIndicator: some View {
-        HStack(spacing: 0) {
-            // Left Arrow
-            Button(action: {
-                if currentStep.rawValue > 0 {
-                    previousStep()
-                }
-            }) {
-                Image(systemName: "chevron.left")
-                    .foregroundColor(currentStep.rawValue > 0 ? .white : .gray.opacity(0.3))
-                    .font(.system(size: 16))
-            }
-            .disabled(currentStep.rawValue == 0)
-            .frame(width: 40)
-            
-            // Progress Line with Sections and Indicators
-            HStack(spacing: 0) {
-                ForEach(0..<OnboardingStep.allCases.count, id: \.self) { index in
-                    // Step indicator (vertical rectangle)
-                    Rectangle()
-                        .fill(currentStep.rawValue == index ? Color.white : Color.gray.opacity(0.3))
-                        .frame(width: currentStep.rawValue == index ? 8 : 1, height: 8)
-                    
-                    // Line segment (only add if not the last step)
-                    if index < OnboardingStep.allCases.count - 1 {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(height: 1)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity)
-            
-            // Right Arrow
-            Button(action: {
-                if canProceed && currentStep != .confirmation {
-                    nextStep()
-                }
-            }) {
-                Image(systemName: "chevron.right")
-                    .foregroundColor(canProceed && currentStep != .confirmation ? .white : .gray.opacity(0.3))
-                    .font(.system(size: 16))
-            }
-            .disabled(!canProceed || currentStep == .confirmation)
-            .frame(width: 40)
-        }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 30)
-    }
-    
+
     // MARK: - Content Views
     private var contentView: some View {
         Group {
@@ -274,9 +213,7 @@ struct MachineOnboardingModal: View {
     
     // Step 3: Configuration and Connection
     private var configurationView: some View {
-        VStack(spacing: 32) {
-            Spacer()
-            
+        VStack(alignment: .center, spacing: 32) {
             VStack(spacing: 24) {
                 // IP Address row
                 HStack(spacing: 0) {
@@ -359,51 +296,200 @@ struct MachineOnboardingModal: View {
             }
             .padding(.horizontal, 15)
             
-                HStack {
-                    Image(systemName: "exclamationmark")
-                        .foregroundColor(.white)
-                    Text("connection only possible if the software is correctly setup on desktop")
-                        .foregroundColor(.gray).font(.system(size: 10))
+            VStack(alignment: .leading, spacing: 32) {
+                    HStack {
+                        Image(systemName: "exclamationmark")
+                            .foregroundColor(.white)
+                        Text("connection only possible if the software is correctly setup on desktop")
+                            .foregroundColor(.gray).font(.system(size: 10))
+                    }
                     RegularButton(Label: connectionButtonText, action: {
                         testConnection()
-                    }, color: "Blue").frame(maxWidth: 110)
+                    }, color: connectionStatus == .success ? "Green" : (connectionStatus == .failed ? "Red" : "Blue"))
                 }.padding(.horizontal, 15)
-            
-            Spacer()
         }
+        .padding(.vertical, 30)
+        .background(
+            RoundedRectangle(cornerRadius: 0)
+                .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+        )
     }
     
     // Step 4: Confirmation
     private var confirmationView: some View {
         VStack(spacing: 24) {
-            VStack(spacing: 8) {
-                HStack {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 16))
-                        .foregroundColor(Color("Green"))
-                    
-                    Text("SUCCESS!")
-                        .foregroundColor(.white)
-                        .font(.system(size: 16, weight: .medium))
+            Spacer().frame(height: 5)
+
+            VStack(alignment: .leading, spacing: 16) {
+                Spacer().frame(height: 5)
+
+                // Server info and icon section
+                HStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Type label
+                        infoLabel(label: "TYPE", value: selectedMachineType?.rawValue ?? "Unknown")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Name label
+                        infoLabel(label: "NAME", value: name.isEmpty ? "My \(selectedMachineType?.rawValue ?? "Machine")" : name)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    // Server icon
+                    VStack {
+                        if let machineType = selectedMachineType {
+                            Image(machineType.imageName(isSelected: true))
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxWidth: 96, maxHeight: 96)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
-                Text("\(name.isEmpty ? "Machine" : name) is now connected and ready to monitor")
-                    .foregroundColor(.gray)
-                    .font(.system(size: 12))
-                    .multilineTextAlignment(.center)
+                RegularButton(Label: "CHANGE", action: {
+                    currentStep = .machineType
+                }, color: "Gray")
+                .frame(maxWidth: .infinity)
+
             }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                machineDetailRow("Type", selectedMachineType?.rawValue ?? "Unknown")
-                machineDetailRow("Name", name.isEmpty ? "My \(selectedMachineType?.rawValue ?? "Machine")" : name)
-                machineDetailRow("Address", "\(ip.isEmpty ? "192.168.1.100" : ip):\(port)")
-                machineDetailRow("Status", connectionStatus == .success ? "Connected" : "Configured")
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+            .background(
+                RoundedRectangle(cornerRadius: 0)
+                    .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+            )
+            .overlay(alignment: .topLeading) {
+                HStack {
+                    Text("MACHINE INFO")
+                        .foregroundColor(.white)
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .padding(10)
+                .background(Color.black)
+                .padding(.top, -20)
+                .padding(.leading, 10)
             }
-            .padding(16)
-            .background(Color(red: 15/255, green: 15/255, blue: 15/255))
-            .overlay(RoundedRectangle(cornerRadius: 0)
-                .stroke(Color.gray.opacity(0.3), lineWidth: 1))
-            
+
+            VStack(alignment: .center, spacing: 32) {
+                VStack(spacing: 24) {
+                    // IP Address row
+                    HStack(spacing: 0) {
+                        Text("IP")
+                            .foregroundColor(.gray)
+                            .font(.system(size: 12, weight: .medium))
+                            .frame(width: 20, alignment: .leading)
+                        
+                        Rectangle()
+                            .fill(Color(red: 65/255, green: 65/255, blue: 65/255))
+                            .frame(height: 1)
+                            .frame(maxWidth: .infinity)
+                        
+                        TextField("00.000.000.00", text: $ip)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .frame(width: 120)
+                            .background(Color.black)
+                            .foregroundColor(.white)
+                            .font(.system(size: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 0)
+                                    .stroke(Color(red: 65/255, green: 65/255, blue: 65/255), lineWidth: 1)
+                            )
+                    }
+                    
+                    // Port row
+                    HStack(spacing: 0) {
+                        Text("PORT")
+                            .foregroundColor(.gray)
+                            .font(.system(size: 12, weight: .medium))
+                            .frame(width: 40, alignment: .leading)
+                        
+                        Rectangle()
+                            .fill(Color(red: 65/255, green: 65/255, blue: 65/255))
+                            .frame(height: 1)
+                            .frame(maxWidth: .infinity)
+                        
+                        TextField("0000", text: $port)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .frame(width: 80)
+                            .background(Color.black)
+                            .foregroundColor(.white)
+                            .font(.system(size: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 0)
+                                    .stroke(Color(red: 65/255, green: 65/255, blue: 65/255), lineWidth: 1)
+                            )
+                    }
+                    
+                    HStack(spacing: 0) {
+                        Text("API-KEY")
+                            .foregroundColor(.gray)
+                            .font(.system(size: 12, weight: .medium))
+                            .frame(width: 60, alignment: .leading)
+                        
+                        Rectangle()
+                            .fill(Color(red: 65/255, green: 65/255, blue: 65/255))
+                            .frame(height: 1)
+                            .frame(maxWidth: .infinity)
+                        
+                        TextField("goofy-ahh-key", text: $apiKey)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .autocapitalization(.none)
+                            .disableAutocorrection(true)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .frame(width: 120)
+                            .background(Color.black)
+                            .foregroundColor(.white)
+                            .font(.system(size: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 0)
+                                    .stroke(Color(red: 65/255, green: 65/255, blue: 65/255), lineWidth: 1)
+                            )
+                    }
+                }
+                .padding(.horizontal, 15)
+                
+                VStack(alignment: .leading, spacing: 32) {
+                        RegularButton(Label: connectionButtonText, action: {
+                            testConnection()
+                        }, color: connectionStatus == .success ? "Green" : (connectionStatus == .failed ? "Red" : "Blue"))
+                    }.padding(.horizontal, 15)
+            }
+            .padding(.vertical, 30)
+            .background(
+                RoundedRectangle(cornerRadius: 0)
+                    .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+            )
+            .overlay(alignment: .topLeading) {
+                HStack {
+                    Text("CONNECTION")
+                        .foregroundColor(.white)
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .padding(10)
+                .background(Color.black)
+                .padding(.top, -20)
+                .padding(.leading, 10)
+            }
+
             Spacer()
+        }
+    }
+
+    private func infoLabel(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .foregroundColor(Color.gray)
+                .font(.system(size: 12, weight: .medium))
+            Text(value)
+                .foregroundColor(.white)
+                .font(.system(size: 14))
         }
     }
     
@@ -424,13 +510,9 @@ struct MachineOnboardingModal: View {
     
     // MARK: - Navigation
     private var navigationView: some View {
-        HStack {
-            Spacer()
-            
-            if currentStep == .confirmation {
-                RegularButton(Label: "FINISH", action: completeOnboarding, color: "Blue")
-                    .frame(maxWidth: 100)
-            }
+        HStack(spacing: 16) {
+            RegularButton(Label: "BACK", action: previousStep, color: "Gray")
+            RegularButton(Label: nextButtonLabel, action: nextStep, color: "Blue", disabled: !canProceed)
         }
         .padding(20)
     }
@@ -440,7 +522,7 @@ struct MachineOnboardingModal: View {
         switch currentStep {
         case .machineType: return "NEXT"
         case .naming: return "NEXT"
-        case .configuration: return "FINISH"
+        case .configuration: return "NEXT"
         case .confirmation: return "FINISH"
         }
     }
@@ -460,7 +542,7 @@ struct MachineOnboardingModal: View {
     
     private var connectionButtonText: String {
         switch connectionStatus {
-        case .idle: return "TEST CONNECT"
+        case .idle: return "TEST CONNECTION"
         case .connecting: return "CONNECTING..."
         case .success: return "SUCCESS"
         case .failed: return "TRY AGAIN"
@@ -526,6 +608,13 @@ struct MachineOnboardingModal: View {
             apiKey: apiKey,
             type: machineType.rawValue
         )
+
+        // If connection was successful, automatically mark as connected
+        if connectionStatus == .success {
+            newServer.isConnected = true
+            newServer.isHealthy = true
+            newServer.lastConnected = Date()
+        }
 
         onComplete(newServer, machineType)
     }

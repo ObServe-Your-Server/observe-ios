@@ -105,11 +105,11 @@ struct SettingsOverview: View {
 }
 
 /// Eine einzelne Settings‑Zeile mit deiner Custom‑Switch rechts
-private struct SettingRow: View {
+public struct SettingRow: View {
     var title: String
     @Binding var binding: Bool
 
-    var body: some View {
+    public var body: some View {
         HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title.uppercased())

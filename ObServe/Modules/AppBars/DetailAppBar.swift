@@ -11,6 +11,10 @@ struct DetailAppBar: View {
     let serverName: String
     @Binding var contentHasScrolled: Bool
     @Binding var selectedInterval: Interval
+    var showIntervalSelector: Bool = true
+    var showProgressIndicator: Bool = false
+    var currentStep: Int = 0
+    var totalSteps: Int = 4
     var onClose: () -> Void
 
     enum Interval: CaseIterable {
@@ -39,28 +43,33 @@ struct DetailAppBar: View {
                 Text(serverName.uppercased())
                     .foregroundColor(.white)
 
-                Button {
-                    let all = Interval.allCases
-                    if let i = all.firstIndex(of: selectedInterval) {
-                        selectedInterval = all[(i + 1) % all.count]
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.white)
+                if showIntervalSelector {
+                    Button {
+                        let all = Interval.allCases
+                        if let i = all.firstIndex(of: selectedInterval) {
+                            selectedInterval = all[(i + 1) % all.count]
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(.white)
 
-                        Text("INTERVALL: \(selectedInterval.label)")
-                            .font(.system(size: 11))
-                            .foregroundColor(.white)
+                            Text("INTERVALL: \(selectedInterval.label)")
+                                .font(.system(size: 11))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 3)
+                        .background(Color("ButtonBackground"))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 0)
+                                .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+                        )
                     }
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 3)
-                    .background(Color("ButtonBackground"))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 0)
-                            .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                    )
+                }
+                else if showProgressIndicator {
+                    progressIndicatorView
                 }
             }
 
@@ -96,6 +105,19 @@ struct DetailAppBar: View {
                 }
             }
         )
+    }
+    
+    private var progressIndicatorView: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<totalSteps, id: \.self) { index in
+                Rectangle()
+                    .fill(index <= currentStep ? Color.white : Color.gray.opacity(0.3))
+                    .frame(width: 18, height: 18)
+                    .animation(.easeInOut(duration: 0.2), value: currentStep)
+            }
+        }
+        .padding(.horizontal, 5)
+        .padding(.vertical, 3)
     }
 }
 

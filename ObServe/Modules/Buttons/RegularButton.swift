@@ -11,21 +11,25 @@ struct RegularButton: View {
     var Label: String
     var action: (() -> Void)?
     var color: String
-    
+    var disabled: Bool = false
+
     var body: some View {
         Button(action: {
-            action?()
+            if !disabled {
+                action?()
+            }
         }) {
             ZStack {
                 Text(Label)
-                    .foregroundColor(Color(color))
+                    .foregroundColor(disabled ? .gray : Color(color))
                     .font(.system(size: 12))
                     .padding(.horizontal, 7)
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
                     .overlay(RoundedRectangle(cornerRadius: 0)
-                            .stroke(Color(color).opacity(0.3), lineWidth: 1))
+                            .stroke((disabled ? Color.gray : Color(color)).opacity(0.3), lineWidth: 1))
             }
         }
+        .disabled(disabled)
     }
 }
