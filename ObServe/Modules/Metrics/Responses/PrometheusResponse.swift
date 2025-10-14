@@ -29,9 +29,9 @@ struct PrometheusResponse: Decodable {
 }
 
 // Type aliases for existing response types to maintain compatibility
-typealias NetworkInResponse = PrometheusResponse
-typealias NetworkOutResponse = PrometheusResponse
 typealias RamResponse = PrometheusResponse
 typealias TotalDiskResponse = PrometheusResponse
 typealias TotalRamResponse = PrometheusResponse
-typealias UptimeResponse = PrometheusResponse
+
+// Simple responses matching OpenAPI spec
+typealias UptimeResponse = Int

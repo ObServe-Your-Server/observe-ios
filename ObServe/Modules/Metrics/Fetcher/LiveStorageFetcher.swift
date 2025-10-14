@@ -13,12 +13,14 @@ class LiveStorageFetcher: BaseLiveFetcher {
     
     override func fetch() {
         let queryItems = createTimeWindowQueryItems()
-        
-        networkService.fetch(endpoint: "/metrics/disk/used-space-in-gb", queryItems: queryItems) { [weak self] (result: Result<TotalDiskResponse, Error>) in
+
+        networkService.fetch(endpoint: "/disk/disk-stat", queryItems: queryItems) { [weak self] (result: Result<[DiskStatisticResponse], Error>) in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let response):
-                    let entries = self?.processPrometheusResponse(response) ?? []
+                    let entries = response.map {
+                        MetricEntry(timestamp: Double($0.unixTime), value: Double($0.totalUsedSpaceAllDisksInGb) ?? 0)
+                    }
                     self?.entries = entries
                     self?.error = nil
                 case .failure(let error):

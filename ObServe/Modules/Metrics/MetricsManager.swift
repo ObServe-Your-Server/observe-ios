@@ -28,15 +28,15 @@ class MetricsManager: ObservableObject {
     
     init(server: ServerModuleItem) {
         // Initialize all fetchers
-        self.cpuFetcher = LiveCpuFetcher(ip: server.ip, port: server.port)
-        self.ramFetcher = LiveRamFetcher(ip: server.ip, port: server.port)
-        self.pingFetcher = LivePingFetcher(ip: server.ip, port: server.port)
-        self.storageFetcher = LiveStorageFetcher(ip: server.ip, port: server.port)
-        self.diskTotalSizeFetcher = LiveDiskTotalSizeFetcher(ip: server.ip, port: server.port)
-        self.totalRamFetcher = LiveTotalRamFetcher(ip: server.ip, port: server.port)
-        self.uptimeFetcher = LiveUptimeFetcher(ip: server.ip, port: server.port)
-        self.networkFetcher = LiveNetworkFetcher(ip: server.ip, port: server.port)
-        
+        self.cpuFetcher = LiveCpuFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.ramFetcher = LiveRamFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.pingFetcher = LivePingFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.storageFetcher = LiveStorageFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.diskTotalSizeFetcher = LiveDiskTotalSizeFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.totalRamFetcher = LiveTotalRamFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.uptimeFetcher = LiveUptimeFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.networkFetcher = LiveNetworkFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+
         setupErrorHandling()
         setupDataObservers()
     }

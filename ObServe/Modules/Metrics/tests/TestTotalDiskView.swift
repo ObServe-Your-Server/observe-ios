@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TestTotalDiskView: View {
-    @StateObject private var diskFetcher = LiveDiskTotalSizeFetcher(ip: "100.103.85.36", port: "8080")
+    @StateObject private var diskFetcher = LiveDiskTotalSizeFetcher(ip: "100.103.85.36", port: "8080", apiKey: "goofy-ass-key")
     
     var body: some View {
         VStack(spacing: 16) {

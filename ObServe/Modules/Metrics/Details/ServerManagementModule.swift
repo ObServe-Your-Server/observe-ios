@@ -8,29 +8,17 @@
 import SwiftUI
 
 struct ServerManagementModule: View {
-    var server: ServerModuleItem?
-    
-    @State private var isOn = true
-    // Convert running time to seconds for UPTIME formatting (120:56:12 = 120*3600 + 56*60 + 12)
-    @State private var runtimeSeconds: Double = 435372 // 120:56:12 in seconds
+    @Bindable var server: ServerModuleItem
+
     @State private var osVersion = "LX - 5.15"
     @State private var storageUsed = 1.26
-    @State private var storageTotal = 2.0
-    @State private var fansRPM: Double = 2300
     @State private var fansTotal = 5000.0
-    
+
     @StateObject private var metricsManager: MetricsManager
-    
-    init(server: ServerModuleItem?) {
-        self.server = server
-        // Initialize MetricsManager with server or default values
-        if let server = server {
-            _metricsManager = StateObject(wrappedValue: MetricsManager(server: server))
-        } else {
-            // Create a default server for preview/testing
-            let defaultServer = ServerModuleItem(name: "Default", ip: "192.168.1.100", port: "8080", type: "Server")
-            _metricsManager = StateObject(wrappedValue: MetricsManager(server: defaultServer))
-        }
+
+    init(server: ServerModuleItem) {
+        self._server = Bindable(wrappedValue: server)
+        _metricsManager = StateObject(wrappedValue: MetricsManager(server: server))
     }
     
     var body: some View {
@@ -42,17 +30,7 @@ struct ServerManagementModule: View {
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 16) {
                         // Top row: UPTIME aligned with OS-VERSION
-                        UpdateLabel(label: "UPTIME", value: runtimeSeconds)
-
-                        // Bottom row: STORAGE aligned with FANS AVG
-                        UpdateLabel(
-                            label: "STORAGE",
-                            value: storageUsed,
-                            max: storageTotal,
-                            unit: "TB",
-                            decimalPlaces: 2,
-                            showPercent: true
-                        )
+                        UpdateLabel(label: "UPTIME", value: metricsManager.uptime, showDaysInUptime: false)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -65,24 +43,16 @@ struct ServerManagementModule: View {
                             Text(osVersion)
                                 .foregroundColor(.white)
                         }
-
-                        // Bottom row: FANS aligned with STORAGE
-                        UpdateLabel(
-                            label: "FANS AVG",
-                            value: 1,
-                            max: 3,
-                            unit: "RPM",
-                            decimalPlaces: 0,
-                            showPercent: true
-                        )
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    // Server icon placeholder
+                    // Server icon
                     VStack {
-                        Image(systemName: "cube")
-                            .font(.system(size: 60))
-                            .foregroundColor(.white.opacity(0.8))
+                        let iconName = "\(server.type.lowercased())_\(server.isConnected ? "on" : "off")"
+                        Image(iconName)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: 96, maxHeight: 96)
 
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -90,14 +60,14 @@ struct ServerManagementModule: View {
                 
                 // Action buttons - matching ServerModule styling
                 HStack(spacing: 12) {
-                    PowerButton(isOn: $isOn)
+                    PowerButton(isConnected: $server.isConnected)
                         .frame(maxWidth: .infinity)
-                    
+
                     RegularButton(Label: "SCHEDULE", action: {
                         // Schedule action
                     }, color: "Orange")
                     .frame(maxWidth: .infinity)
-                    
+
                     CoolButton(
                         action: {
                             // Simulate a restart action
@@ -118,7 +88,7 @@ struct ServerManagementModule: View {
             )
             .overlay(alignment: .topLeading) {
                 HStack {
-                    Text(server?.type.uppercased() ?? "CUBE")
+                    Text(server.type.uppercased())
                         .foregroundColor(.white)
                         .font(.system(size: 14, weight: .medium))
                 }
@@ -154,14 +124,14 @@ struct ServerManagementModule: View {
         }
         .padding(.vertical, 20)
         .onAppear {
-            if isOn {
+            if server.isConnected {
                 metricsManager.startFetching()
             }
         }
         .onDisappear {
             metricsManager.stopFetching()
         }
-        .onChange(of: isOn) { oldValue, newValue in
+        .onChange(of: server.isConnected) { oldValue, newValue in
             if newValue {
                 metricsManager.startFetching()
             } else {
@@ -172,6 +142,6 @@ struct ServerManagementModule: View {
 }
 
 #Preview {
-    ServerManagementModule(server: ServerModuleItem(name: "Test Server", ip: "192.168.1.100", port: "8080", type: "Cube"))
+    ServerManagementModule(server: ServerModuleItem(name: "Test Server", ip: "192.168.1.100", port: "8080", apiKey: "preview-key", type: "Cube"))
         .background(Color.black)
 }

@@ -28,8 +28,8 @@ struct OverView: View {
     var filteredServers: [ServerModuleItem] {
         switch sortType {
         case .all:     return servers
-        case .online:  return servers.filter { $0.isOn }
-        case .offline: return servers.filter { !$0.isOn }
+        case .online:  return servers.filter { $0.isHealthy }
+        case .offline: return servers.filter { !$0.isHealthy }
         }
     }
 

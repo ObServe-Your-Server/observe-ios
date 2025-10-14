@@ -8,28 +8,28 @@
 import SwiftUI
 
 struct PowerButton: View {
-    @Binding var isOn: Bool
+    @Binding var isConnected: Bool
 
     var body: some View {
         Button(action: {
             withAnimation(.easeInOut(duration: 0.3)) {
-                isOn.toggle()
+                isConnected.toggle()
                 Haptics.click()
             }
         }) {
             ZStack {
-                Text(isOn ? "SHUT DOWN" : "START UP")
-                    .foregroundColor(Color(isOn ? "Red" : "Green"))
+                Text(isConnected ? "DISCONNECT" : "CONNECT")
+                    .foregroundColor(Color(isConnected ? "Red" : "Green"))
                     .font(.system(size: 12))
                     .padding(.horizontal, 7)
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
                     .overlay(
                         RoundedRectangle(cornerRadius: 0)
-                            .stroke(Color(isOn ? "Red" : "Green").opacity(0.3), lineWidth: 1)
+                            .stroke(Color(isConnected ? "Red" : "Green").opacity(0.3), lineWidth: 1)
                     )
                     .overlay(
-                        FocusCorners(color: Color(isOn ? "Red" : "Green"), size: 8, thickness: 1)
+                        FocusCorners(color: Color(isConnected ? "Red" : "Green"), size: 8, thickness: 1)
                     )
                     .transition(.opacity)
             }
