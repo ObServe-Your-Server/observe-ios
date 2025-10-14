@@ -38,15 +38,17 @@ class NetworkService {
             completion(false)
             return
         }
-        
-        let request = createRequest(for: url)
-        
+
+        var request = createRequest(for: url)
+        request.timeoutInterval = 5.0 // 5 second timeout
+
         let task = URLSession.shared.dataTask(with: request) { _, response, error in
-            if let error = error {
+            // Silently treat any error (including timeout) as server offline
+            if error != nil {
                 completion(false)
                 return
             }
-            
+
             if let httpResponse = response as? HTTPURLResponse {
                 let isHealthy = httpResponse.statusCode == 200
                 completion(isHealthy)
