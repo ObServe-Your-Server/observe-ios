@@ -6,7 +6,20 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		65975AF52EA0F37500C1A213 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 65975AF42EA0F37500C1A213 /* WidgetKit.framework */; };
+		65975AF72EA0F37500C1A213 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 65975AF62EA0F37500C1A213 /* SwiftUI.framework */; };
+		65975B082EA0F37700C1A213 /* observeMetricsWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 65975AF22EA0F37500C1A213 /* observeMetricsWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		65975B062EA0F37700C1A213 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 65B216BE2E278D5C00F43B59 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 65975AF12EA0F37500C1A213;
+			remoteInfo = observeMetricsWidgetExtension;
+		};
 		65B216D62E278D5E00F43B59 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 65B216BE2E278D5C00F43B59 /* Project object */;
@@ -23,7 +36,24 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		65975B0D2EA0F37700C1A213 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				65975B082EA0F37700C1A213 /* observeMetricsWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		65975AF22EA0F37500C1A213 /* observeMetricsWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = observeMetricsWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		65975AF42EA0F37500C1A213 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		65975AF62EA0F37500C1A213 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		65B216C62E278D5C00F43B59 /* ObServe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ObServe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		65B216D52E278D5E00F43B59 /* ObServeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ObServeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		65B216DF2E278D5E00F43B59 /* ObServeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ObServeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -53,9 +83,24 @@
 			);
 			target = 65B216DE2E278D5E00F43B59 /* ObServeUITests */;
 		};
+		65975B0C2EA0F37700C1A213 /* Exceptions for "observeMetricsWidget" folder in "observeMetricsWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 65975AF12EA0F37500C1A213 /* observeMetricsWidgetExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		65975AF82EA0F37500C1A213 /* observeMetricsWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				65975B0C2EA0F37700C1A213 /* Exceptions for "observeMetricsWidget" folder in "observeMetricsWidgetExtension" target */,
+			);
+			path = observeMetricsWidget;
+			sourceTree = "<group>";
+		};
 		65B216C82E278D5C00F43B59 /* ObServe */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -79,6 +124,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		65975AEF2EA0F37500C1A213 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				65975AF72EA0F37500C1A213 /* SwiftUI.framework in Frameworks */,
+				65975AF52EA0F37500C1A213 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		65B216C32E278D5C00F43B59 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -103,12 +157,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		65975AF32EA0F37500C1A213 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				65975AF42EA0F37500C1A213 /* WidgetKit.framework */,
+				65975AF62EA0F37500C1A213 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		65B216BD2E278D5C00F43B59 = {
 			isa = PBXGroup;
 			children = (
 				65B216C82E278D5C00F43B59 /* ObServe */,
 				65B216D82E278D5E00F43B59 /* ObServeTests */,
 				65B216E22E278D5E00F43B59 /* ObServeUITests */,
+				65975AF82EA0F37500C1A213 /* observeMetricsWidget */,
+				65975AF32EA0F37500C1A213 /* Frameworks */,
 				65B216C72E278D5C00F43B59 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -119,6 +184,7 @@
 				65B216C62E278D5C00F43B59 /* ObServe.app */,
 				65B216D52E278D5E00F43B59 /* ObServeTests.xctest */,
 				65B216DF2E278D5E00F43B59 /* ObServeUITests.xctest */,
+				65975AF22EA0F37500C1A213 /* observeMetricsWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -126,6 +192,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		65975AF12EA0F37500C1A213 /* observeMetricsWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 65975B092EA0F37700C1A213 /* Build configuration list for PBXNativeTarget "observeMetricsWidgetExtension" */;
+			buildPhases = (
+				65975AEE2EA0F37500C1A213 /* Sources */,
+				65975AEF2EA0F37500C1A213 /* Frameworks */,
+				65975AF02EA0F37500C1A213 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				65975AF82EA0F37500C1A213 /* observeMetricsWidget */,
+			);
+			name = observeMetricsWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = observeMetricsWidgetExtension;
+			productReference = 65975AF22EA0F37500C1A213 /* observeMetricsWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		65B216C52E278D5C00F43B59 /* ObServe */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 65B216E92E278D5E00F43B59 /* Build configuration list for PBXNativeTarget "ObServe" */;
@@ -133,10 +221,12 @@
 				65B216C22E278D5C00F43B59 /* Sources */,
 				65B216C32E278D5C00F43B59 /* Frameworks */,
 				65B216C42E278D5C00F43B59 /* Resources */,
+				65975B0D2EA0F37700C1A213 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				65975B072EA0F37700C1A213 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				65B216C82E278D5C00F43B59 /* ObServe */,
@@ -204,6 +294,9 @@
 				LastSwiftUpdateCheck = 1640;
 				LastUpgradeCheck = 1640;
 				TargetAttributes = {
+					65975AF12EA0F37500C1A213 = {
+						CreatedOnToolsVersion = 16.4;
+					};
 					65B216C52E278D5C00F43B59 = {
 						CreatedOnToolsVersion = 16.4;
 					};
@@ -234,11 +327,19 @@
 				65B216C52E278D5C00F43B59 /* ObServe */,
 				65B216D42E278D5E00F43B59 /* ObServeTests */,
 				65B216DE2E278D5E00F43B59 /* ObServeUITests */,
+				65975AF12EA0F37500C1A213 /* observeMetricsWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		65975AF02EA0F37500C1A213 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		65B216C42E278D5C00F43B59 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -263,6 +364,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		65975AEE2EA0F37500C1A213 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		65B216C22E278D5C00F43B59 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -287,6 +395,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		65975B072EA0F37700C1A213 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 65975AF12EA0F37500C1A213 /* observeMetricsWidgetExtension */;
+			targetProxy = 65975B062EA0F37700C1A213 /* PBXContainerItemProxy */;
+		};
 		65B216D72E278D5E00F43B59 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 65B216C52E278D5C00F43B59 /* ObServe */;
@@ -300,6 +413,62 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		65975B0A2EA0F37700C1A213 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3R7V4V7D7N;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = observeMetricsWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = observeMetricsWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = vision.dev.ObServe.observeMetricsWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		65975B0B2EA0F37700C1A213 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3R7V4V7D7N;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = observeMetricsWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = observeMetricsWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = vision.dev.ObServe.observeMetricsWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		65B216E72E278D5E00F43B59 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -558,6 +727,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		65975B092EA0F37700C1A213 /* Build configuration list for PBXNativeTarget "observeMetricsWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				65975B0A2EA0F37700C1A213 /* Debug */,
+				65975B0B2EA0F37700C1A213 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		65B216C12E278D5C00F43B59 /* Build configuration list for PBXProject "ObServe" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
