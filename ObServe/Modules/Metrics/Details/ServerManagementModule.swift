@@ -122,7 +122,6 @@ struct ServerManagementModule: View {
                 )
             }
         }
-        .padding(.vertical, 20)
         .onAppear {
             if server.isConnected {
                 metricsManager.startFetching()

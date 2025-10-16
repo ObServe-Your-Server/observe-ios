@@ -35,9 +35,6 @@ struct ExpandableMetricBox: View {
                 )
                 .frame(height: 200)
                 .frame(maxWidth: .infinity)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-                .padding(.top, 30)
                 .clipped()
             }
 
