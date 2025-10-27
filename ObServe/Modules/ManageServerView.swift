@@ -163,7 +163,7 @@ struct ManageServerView: View {
                 }
                 RegularButton(Label: "CHANGE", action: {
                     currentStep = .editMachineType
-                }, color: "Gray")
+                }, color: "ObServeGray")
                 .frame(maxWidth: .infinity)
 
             }
@@ -271,7 +271,7 @@ struct ManageServerView: View {
                 VStack(alignment: .leading, spacing: 32) {
                         RegularButton(Label: connectionButtonText, action: {
                             testConnection()
-                        }, color: connectionStatus == .success ? "Green" : (connectionStatus == .failed ? "Red" : "Blue"))
+                        }, color: connectionStatus == .success ? "ObServeGreen" : (connectionStatus == .failed ? "ObServeRed" : "ObServeBlue"))
                     }.padding(.horizontal, 15)
             }
             .padding(.vertical, 30)
@@ -298,7 +298,7 @@ struct ManageServerView: View {
                 )
                 RegularButton(Label: "DELETE", action: {
                     deleteServer()
-                }, color: "Red", disabled: !deleteBoolean)
+                }, color: "ObServeRed", disabled: !deleteBoolean)
                 .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 15)
@@ -419,7 +419,7 @@ struct ManageServerView: View {
                 default:
                     break
                 }
-            }, color: "Gray")
+            }, color: "ObServeGray")
 
             RegularButton(Label: "NEXT", action: {
                 switch currentStep {
@@ -432,7 +432,7 @@ struct ManageServerView: View {
                 default:
                     break
                 }
-            }, color: "Blue", disabled: !canProceed)
+            }, color: "ObServeBlue", disabled: !canProceed)
         }
         .padding(20)
     }
@@ -441,7 +441,7 @@ struct ManageServerView: View {
         HStack(spacing: 16) {
             RegularButton(Label: "SAVE CHANGES", action: {
                 saveChanges()
-            }, color: "Green")
+            }, color: "ObServeGreen")
         }
         .padding(20)
     }

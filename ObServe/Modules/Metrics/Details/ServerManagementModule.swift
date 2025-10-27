@@ -65,7 +65,7 @@ struct ServerManagementModule: View {
 
                     RegularButton(Label: "SCHEDULE", action: {
                         // Schedule action
-                    }, color: "Orange")
+                    }, color: "ObServeOrange")
                     .frame(maxWidth: .infinity)
 
                     CoolButton(
@@ -75,7 +75,7 @@ struct ServerManagementModule: View {
                             // Restart action
                         },
                         text: "RESTART",
-                        color: "Blue"
+                        color: "ObServeBlue"
                     )
                     .frame(maxWidth: .infinity)
                 }

@@ -305,7 +305,7 @@ struct MachineOnboardingModal: View {
                     }
                     RegularButton(Label: connectionButtonText, action: {
                         testConnection()
-                    }, color: connectionStatus == .success ? "Green" : (connectionStatus == .failed ? "Red" : "Blue"))
+                    }, color: connectionStatus == .success ? "ObServeGreen" : (connectionStatus == .failed ? "ObServeRed" : "ObServeBlue"))
                 }.padding(.horizontal, 15)
         }
         .padding(.vertical, 30)
@@ -350,7 +350,7 @@ struct MachineOnboardingModal: View {
                 }
                 RegularButton(Label: "CHANGE", action: {
                     currentStep = .machineType
-                }, color: "Gray")
+                }, color: "ObServeGray")
                 .frame(maxWidth: .infinity)
 
             }
@@ -458,7 +458,7 @@ struct MachineOnboardingModal: View {
                 VStack(alignment: .leading, spacing: 32) {
                         RegularButton(Label: connectionButtonText, action: {
                             testConnection()
-                        }, color: connectionStatus == .success ? "Green" : (connectionStatus == .failed ? "Red" : "Blue"))
+                        }, color: connectionStatus == .success ? "ObServeGreen" : (connectionStatus == .failed ? "ObServeRed" : "ObServeBlue"))
                     }.padding(.horizontal, 15)
             }
             .padding(.vertical, 30)
@@ -511,8 +511,8 @@ struct MachineOnboardingModal: View {
     // MARK: - Navigation
     private var navigationView: some View {
         HStack(spacing: 16) {
-            RegularButton(Label: "BACK", action: previousStep, color: "Gray")
-            RegularButton(Label: nextButtonLabel, action: nextStep, color: "Blue", disabled: !canProceed)
+            RegularButton(Label: "BACK", action: previousStep, color: "ObServeGray")
+            RegularButton(Label: nextButtonLabel, action: nextStep, color: "ObServeBlue", disabled: !canProceed)
         }
         .padding(20)
     }

@@ -90,7 +90,7 @@ struct ServerModule: View {
                     if !isConnected {
                         RegularButton(Label: "MANAGE", action: {
                             showManageView = true
-                        }, color: "Gray")
+                        }, color: "ObServeGray")
                         .frame(maxWidth: .infinity)
                         .disabled(isCheckingHealth)
                     } else {
@@ -98,10 +98,9 @@ struct ServerModule: View {
                             action: {
                                 // Simulate a restart action
                                 try? await Task.sleep(nanoseconds: 2_000_000_000)
-                                onDelete?()
                             },
                             text: "RESTART",
-                            color: "Blue"
+                            color: "ObServeBlue"
                         )
                         .frame(maxWidth: .infinity)
                         .disabled(isCheckingHealth)
@@ -119,9 +118,9 @@ struct ServerModule: View {
                     Text(server.name)
                         .foregroundColor(.white)
                     Circle()
-                        .fill(Color(showCheckingIndicator ? "Orange" : (isHealthy ? "Green" : "Red")))
+                        .fill(Color(showCheckingIndicator ? "ObServeOrange" : (isHealthy ? "ObServeGreen" : "ObServeRed")))
                         .frame(width: 10, height: 10)
-                        .shadow(color: Color(showCheckingIndicator ? "Orange" : (isHealthy ? "Green" : "Red")).opacity(3), radius: 10)
+                        .shadow(color: Color(showCheckingIndicator ? "ObServeOrange" : (isHealthy ? "ObServeGreen" : "ObServeRed")).opacity(3), radius: 10)
                 }
                 .padding(10)
                 .background(Color.black)

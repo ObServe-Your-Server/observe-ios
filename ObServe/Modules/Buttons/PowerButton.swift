@@ -19,17 +19,17 @@ struct PowerButton: View {
         }) {
             ZStack {
                 Text(isConnected ? "DISCONNECT" : "CONNECT")
-                    .foregroundColor(Color(isConnected ? "Red" : "Green"))
+                    .foregroundColor(Color(isConnected ? "ObServeRed" : "ObServeGreen"))
                     .font(.system(size: 12))
                     .padding(.horizontal, 7)
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
                     .overlay(
                         RoundedRectangle(cornerRadius: 0)
-                            .stroke(Color(isConnected ? "Red" : "Green").opacity(0.3), lineWidth: 1)
+                            .stroke(Color(isConnected ? "ObServeRed" : "ObServeGreen").opacity(0.3), lineWidth: 1)
                     )
                     .overlay(
-                        FocusCorners(color: Color(isConnected ? "Red" : "Green"), size: 8, thickness: 1)
+                        FocusCorners(color: Color(isConnected ? "ObServeRed" : "ObServeGreen"), size: 8, thickness: 1)
                     )
                     .transition(.opacity)
             }
