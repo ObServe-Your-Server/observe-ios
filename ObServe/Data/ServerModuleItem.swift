@@ -26,4 +26,20 @@ class ServerModuleItem {
         self.apiKey = apiKey
         self.type = type
     }
+
+    /// Convert to SharedServer for widget communication
+    func toSharedServer() -> SharedServer {
+        return SharedServer(
+            id: self.id,
+            name: self.name,
+            ip: self.ip,
+            port: self.port,
+            apiKey: self.apiKey,
+            type: self.type,
+            isConnected: self.isConnected,
+            isHealthy: self.isHealthy,
+            lastConnected: self.lastConnected,
+            uptime: nil // Will be set separately by MetricsManager
+        )
+    }
 }

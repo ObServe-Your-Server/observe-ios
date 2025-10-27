@@ -51,6 +51,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		651F11892EAAB6B3004BEFBF /* observeMetricsWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = observeMetricsWidgetExtension.entitlements; sourceTree = "<group>"; };
 		65975AF22EA0F37500C1A213 /* observeMetricsWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = observeMetricsWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		65975AF42EA0F37500C1A213 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		65975AF62EA0F37500C1A213 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -83,6 +84,21 @@
 			);
 			target = 65B216DE2E278D5E00F43B59 /* ObServeUITests */;
 		};
+		651F118D2EAABB0C004BEFBF /* Exceptions for "ObServe" folder in "observeMetricsWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Assets/IBMPlexSans-Italic-VariableFont_wdth,wght.ttf",
+				"Assets/IBMPlexSans-VariableFont_wdth,wght.ttf",
+				Data/SharedModels.swift,
+				Data/SharedStorageManager.swift,
+				Modules/Metrics/NetworkService.swift,
+				Modules/Metrics/Responses/CpuResponse.swift,
+				Modules/Metrics/Responses/DiskStatisticResponse.swift,
+				Modules/Metrics/Responses/MemoryResponse.swift,
+				Modules/Metrics/Responses/NetworkResponse.swift,
+			);
+			target = 65975AF12EA0F37500C1A213 /* observeMetricsWidgetExtension */;
+		};
 		65975B0C2EA0F37700C1A213 /* Exceptions for "observeMetricsWidget" folder in "observeMetricsWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -107,6 +123,7 @@
 				5B32D6562E2AE38700A766C2 /* Exceptions for "ObServe" folder in "ObServe" target */,
 				5B3715F52E2AF0650077041B /* Exceptions for "ObServe" folder in "ObServeTests" target */,
 				5B3715F62E2AF0650077041B /* Exceptions for "ObServe" folder in "ObServeUITests" target */,
+				651F118D2EAABB0C004BEFBF /* Exceptions for "ObServe" folder in "observeMetricsWidgetExtension" target */,
 			);
 			path = ObServe;
 			sourceTree = "<group>";
@@ -169,6 +186,7 @@
 		65B216BD2E278D5C00F43B59 = {
 			isa = PBXGroup;
 			children = (
+				651F11892EAAB6B3004BEFBF /* observeMetricsWidgetExtension.entitlements */,
 				65B216C82E278D5C00F43B59 /* ObServe */,
 				65B216D82E278D5E00F43B59 /* ObServeTests */,
 				65B216E22E278D5E00F43B59 /* ObServeUITests */,
@@ -418,6 +436,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = observeMetricsWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -446,6 +465,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = observeMetricsWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -593,6 +613,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ObServe/ObServe.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -627,6 +648,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ObServe/ObServe.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

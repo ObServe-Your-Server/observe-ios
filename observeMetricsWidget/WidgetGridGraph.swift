@@ -8,66 +8,45 @@
 import SwiftUI
 
 struct WidgetGridGraph: View {
-    let value: Double
+    let value: Double?
     let maxValue: Double
-    
-    // Internal state to manage the rolling array of percentages
-    @State private var percentageHistory: [Double] = []
-    
-    // Grid configuration - adapted for widget
+    let columns: Int
+    let history: [Double] // Historical percentage values passed from cache
+
     private let rows = 10
-    private let columns = 12
     private let cellSize: CGFloat = 8
-    private let maxHistoryCount = 12
-    
+
     private var cellSpacing: CGFloat {
-        cellSize * 0.15 // Slightly tighter spacing for widget
+        cellSize * 0.15
     }
-    
+
     // Calculate current percentage
     private var currentPercentage: Double {
-        guard maxValue > 0 else { return 0 }
+        guard let value = value, maxValue > 0 else { return 0 }
         return min(max((value / maxValue) * 100, 0), 100)
     }
-    
+
+    private var isOffline: Bool {
+        return value == nil
+    }
+
     // Colors
     private let gridColor = Color(red: 0x80/255, green: 0x80/255, blue: 0x80/255).opacity(0.2)
     private let fillColor = Color.white
-    
+
     var body: some View {
         GeometryReader { geometry in
             WidgetGridContentView(
-                timeSeriesData: percentageHistory,
+                timeSeriesData: isOffline ? [] : history,
                 currentPercentage: currentPercentage,
                 cellSize: cellSize,
                 cellSpacing: cellSpacing,
                 rows: rows,
                 columns: columns,
                 gridColor: gridColor,
-                fillColor: fillColor
+                fillColor: fillColor,
+                isOffline: isOffline
             )
-        }
-        .onChange(of: value) { oldValue, newValue in
-            updatePercentageHistory()
-        }
-        .onChange(of: maxValue) { oldValue, newValue in
-            updatePercentageHistory()
-        }
-        .onAppear {
-            // Initialize with current percentage
-            updatePercentageHistory()
-        }
-    }
-    
-    private func updatePercentageHistory() {
-        let newPercentage = currentPercentage
-        
-        // Add the new percentage to the history
-        percentageHistory.append(newPercentage)
-        
-        // Keep only the last 12 values (for 12 columns)
-        if percentageHistory.count > maxHistoryCount {
-            percentageHistory.removeFirst(percentageHistory.count - maxHistoryCount)
         }
     }
 }
@@ -81,44 +60,61 @@ struct WidgetGridContentView: View {
     let columns: Int
     let gridColor: Color
     let fillColor: Color
-    
+    let isOffline: Bool
+
     var body: some View {
         let displayData: [Double] = {
-            let dataCount = timeSeriesData.count
+            // If offline, show all zeros (empty grid)
+            if isOffline {
+                return Array(repeating: 0.0, count: columns)
+            }
+
+            // Create display data including current value
+            var data = timeSeriesData
+            
+            // Add current percentage as the latest value
+            data.append(currentPercentage)
+            
+            let dataCount = data.count
             if dataCount >= columns {
-                return Array(timeSeriesData.suffix(columns))
+                return Array(data.suffix(columns))
             } else {
                 let paddingCount = columns - dataCount
                 let padding = Array(repeating: 0.0, count: paddingCount)
-                return padding + timeSeriesData
+                return padding + data
             }
         }()
-        
+
         Canvas { context, size in
-            // Center the grid in the available space
+            // Calculate grid dimensions
             let gridWidth = CGFloat(columns) * cellSize + CGFloat(columns - 1) * cellSpacing
             let gridHeight = CGFloat(rows) * cellSize + CGFloat(rows - 1) * cellSpacing
-            
+
+            // Center the grid horizontally and vertically
             let startX = (size.width - gridWidth) / 2
             let startY = (size.height - gridHeight) / 2
-            
-            // Draw grid cells using the same logic as the main app
+
+            // Draw grid cells - same logic as main app's GridGraph
             for row in 0..<rows {
                 for col in 0..<columns {
                     let x = startX + CGFloat(col) * (cellSize + cellSpacing)
                     let y = startY + CGFloat(rows - 1 - row) * (cellSize + cellSpacing)
-                    
+
                     let rect = CGRect(x: x, y: y, width: cellSize, height: cellSize)
-                    
+
                     var cellColor = gridColor
-                    let usageValue = displayData[col]
-                    let percentageLevel = Double(row) * 10.0
-                    
-                    // Fill cell if usage value exceeds the percentage level for this row
-                    if usageValue > percentageLevel {
-                        cellColor = fillColor
+
+                    // If offline, keep all cells at grid color (empty)
+                    if !isOffline {
+                        let usageValue = displayData[col]
+                        let percentageLevel = Double(row) * 10.0  // Match main app: row 0 = 0%, row 1 = 10%, etc.
+
+                        // Fill cell if usage value exceeds the percentage level for this row
+                        if usageValue > percentageLevel {
+                            cellColor = fillColor
+                        }
                     }
-                    
+
                     context.fill(
                         Rectangle().path(in: rect),
                         with: .color(cellColor)
@@ -130,7 +126,7 @@ struct WidgetGridContentView: View {
 }
 
 #Preview {
-    WidgetGridGraph(value: 75, maxValue: 100)
+    WidgetGridGraph(value: 75, maxValue: 100, columns: 14, history: [45, 50, 55, 60, 65, 70, 75])
         .background(Color.black)
         .padding()
 }

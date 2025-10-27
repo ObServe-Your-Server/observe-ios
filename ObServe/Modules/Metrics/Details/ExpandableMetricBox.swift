@@ -26,89 +26,88 @@ struct ExpandableMetricBox: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Always create the chart to keep collecting data
-            if isExpanded {
-                TimeSeriesGridChart(
-                    currentValue: currentValue,
-                    maximum: maximum
-                )
-                .frame(height: 200)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-                .padding(.top, 30)
-                .clipped()
+        Button(action: {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isExpanded.toggle()
             }
+        }) {
+            VStack(spacing: 0) {
+                // Always create the chart to keep collecting data
+                if isExpanded {
+                    TimeSeriesGridChart(
+                        currentValue: currentValue,
+                        maximum: maximum
+                    )
+                    .frame(height: 200)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 30)
+                    .clipped()
+                }
 
-            // Content area
-            if !isExpanded {
-                VStack(spacing: 0) {
-                    Spacer().frame(height: 20)
+                // Content area
+                if !isExpanded {
+                    VStack(spacing: 0) {
+                        Spacer().frame(height: 20)
 
-                    // Show metric info similar to UpdateLabel when collapsed
-                    HStack {
-                        PercentLabel(value: currentValue, maximum: maximum)
-                            .frame(height: 8)
+                        // Show metric info similar to UpdateLabel when collapsed
+                        HStack {
+                            PercentLabel(value: currentValue, maximum: maximum)
+                                .frame(height: 8)
 
-                        Spacer()
-                            .frame(width: 20)
+                            Spacer()
+                                .frame(width: 20)
 
-                        HStack(spacing: 4) {
-                            if showPercent && maximum > 0 {
-                                Text("\(String(format: "%.\(decimalPlaces)f", currentValue))/\(String(format: "%.\(decimalPlaces)f", maximum))")
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 16, weight: .medium))
-                                if let unit = unit {
-                                    Text(unit)
+                            HStack(spacing: 4) {
+                                if showPercent && maximum > 0 {
+                                    Text("\(String(format: "%.\(decimalPlaces)f", currentValue))/\(String(format: "%.\(decimalPlaces)f", maximum))")
                                         .foregroundColor(.white)
                                         .font(.system(size: 16, weight: .medium))
-                                }
-                                Text("(\(String(format: "%.1f", (currentValue / maximum) * 100))%)")
-                                    .foregroundColor(Color.gray)
-                                    .font(.system(size: 14))
-                            } else {
-                                Text(String(format: "%.\(decimalPlaces)f", currentValue))
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 16, weight: .medium))
-                                if let unit = unit {
-                                    Text(unit)
+                                    if let unit = unit {
+                                        Text(unit)
+                                            .foregroundColor(.white)
+                                            .font(.system(size: 16, weight: .medium))
+                                    }
+                                    Text("(\(String(format: "%.1f", (currentValue / maximum) * 100))%)")
+                                        .foregroundColor(Color.gray)
+                                        .font(.system(size: 14))
+                                } else {
+                                    Text(String(format: "%.\(decimalPlaces)f", currentValue))
                                         .foregroundColor(.white)
                                         .font(.system(size: 16, weight: .medium))
+                                    if let unit = unit {
+                                        Text(unit)
+                                            .foregroundColor(.white)
+                                            .font(.system(size: 16, weight: .medium))
+                                    }
                                 }
                             }
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
                 }
             }
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 0)
-                .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
-        )
-        .overlay(alignment: .topLeading) {
-            HStack {
-                Text(title.uppercased())
-                    .foregroundColor(.white)
-                    .font(.system(size: 14, weight: .medium))
+            .background(
+                RoundedRectangle(cornerRadius: 0)
+                    .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+            )
+            .overlay(alignment: .topLeading) {
+                HStack {
+                    Text(title.uppercased())
+                        .foregroundColor(.white)
+                        .font(.system(size: 14, weight: .medium))
 
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        isExpanded.toggle()
-                    }
-                }) {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .foregroundColor(.white)
                         .font(.system(size: 12, weight: .medium))
                 }
+                .padding(10)
+                .background(Color.black)
+                .padding(.top, -18)
+                .padding(.leading, 10)
             }
-            .padding(10)
-            .background(Color.black)
-            .padding(.top, -18)
-            .padding(.leading, 10)
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

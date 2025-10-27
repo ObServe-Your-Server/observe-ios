@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import WidgetKit
 
 class MetricsManager: ObservableObject {
     // MARK: - Published Properties
@@ -13,7 +14,7 @@ class MetricsManager: ObservableObject {
     @Published var avgNetworkIn: Double = 0.0
     @Published var avgNetworkOut: Double = 0.0
     @Published var uptime: TimeInterval = 0.0
-    
+
     // MARK: - Fetchers
     let cpuFetcher: LiveCpuFetcher
     let ramFetcher: LiveRamFetcher
@@ -23,10 +24,13 @@ class MetricsManager: ObservableObject {
     let uptimeFetcher: LiveUptimeFetcher
     let totalRamFetcher: LiveTotalRamFetcher
     let networkFetcher: LiveNetworkFetcher
-    
+
     private var cancellables = Set<AnyCancellable>()
-    
+    private let serverId: UUID
+
     init(server: ServerModuleItem) {
+        self.serverId = server.id
+
         // Initialize all fetchers
         self.cpuFetcher = LiveCpuFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
         self.ramFetcher = LiveRamFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
@@ -118,20 +122,53 @@ class MetricsManager: ObservableObject {
             .store(in: &cancellables)
     }
     
+    // MARK: - Widget Sync
+
+    /// Sync metric data to shared storage for widget access
+    private func syncMetricToWidget(metricType: String, value: Double) {
+        guard let serverId = self.serverId as UUID? else { return }
+
+        // Load existing history
+        let cachedMetric = SharedStorageManager.shared.loadMetricData(
+            serverId: serverId,
+            metricType: metricType
+        )
+
+        var history = cachedMetric?.history ?? []
+        history.append(value)
+        if history.count > 14 {
+            history.removeFirst()
+        }
+
+        let metricData = SharedMetricData(
+            serverId: serverId,
+            metricType: metricType,
+            value: value,
+            timestamp: Date(),
+            history: history
+        )
+
+        SharedStorageManager.shared.saveMetricData(metricData)
+    }
+
     // MARK: - Data Observers
     private func setupDataObservers() {
         // CPU observer
         cpuFetcher.$entries
             .sink { [weak self] entries in
+                guard let self = self else { return }
                 if entries.isEmpty {
-                    self?.avgCPU = 0.0
+                    self.avgCPU = 0.0
                 } else {
                     let sum = entries.map(\.value).reduce(0, +)
                     let test = entries.last?.value ?? 0.0
-                    self?.avgCPU = test
+                    self.avgCPU = test
                     // TODO: Fixen
                     //let avg = sum / Double(entries.count)
-                    //self?.avgCPU = avg
+                    //self.avgCPU = avg
+
+                    // Sync to widget
+                    self.syncMetricToWidget(metricType: "CPU", value: test)
                 }
             }
             .store(in: &cancellables)
@@ -139,15 +176,22 @@ class MetricsManager: ObservableObject {
         // RAM observer
         ramFetcher.$entries
             .sink { [weak self] entries in
+                guard let self = self else { return }
                 if entries.isEmpty {
-                    self?.avgRAM = 0.0
+                    self.avgRAM = 0.0
                 } else {
                     let sum = entries.map(\.value).reduce(0, +)
 // TODO: Fixen
 //                    let avg = sum / Double(entries.count)
-//                    self?.avgRAM = avg
+//                    self.avgRAM = avg
                     let test = entries.last?.value ?? 0.0
-                    self?.avgRAM = test
+                    self.avgRAM = test
+
+                    // Sync percentage to widget (not raw GB value)
+                    if self.maxRAM > 0 {
+                        let percentage = (test / self.maxRAM) * 100
+                        self.syncMetricToWidget(metricType: "RAM", value: percentage)
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -163,12 +207,18 @@ class MetricsManager: ObservableObject {
         // Ping observer
         pingFetcher.$entries
             .sink { [weak self] entries in
+                guard let self = self else { return }
                 if entries.isEmpty {
-                    self?.avgPing = 0.0
+                    self.avgPing = 0.0
                 } else {
                     let sum = entries.map(\.value).reduce(0, +)
                     let avg = sum / Double(entries.count)
-                    self?.avgPing = avg
+                    self.avgPing = avg
+
+                    // Sync to widget (use latest value)
+                    if let latestValue = entries.last?.value {
+                        self.syncMetricToWidget(metricType: "Ping", value: latestValue)
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -176,12 +226,19 @@ class MetricsManager: ObservableObject {
         // Storage observer
         storageFetcher.$entries
             .sink { [weak self] entries in
+                guard let self = self else { return }
                 if entries.isEmpty {
-                    self?.avgStorage = 0.0
+                    self.avgStorage = 0.0
                 } else {
                     let sum = entries.map(\.value).reduce(0, +)
                     let avg = sum / Double(entries.count)
-                    self?.avgStorage = avg
+                    self.avgStorage = avg
+
+                    // Sync percentage to widget (not raw GB value)
+                    if let latestValue = entries.last?.value, self.maxStorage > 0 {
+                        let percentage = (latestValue / self.maxStorage) * 100
+                        self.syncMetricToWidget(metricType: "Storage", value: percentage)
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -197,25 +254,53 @@ class MetricsManager: ObservableObject {
         // Network IN observer
         networkFetcher.$inEntries
             .sink { [weak self] entries in
+                guard let self = self else { return }
                 if entries.isEmpty {
-                    self?.avgNetworkIn = 0.0
+                    self.avgNetworkIn = 0.0
                 } else {
                     let sum = entries.map(\.value).reduce(0, +)
-                    let avg = sum / Double(entries.count)
-                    self?.avgNetworkIn = avg
+                    let test = entries.last?.value ?? 0.0
+                    
+                    // Round to match display formatting (0 decimal places)
+                    let roundedValue = round(test)
+                    self.avgNetworkIn = roundedValue
+                    
+                    // TODO: Fixen
+                    //let avg = sum / Double(entries.count)
+                    //self.avgNetworkIn = avg
+
+                    // Debug logging
+                    print("DEBUG: Network IN - raw: \(test), rounded: \(roundedValue), avgNetworkIn: \(self.avgNetworkIn)")
+                    
+                    // Sync to widget (use same rounded value as main app displays)
+                    self.syncMetricToWidget(metricType: "Network In", value: roundedValue)
                 }
             }
             .store(in: &cancellables)
-        
+
         // Network OUT observer
         networkFetcher.$outEntries
             .sink { [weak self] entries in
+                guard let self = self else { return }
                 if entries.isEmpty {
-                    self?.avgNetworkOut = 0.0
+                    self.avgNetworkOut = 0.0
                 } else {
                     let sum = entries.map(\.value).reduce(0, +)
-                    let avg = sum / Double(entries.count)
-                    self?.avgNetworkOut = avg
+                    let test = entries.last?.value ?? 0.0
+                    
+                    // Round to match display formatting (0 decimal places)
+                    let roundedValue = round(test)
+                    self.avgNetworkOut = roundedValue
+                    
+                    // TODO: Fixen
+                    //let avg = sum / Double(entries.count)
+                    //self.avgNetworkOut = avg
+
+                    // Debug logging
+                    print("DEBUG: Network OUT - raw: \(test), rounded: \(roundedValue), avgNetworkOut: \(self.avgNetworkOut)")
+                    
+                    // Sync to widget (use same rounded value as main app displays)
+                    self.syncMetricToWidget(metricType: "Network Out", value: roundedValue)
                 }
             }
             .store(in: &cancellables)
@@ -223,8 +308,19 @@ class MetricsManager: ObservableObject {
         // Uptime observer
         uptimeFetcher.$uptime
             .sink { [weak self] uptime in
+                guard let self = self else { return }
                 let value = uptime ?? 0.0
-                self?.uptime = value
+                self.uptime = value
+
+                // Sync uptime to widget
+                if let serverId = self.serverId as UUID? {
+                    SharedStorageManager.shared.updateServerStatus(
+                        serverId: serverId,
+                        isConnected: true,
+                        isHealthy: true,
+                        uptime: uptime
+                    )
+                }
             }
             .store(in: &cancellables)
     }

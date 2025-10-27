@@ -7,5 +7,15 @@
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.widgetkit-extension</string>
 	</dict>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>UIAppFonts</key>
+	<array>
+		<string>IBMPlexSans-VariableFont_wdth,wght.ttf</string>
+		<string>IBMPlexSans-Italic-VariableFont_wdth,wght.ttf</string>
+	</array>
 </dict>
 </plist>
