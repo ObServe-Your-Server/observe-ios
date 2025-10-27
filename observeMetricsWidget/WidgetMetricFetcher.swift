@@ -267,7 +267,7 @@ class WidgetMetricFetcher {
                     return
                 }
 
-                let value = Double(latest.value) // Already in kB/s
+                let value = Double(latest.value) / 1024 // Convert bytes to kB
                 print("WidgetMetricFetcher: Fetched Network In = \(value) kB/s")
                 completion(value)
             case .failure(let error):
@@ -289,7 +289,7 @@ class WidgetMetricFetcher {
                     return
                 }
 
-                let value = Double(latest.value) // Already in kB/s
+                let value = Double(latest.value) / 1024 // Convert bytes to kB
                 print("WidgetMetricFetcher: Fetched Network Out = \(value) kB/s")
                 completion(value)
             case .failure(let error):

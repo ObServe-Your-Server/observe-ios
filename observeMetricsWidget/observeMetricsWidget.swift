@@ -245,9 +245,9 @@ struct observeMetricsWidgetEntryView : View {
     // Display value or "---" when offline
     private var displayValue: String {
         if let value = entry.value {
-            // Show "<1" for values between 0 and 1 (exclusive)
-            if value > 0 && value < 1 {
-                return "<1"
+            // Show decimal places for values < 1, otherwise show as integer
+            if value < 1 {
+                return formatValue(value, decimalPlaces: 2)
             }
             return "\(Int(value))"
         } else {

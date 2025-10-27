@@ -30,6 +30,7 @@ func formatValue(_ value: Double, decimalPlaces: Int = 2) -> String {
     formatter.minimumFractionDigits = 0
     formatter.maximumFractionDigits = decimalPlaces
     formatter.numberStyle = .decimal
+    formatter.usesGroupingSeparator = false // Disable thousand separators
     return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
 }
 
@@ -139,9 +140,7 @@ struct WidgetNetworkLabel: View {
             return "---"
         }
 
-        // Force rounding to match main app exactly (round first, then format)
-        let roundedValue = round(value)
-        return "\(formatValue(roundedValue, decimalPlaces: decimalPlaces)) kB/s"
+        return "\(formatValue(value, decimalPlaces: decimalPlaces)) kB/s"
     }
 }
 
