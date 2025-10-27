@@ -72,10 +72,7 @@ class NetworkService {
                 completion(.failure(error))
                 return
             }
-            
-            if let httpResponse = response as? HTTPURLResponse {
-            }
-            
+
             guard let data = data else {
                 completion(.failure(NSError(domain: "No data", code: 0)))
                 return

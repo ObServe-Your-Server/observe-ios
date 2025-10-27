@@ -160,10 +160,10 @@ class MetricsManager: ObservableObject {
                 if entries.isEmpty {
                     self.avgCPU = 0.0
                 } else {
-                    let sum = entries.map(\.value).reduce(0, +)
                     let test = entries.last?.value ?? 0.0
                     self.avgCPU = test
                     // TODO: Fixen
+                    //let sum = entries.map(\.value).reduce(0, +)
                     //let avg = sum / Double(entries.count)
                     //self.avgCPU = avg
 
@@ -180,12 +180,12 @@ class MetricsManager: ObservableObject {
                 if entries.isEmpty {
                     self.avgRAM = 0.0
                 } else {
-                    let sum = entries.map(\.value).reduce(0, +)
-// TODO: Fixen
-//                    let avg = sum / Double(entries.count)
-//                    self.avgRAM = avg
                     let test = entries.last?.value ?? 0.0
                     self.avgRAM = test
+// TODO: Fixen
+//                    let sum = entries.map(\.value).reduce(0, +)
+//                    let avg = sum / Double(entries.count)
+//                    self.avgRAM = avg
 
                     // Sync percentage to widget (not raw GB value)
                     if self.maxRAM > 0 {
@@ -258,20 +258,20 @@ class MetricsManager: ObservableObject {
                 if entries.isEmpty {
                     self.avgNetworkIn = 0.0
                 } else {
-                    let sum = entries.map(\.value).reduce(0, +)
                     let test = entries.last?.value ?? 0.0
-                    
+
                     // Round to match display formatting (0 decimal places)
                     let roundedValue = round(test)
                     self.avgNetworkIn = roundedValue
-                    
+
                     // TODO: Fixen
+                    //let sum = entries.map(\.value).reduce(0, +)
                     //let avg = sum / Double(entries.count)
                     //self.avgNetworkIn = avg
 
                     // Debug logging
                     print("DEBUG: Network IN - raw: \(test), rounded: \(roundedValue), avgNetworkIn: \(self.avgNetworkIn)")
-                    
+
                     // Sync to widget (use same rounded value as main app displays)
                     self.syncMetricToWidget(metricType: "Network In", value: roundedValue)
                 }
@@ -285,7 +285,6 @@ class MetricsManager: ObservableObject {
                 if entries.isEmpty {
                     self.avgNetworkOut = 0.0
                 } else {
-                    let sum = entries.map(\.value).reduce(0, +)
                     let test = entries.last?.value ?? 0.0
                     
                     // Round to match display formatting (0 decimal places)

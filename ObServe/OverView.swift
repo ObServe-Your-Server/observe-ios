@@ -56,7 +56,7 @@ struct OverView: View {
                                         .scaledToFit()
                                         .padding(.horizontal, 100)
                                     Rectangle()
-                                        .fill(Color("Gray"))
+                                        .fill(Color("ObServeGray"))
                                         .frame(width: 2, height: 200)
                                 }
                             } else {

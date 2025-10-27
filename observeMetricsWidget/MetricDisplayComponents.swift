@@ -53,7 +53,7 @@ struct WidgetPercentLabel: View {
                         .foregroundColor(Color.gray.opacity(0.4))
                     Rectangle()
                         .frame(width: geometry.size.width * percent, height: 6)
-                        .foregroundColor(Color("Gray")) // Changed from Color("Gray") to .white for debugging
+                        .foregroundColor(Color("ObServeGray"))
                     Rectangle()
                         .frame(width: 1, height: 6)
                         .foregroundColor(Color.gray.opacity(0.4))

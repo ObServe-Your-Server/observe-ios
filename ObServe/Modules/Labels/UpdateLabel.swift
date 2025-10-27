@@ -70,8 +70,8 @@ struct UpdateLabel: View {
         .onAppear {
             oldValue = value
         }
-        .onChange(of: value) { newValue in
-            oldValue = newValue
+        .onChange(of: value) {
+            oldValue = value
         }
     }
 }

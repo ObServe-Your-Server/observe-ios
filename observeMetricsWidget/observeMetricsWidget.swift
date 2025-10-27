@@ -266,53 +266,49 @@ struct observeMetricsWidgetEntryView : View {
     }
 
     var body: some View {
-        ZStack {
-            Color.black
+        if widgetFamily == .systemLarge {
+            // Large widget: comprehensive dashboard view
+            LargeWidgetView(entry: entry, statusColor: statusColor, displayValue: displayValue, gridColumns: gridColumns)
+        } else {
+            // Small and Medium widgets: original layout
+            VStack(spacing: 5) {
+                // Header with server name, status indicator, and metric value
+                HStack(alignment: .top, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        // Left side: Server name and status
+                        HStack(spacing: 6) {
+                            Text(entry.configuration.serverName)
+                                .font(.custom("IBM Plex Sans", size: 16))
+                                .fontWeight(.medium)
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
 
-            if widgetFamily == .systemLarge {
-                // Large widget: comprehensive dashboard view
-                LargeWidgetView(entry: entry, statusColor: statusColor, displayValue: displayValue, gridColumns: gridColumns)
-            } else {
-                // Small and Medium widgets: original layout
-                VStack(spacing: 5) {
-                    // Header with server name, status indicator, and metric value
-                    HStack(alignment: .top, spacing: 0) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            // Left side: Server name and status
-                            HStack(spacing: 6) {
-                                Text(entry.configuration.serverName)
-                                    .font(.custom("IBM Plex Sans", size: 16))
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.white)
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
-
-                                Circle()
-                                    .fill(statusColor)
-                                    .frame(width: 8, height: 8)
-                            }
-                            .layoutPriority(-1)
-
-                            // Metric type label
-                            Text("\(entry.configuration.metricType) %")
-                                .font(.custom("IBM Plex Sans", size: 14))
-                                .foregroundColor(Color(red: 0x80/255, green: 0x80/255, blue: 0x80/255))
+                            Circle()
+                                .fill(statusColor)
+                                .frame(width: 8, height: 8)
                         }
+                        .layoutPriority(-1)
 
-                        Spacer(minLength: 6)
-
-                        // Right side: Large metric value or "---"
-                        Text(displayValue)
-                            .font(.custom("IBM Plex Sans", size: 30))
-                            .foregroundColor(.white)
-                            .tracking(-1.0)
-                            .layoutPriority(1)
+                        // Metric type label
+                        Text("\(entry.configuration.metricType) %")
+                            .font(.custom("IBM Plex Sans", size: 14))
+                            .foregroundColor(Color(red: 0x80/255, green: 0x80/255, blue: 0x80/255))
                     }
-                    .padding(.horizontal, 0)
 
-                    // Grid graph visualization with dynamic columns based on widget size
-                    WidgetGridGraph(value: entry.value, maxValue: 100, columns: gridColumns, history: entry.history)
+                    Spacer(minLength: 6)
+
+                    // Right side: Large metric value or "---"
+                    Text(displayValue)
+                        .font(.custom("IBM Plex Sans", size: 30))
+                        .foregroundColor(.white)
+                        .tracking(-1.0)
+                        .layoutPriority(1)
                 }
+                .padding(.horizontal, 0)
+
+                // Grid graph visualization with dynamic columns based on widget size
+                WidgetGridGraph(value: entry.value, maxValue: 100, columns: gridColumns, history: entry.history)
             }
         }
     }

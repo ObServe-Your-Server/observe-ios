@@ -11,7 +11,7 @@ import Foundation
 class SharedStorageManager {
     static let shared = SharedStorageManager()
 
-    private let appGroupIdentifier = "group.vision.dev.ObServe"
+    private let appGroupIdentifier = "group.com.dev.ObServe"
     private let serversKey = "shared_servers"
     private let metricsKey = "shared_metrics"
 
