@@ -12,6 +12,7 @@
 
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 struct OverView: View {
     @Environment(\.modelContext) private var modelContext
@@ -67,6 +68,7 @@ struct OverView: View {
                                                 withAnimation {
                                                     modelContext.delete(server)
                                                     try? modelContext.save()
+                                                    syncServersToWidget()
                                                 }
                                             }
                                         )
@@ -93,6 +95,7 @@ struct OverView: View {
                         onComplete: { newServer, machineType in
                             modelContext.insert(newServer)
                             try? modelContext.save()
+                            syncServersToWidget()
                             withAnimation { showAddServer = false }
                         }
                     )
@@ -121,7 +124,22 @@ struct OverView: View {
                     .toolbar(.hidden, for: .navigationBar)
                     .background(Color.black.ignoresSafeArea())
             }
+            .onAppear {
+                syncServersToWidget()
+            }
+            .onChange(of: servers.count) { oldValue, newValue in
+                syncServersToWidget()
+            }
         }
+    }
+
+    // MARK: - Widget Sync
+
+    private func syncServersToWidget() {
+        let sharedServers = servers.map { $0.toSharedServer() }
+        SharedStorageManager.shared.saveServers(sharedServers)
+        WidgetCenter.shared.reloadAllTimelines()
+        print("OverView: Synced \(sharedServers.count) servers to widget")
     }
 
     // MARK: - Scroll Detection
