@@ -169,8 +169,9 @@ class WidgetMetricFetcher {
             switch result {
             case .success(let response):
                 if let value = Double(response.usageInPercent) {
-                    print("WidgetMetricFetcher: Fetched CPU = \(value)%")
-                    completion(value)
+                    let percentage = value * 100 // Convert fraction (0.0-1.0) to percentage (0-100)
+                    print("WidgetMetricFetcher: Fetched CPU = \(percentage)%")
+                    completion(percentage)
                 } else {
                     print("WidgetMetricFetcher: Failed to parse CPU value: \(response.usageInPercent)")
                     completion(nil)

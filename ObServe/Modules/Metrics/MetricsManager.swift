@@ -167,8 +167,8 @@ class MetricsManager: ObservableObject {
                     //let avg = sum / Double(entries.count)
                     //self.avgCPU = avg
 
-                    // Sync to widget
-                    self.syncMetricToWidget(metricType: "CPU", value: test)
+                    // Sync to widget (convert fraction to percentage)
+                    self.syncMetricToWidget(metricType: "CPU", value: test * 100)
                 }
             }
             .store(in: &cancellables)
