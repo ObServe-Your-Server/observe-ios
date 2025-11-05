@@ -11,10 +11,11 @@ import SwiftData
 struct ServerDetailView: View {
 
     var server: ServerModuleItem
-    
+
     @Environment(\.dismiss) private var dismiss
     @State private var contentHasScrolled = false
     @State private var selectedInterval: DetailAppBar.Interval = .s1
+    @State private var showManageView = false
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -34,8 +35,11 @@ struct ServerDetailView: View {
                         Rectangle().frame(height: 20).opacity(0)
 
                         // Server Management Module
-                        ServerManagementModule(server: server)
-                        
+                        ServerManagementModule(
+                            server: server,
+                            onManage: { showManageView = true }
+                        )
+
                         Rectangle().fill(.clear).frame(height: 12)
                     }
                     .frame(maxWidth: .infinity)
@@ -44,6 +48,22 @@ struct ServerDetailView: View {
                 .coordinateSpace(name: "scroll")
             }
             .background(Color.black.edgesIgnoringSafeArea(.all))
+        }
+        .sheet(isPresented: $showManageView) {
+            ManageServerView(
+                server: server,
+                onDismiss: {
+                    showManageView = false
+                },
+                onSave: { updatedServer in
+                    // Update the server with new values
+                    server.name = updatedServer.name
+                    server.ip = updatedServer.ip
+                    server.port = updatedServer.port
+                    server.apiKey = updatedServer.apiKey
+                    server.type = updatedServer.type
+                }
+            )
         }
     }
     

@@ -14,15 +14,19 @@ struct ExpandableMetricBox: View {
     let unit: String?
     let decimalPlaces: Int
     let showPercent: Bool
+    let serverId: UUID?
+    let metricType: String?
     @State private var isExpanded: Bool = false
-    
-    init(title: String, currentValue: Double, maximum: Double, unit: String? = nil, decimalPlaces: Int = 1, showPercent: Bool = false) {
+
+    init(title: String, currentValue: Double, maximum: Double, unit: String? = nil, decimalPlaces: Int = 1, showPercent: Bool = false, serverId: UUID? = nil, metricType: String? = nil) {
         self.title = title
         self.currentValue = currentValue
         self.maximum = maximum
         self.unit = unit
         self.decimalPlaces = decimalPlaces
         self.showPercent = showPercent
+        self.serverId = serverId
+        self.metricType = metricType
     }
     
     var body: some View {
@@ -31,9 +35,11 @@ struct ExpandableMetricBox: View {
             if isExpanded {
                 TimeSeriesGridChart(
                     currentValue: currentValue,
-                    maximum: maximum
+                    maximum: maximum,
+                    serverId: serverId,
+                    metricType: metricType
                 )
-                .frame(height: 200)
+                .frame(height: 185)
                 .frame(maxWidth: .infinity)
                 .clipped()
             }
@@ -91,20 +97,19 @@ struct ExpandableMetricBox: View {
                     .foregroundColor(.white)
                     .font(.system(size: 14, weight: .medium))
 
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        isExpanded.toggle()
-                    }
-                }) {
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .foregroundColor(.white)
-                        .font(.system(size: 12, weight: .medium))
-                }
+                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    .foregroundColor(.white)
+                    .font(.system(size: 12, weight: .medium))
             }
             .padding(10)
             .background(Color.black)
             .padding(.top, -18)
             .padding(.leading, 10)
+        }
+        .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isExpanded.toggle()
+            }
         }
     }
 }

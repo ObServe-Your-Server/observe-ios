@@ -16,22 +16,14 @@ struct NetworkMetricsView: View {
                 Spacer().frame(height: 12)
                 
                 // Network metrics content
-                HStack(spacing: 40) {
-                    // UPLINK
-                    UpdateLabel(
-                        label: "UPLINK",
-                        value: metricsManager.avgNetworkOut / 1000,
-                        unit: "MB/s",
-                        decimalPlaces: 0
-                    )
-                    
-                    // DOWNLINK
-                    UpdateLabel(
-                        label: "DOWNLINK",
-                        value: metricsManager.avgNetworkIn / 1000,
-                        unit: "MB/s",
-                        decimalPlaces: 0
-                    )
+                HStack(spacing: 60) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("DOWN | UP")
+                            .foregroundColor(Color.gray)
+                            .font(.system(size: 12, weight: .medium))
+                        Text("300 | 38 MB/s")
+                            .foregroundColor(.white)
+                    }
                     
                     // PING
                     UpdateLabel(

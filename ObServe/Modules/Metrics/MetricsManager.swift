@@ -47,6 +47,7 @@ class MetricsManager: ObservableObject {
     
     // MARK: - Control Methods
     func startFetching() {
+        fetchInitialHistoricalData()
         startLiveFetchers()
         startStaticFetchers()
     }
@@ -122,6 +123,53 @@ class MetricsManager: ObservableObject {
             .store(in: &cancellables)
     }
     
+    // MARK: - Historical Data Initialization
+
+    /// Fetch historical data on startup to prefill cache with 150 seconds (30 points @ 5s intervals)
+    private func fetchInitialHistoricalData() {
+        // Fetch CPU historical data
+        cpuFetcher.fetchHistoricalData(seconds: 150) { [weak self] entries in
+            guard let self = self else { return }
+
+            // Convert entries to percentage values and sync to widget cache
+            let percentageValues = entries.map { $0.value * 100 }
+
+            // Save as initial history
+            if !percentageValues.isEmpty {
+                let metricData = SharedMetricData(
+                    serverId: self.serverId,
+                    metricType: "CPU",
+                    value: percentageValues.last ?? 0,
+                    timestamp: Date(),
+                    history: Array(percentageValues.suffix(30))  // Keep last 30 values
+                )
+                SharedStorageManager.shared.saveMetricData(metricData)
+            }
+        }
+
+        // Fetch RAM historical data
+        ramFetcher.fetchHistoricalData(seconds: 150) { [weak self] entries in
+            guard let self = self else { return }
+
+            // Convert entries to percentage values (if maxRAM is available)
+            if self.maxRAM > 0 {
+                let percentageValues = entries.map { ($0.value / self.maxRAM) * 100 }
+
+                // Save as initial history
+                if !percentageValues.isEmpty {
+                    let metricData = SharedMetricData(
+                        serverId: self.serverId,
+                        metricType: "RAM",
+                        value: percentageValues.last ?? 0,
+                        timestamp: Date(),
+                        history: Array(percentageValues.suffix(30))  // Keep last 30 values
+                    )
+                    SharedStorageManager.shared.saveMetricData(metricData)
+                }
+            }
+        }
+    }
+
     // MARK: - Widget Sync
 
     /// Sync metric data to shared storage for widget access
@@ -136,7 +184,7 @@ class MetricsManager: ObservableObject {
 
         var history = cachedMetric?.history ?? []
         history.append(value)
-        if history.count > 14 {
+        if history.count > 30 {
             history.removeFirst()
         }
 

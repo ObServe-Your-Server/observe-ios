@@ -40,7 +40,7 @@ struct SharedMetricData: Codable {
     let metricType: String
     let value: Double
     let timestamp: Date
-    let history: [Double] // Last 14 values for grid display
+    let history: [Double] // Last 30 values for grid display (150 seconds @ 5s intervals)
 
     init(serverId: UUID, metricType: String, value: Double, timestamp: Date, history: [Double] = []) {
         self.serverId = serverId
