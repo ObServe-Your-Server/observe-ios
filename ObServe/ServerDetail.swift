@@ -31,6 +31,8 @@ struct ServerDetailView: View {
                     
                     VStack(spacing: 0) {
                         
+                        Rectangle().frame(height: 20).opacity(0)
+
                         // Server Management Module
                         ServerManagementModule(server: server)
                         

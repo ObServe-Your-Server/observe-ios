@@ -310,7 +310,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1640;
-				LastUpgradeCheck = 1640;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					65975AF12EA0F37500C1A213 = {
 						CreatedOnToolsVersion = 16.4;
@@ -440,7 +440,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3R7V4V7D7N;
+				DEVELOPMENT_TEAM = KNZ6246X7R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = observeMetricsWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = observeMetricsWidget;
@@ -469,7 +469,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3R7V4V7D7N;
+				DEVELOPMENT_TEAM = KNZ6246X7R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = observeMetricsWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = observeMetricsWidget;
@@ -617,7 +617,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3R7V4V7D7N;
+				DEVELOPMENT_TEAM = KNZ6246X7R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ObServe/Info.plist;
@@ -652,7 +652,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3R7V4V7D7N;
+				DEVELOPMENT_TEAM = KNZ6246X7R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ObServe/Info.plist;
