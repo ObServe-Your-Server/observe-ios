@@ -53,8 +53,6 @@ struct TimeSeriesGridChart: View {
                 Color.black.ignoresSafeArea()
                 
                 VStack {
-                    Spacer()
-                    
                     let actualCellSize = calculateActualCellSize(for: geometry.size.width)
                     let actualSpacing = calculateActualSpacing(for: actualCellSize)
                     let gridHeight = calculateGridHeight(cellSize: actualCellSize, spacing: actualSpacing)
@@ -73,11 +71,10 @@ struct TimeSeriesGridChart: View {
                         screenWidth: geometry.size.width
                     )
                     .frame(maxWidth: .infinity)
-                    
-                    Spacer()
                 }
             }
         }
+        .aspectRatio(2.2, contentMode: .fit)
         .onChange(of: currentValue) { _, _ in updatePercentageHistory() }
         .onChange(of: maximum) { _, _ in updatePercentageHistory() }
         .onAppear {

@@ -33,14 +33,17 @@ struct ExpandableMetricBox: View {
         VStack(spacing: 0) {
             // Always create the chart to keep collecting data
             if isExpanded {
-                TimeSeriesGridChart(
-                    currentValue: currentValue,
-                    maximum: maximum,
-                    serverId: serverId,
-                    metricType: metricType
-                )
-                .frame(height: 185)
-                .frame(maxWidth: .infinity)
+                HStack {
+                    Spacer()
+                    TimeSeriesGridChart(
+                        currentValue: currentValue,
+                        maximum: maximum,
+                        serverId: serverId,
+                        metricType: metricType
+                    )
+                    .frame(maxWidth: 800)
+                    Spacer()
+                }
                 .clipped()
             }
 

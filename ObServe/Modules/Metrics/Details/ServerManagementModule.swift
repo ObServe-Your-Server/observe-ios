@@ -11,7 +11,7 @@ struct ServerManagementModule: View {
     @Bindable var server: ServerModuleItem
     var onManage: () -> Void
 
-    @State private var osVersion = "Linux 6.8.12-15-pve"
+    @State private var osVersion = "Linux 6.8.12-15"
     @State private var status = ""
 
     // Blinking animation state
@@ -126,14 +126,14 @@ struct ServerManagementModule: View {
                             .font(.system(size: 12, weight: .medium))
                         Text(osVersion)
                             .foregroundColor(.white)
-                    }
+                    }.frame(maxWidth: .infinity, alignment: .leading)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("STATUS")
                             .foregroundColor(Color.gray)
                             .font(.system(size: 12, weight: .medium))
                         Text(status)
                             .foregroundColor(.white)
-                    }
+                    }.frame(maxWidth: .infinity, alignment: .leading)
                 }
                 // Action buttons - matching ServerModule styling
                 HStack(spacing: 12) {
