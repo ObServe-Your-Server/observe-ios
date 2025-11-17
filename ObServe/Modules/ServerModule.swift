@@ -100,7 +100,10 @@ struct ServerModule: View {
                                 try? await Task.sleep(nanoseconds: 2_000_000_000)
                             },
                             text: "RESTART",
-                            color: "ObServeBlue"
+                            color: "ObServeBlue",
+                            requiresConfirmation: SettingsManager.shared.safeModeEnabled,
+                            confirmationTitle: "Restart Server",
+                            confirmationMessage: "Are you sure you want to restart \(server.name)? This may temporarily interrupt monitoring."
                         )
                         .frame(maxWidth: .infinity)
                         .disabled(isCheckingHealth)
@@ -153,6 +156,12 @@ struct ServerModule: View {
             isConnected = server.isConnected
             isHealthy = server.isHealthy
             performHealthCheck()
+
+            // Auto-connect on launch if setting is enabled
+            if SettingsManager.shared.autoConnectOnLaunch && !isConnected {
+                isConnected = true
+            }
+
             if isConnected {
                 metricsManager.startFetching()
             }

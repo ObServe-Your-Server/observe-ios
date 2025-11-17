@@ -29,6 +29,7 @@ struct ManageServerView: View {
     @State private var contentHasScrolled = false
     @State private var dummyInterval: DetailAppBar.Interval = .s1
     @State private var deleteBoolean: Bool = false
+    @State private var showDeleteConfirmation: Bool = false
 
     init(server: ServerModuleItem, onDismiss: @escaping () -> Void, onSave: @escaping (ServerModuleItem) -> Void, onDelete: (() -> Void)? = nil) {
         self.server = server
@@ -48,10 +49,10 @@ struct ManageServerView: View {
 
         // Debug logging
         if matchedType == nil {
-            print("⚠️ ManageServerView: Could not find MachineType for", server.type)
+            print("ManageServerView: Could not find MachineType for", server.type)
             print("   Available types:", MachineType.allCases.map { $0.rawValue })
         } else {
-            print("✅ ManageServerView: Successfully matched type", server.type, "to", matchedType!.rawValue)
+            print("ManageServerView: Successfully matched type", server.type, "to", matchedType!.rawValue)
         }
     }
 
@@ -91,6 +92,14 @@ struct ManageServerView: View {
             }
             .frame(maxWidth: 600, maxHeight: 700)
             .background(Color.black)
+        }
+        .confirmationDialog("Delete Server", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
+            Button("Delete \(server.name)", role: .destructive) {
+                deleteServer()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure you want to delete \(server.name)? This action cannot be undone.")
         }
     }
 
@@ -297,7 +306,12 @@ struct ManageServerView: View {
                     binding: $deleteBoolean
                 )
                 RegularButton(Label: "DELETE", action: {
-                    deleteServer()
+                    // Check if Safe Mode is enabled
+                    if SettingsManager.shared.safeModeEnabled {
+                        showDeleteConfirmation = true
+                    } else {
+                        deleteServer()
+                    }
                 }, color: "ObServeRed", disabled: !deleteBoolean)
                 .frame(maxWidth: .infinity)
             }

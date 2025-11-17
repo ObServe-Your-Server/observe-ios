@@ -43,6 +43,7 @@ class MetricsManager: ObservableObject {
 
         setupErrorHandling()
         setupDataObservers()
+        setupPollingIntervalObserver()
     }
     
     // MARK: - Control Methods
@@ -122,7 +123,34 @@ class MetricsManager: ObservableObject {
             .assign(to: \.error, on: self)
             .store(in: &cancellables)
     }
-    
+
+    // MARK: - Polling Interval Observer
+
+    private func setupPollingIntervalObserver() {
+        // Observe polling interval changes and restart fetchers
+        SettingsManager.shared.$pollingIntervalSeconds
+            .dropFirst() // Skip initial value
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] newInterval in
+                guard let self = self else { return }
+
+                print("MetricsManager: Polling interval changed to \(newInterval) seconds")
+                print("CPU fetcher current interval: \(self.cpuFetcher.interval)")
+                print("Restarting all fetchers...")
+
+                // Restart all live fetchers with new interval
+                self.cpuFetcher.restart()
+                self.ramFetcher.restart()
+                self.pingFetcher.restart()
+                self.storageFetcher.restart()
+                self.networkFetcher.restart()
+                self.uptimeFetcher.restart()
+
+                print("Fetchers restarted with new interval: \(self.cpuFetcher.interval)")
+            }
+            .store(in: &cancellables)
+    }
+
     // MARK: - Historical Data Initialization
 
     /// Fetch historical data on startup to prefill cache with 150 seconds (30 points @ 5s intervals)

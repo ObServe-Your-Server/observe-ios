@@ -9,7 +9,15 @@ import SwiftUI
 func formatValue(_ value: Double, decimalPlaces: Int = 2) -> String {
     let formatter = NumberFormatter()
     formatter.minimumFractionDigits = 0
-    formatter.maximumFractionDigits = decimalPlaces
+
+    // If precise data is enabled, use the specified decimal places
+    // Otherwise, round to whole numbers (0 decimal places) for cleaner display
+    if SettingsManager.shared.preciseDataEnabled {
+        formatter.maximumFractionDigits = decimalPlaces
+    } else {
+        formatter.maximumFractionDigits = 0
+    }
+
     formatter.numberStyle = .decimal
     return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
 }

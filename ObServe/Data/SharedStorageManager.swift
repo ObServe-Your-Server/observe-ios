@@ -147,6 +147,23 @@ class SharedStorageManager {
         print("SharedStorageManager: Cleared all metric data for server \(serverId)")
     }
 
+    /// Clear all metrics for all servers
+    func clearAllMetrics() {
+        guard let defaults = sharedDefaults else { return }
+
+        // Get all servers and clear their metrics
+        let servers = loadServers()
+        for server in servers {
+            for metricType in MetricType.allCases {
+                let key = metricKey(serverId: server.id, metricType: metricType.rawValue)
+                defaults.removeObject(forKey: key)
+            }
+        }
+
+        defaults.synchronize()
+        print("SharedStorageManager: Cleared all metric data for all servers")
+    }
+
     // MARK: - Private Helpers
 
     private func metricKey(serverId: UUID, metricType: String) -> String {

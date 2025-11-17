@@ -3,35 +3,54 @@ import Combine
 
 class LiveUptimeFetcher: BaseLiveFetcher {
     @Published var uptime: TimeInterval? // Current uptime in seconds
-    
+
     private var tickTimer: Timer? // 1-second timer for UI updates
+    private var syncTimer: Timer? // 5-minute timer for server sync
     private var lastFetchDate: Date?
     private var lastFetchedUptime: TimeInterval?
-    
-    override init(ip: String, port: String, apiKey: String, interval: TimeInterval = 300, windowSize: Int = 60) {
-        // Set fetch interval to 5 minutes (300 seconds)
+    private let syncInterval: TimeInterval = 300 // 5 minutes
+
+    override init(ip: String, port: String, apiKey: String, interval: TimeInterval = 5, windowSize: Int = 60) {
         super.init(ip: ip, port: port, apiKey: apiKey, interval: interval, windowSize: windowSize)
     }
-    
+
     override func start() {
-        // Start the network fetch timer (every 5 minutes)
-        super.start()
-        
-        // Start the UI update timer (every 1 second)
+        // Don't use BaseLiveFetcher's polling timer - we have our own schedule
+        // Start the sync timer (every 5 minutes) for server syncing
+        startSyncTimer()
+
         startTickTimer()
+
+        // Fetch immediately on start
+        fetch()
     }
-    
+
     override func stop() {
-        super.stop()
+        stopSyncTimer()
         stopTickTimer()
     }
-    
+
+    override func restart() {
+        print("LiveUptimeFetcher: Ignoring restart - maintaining independent 5-minute sync")
+    }
+
+    private func startSyncTimer() {
+        syncTimer = Timer.scheduledTimer(withTimeInterval: syncInterval, repeats: true) { [weak self] _ in
+            self?.fetch()
+        }
+    }
+
+    private func stopSyncTimer() {
+        syncTimer?.invalidate()
+        syncTimer = nil
+    }
+
     private func startTickTimer() {
         tickTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             self?.updateUptimeDisplay()
         }
     }
-    
+
     private func stopTickTimer() {
         tickTimer?.invalidate()
         tickTimer = nil
@@ -65,6 +84,7 @@ class LiveUptimeFetcher: BaseLiveFetcher {
     }
     
     deinit {
+        stopSyncTimer()
         stopTickTimer()
     }
 }

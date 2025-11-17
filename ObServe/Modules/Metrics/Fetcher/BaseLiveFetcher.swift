@@ -12,31 +12,41 @@ class BaseLiveFetcher: ObservableObject {
     @Published var error: String?
 
     private var timer: Timer?
-    internal let interval: TimeInterval
+    internal var interval: TimeInterval
     internal let windowSize: Int
     internal let networkService: NetworkService
 
-    init(ip: String, port: String, apiKey: String, interval: TimeInterval = 3, windowSize: Int = 60) {
-        self.interval = interval
+    init(ip: String, port: String, apiKey: String, interval: TimeInterval = 5, windowSize: Int = 60) {
+        self.interval = TimeInterval(SettingsManager.shared.pollingIntervalSeconds)
         self.windowSize = windowSize
         self.networkService = NetworkService(ip: ip, port: port, apiKey: apiKey)
     }
-    
+
     func start() {
+        self.interval = TimeInterval(SettingsManager.shared.pollingIntervalSeconds)
+
+        print("BaseLiveFetcher: Starting with interval \(interval) seconds")
         fetch()
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             self?.fetch()
         }
     }
-    
+
     func stop() {
         timer?.invalidate()
         timer = nil
     }
+
+    func restart() {
+        print("BaseLiveFetcher: Restarting (old interval: \(interval))")
+        stop()
+        start()
+        print("BaseLiveFetcher: Restarted (new interval: \(interval))")
+    }
     
     // Override in subclasses
     func fetch() {
-        print("⚠️ BaseLiveFetcher: Default fetch() called - subclass should override this")
+        print("BaseLiveFetcher: Default fetch() called - subclass should override this")
         // Default implementation - subclasses should override
     }
     
