@@ -33,6 +33,14 @@ struct PowerButton: View {
                     )
                     .transition(.opacity)
             }
+            .innerShadow(
+                color: Color(isConnected ? "ObServeRed" : "ObServeGreen"),
+                blur: 25,
+                spread: 12,
+                offsetX: 0,
+                offsetY: 0,
+                opacity: 0.1
+            )
         }
     }
 }

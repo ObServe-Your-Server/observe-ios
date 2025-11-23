@@ -345,9 +345,6 @@ class MetricsManager: ObservableObject {
                     //let avg = sum / Double(entries.count)
                     //self.avgNetworkIn = avg
 
-                    // Debug logging
-                    print("DEBUG: Network IN - raw: \(test), rounded: \(roundedValue), avgNetworkIn: \(self.avgNetworkIn)")
-
                     // Sync to widget (use same rounded value as main app displays)
                     self.syncMetricToWidget(metricType: "Network In", value: roundedValue)
                 }
@@ -370,9 +367,6 @@ class MetricsManager: ObservableObject {
                     // TODO: Fixen
                     //let avg = sum / Double(entries.count)
                     //self.avgNetworkOut = avg
-
-                    // Debug logging
-                    print("DEBUG: Network OUT - raw: \(test), rounded: \(roundedValue), avgNetworkOut: \(self.avgNetworkOut)")
                     
                     // Sync to widget (use same rounded value as main app displays)
                     self.syncMetricToWidget(metricType: "Network Out", value: roundedValue)

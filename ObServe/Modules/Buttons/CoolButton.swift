@@ -36,6 +36,14 @@ struct CoolButton: View {
                     .stroke(Color(color).opacity(0.3), lineWidth: 1)
             )
         }
+        .innerShadow(
+            color: Color(color),
+            blur: 25,
+            spread: 12,
+            offsetX: 0,
+            offsetY: 0,
+            opacity: 0.1
+        )
         .disabled(isPerformingTask || isCompleted)
         .confirmationDialog(confirmationTitle, isPresented: $showConfirmation, titleVisibility: .visible) {
             Button(text, role: .destructive) {
