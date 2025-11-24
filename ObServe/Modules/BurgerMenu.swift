@@ -64,10 +64,10 @@ struct BurgerMenu: View {
 
             VStack(spacing: 0) {
                 // Header with app icon and version
-                HStack(spacing: 12) {
+                HStack(spacing: 0) {
                     Image("AppIcon")
                         .resizable()
-                        .frame(width: 60, height: 60)
+                        .frame(width: 50, height: 50)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("ObServe")
@@ -80,7 +80,7 @@ struct BurgerMenu: View {
 
                     Spacer()
                 }
-                .padding(.horizontal, 30)
+                .padding(.leading, 20)
                 .padding(.top, 20)
                 .padding(.bottom, 30)
 
