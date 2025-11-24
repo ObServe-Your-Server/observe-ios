@@ -9,19 +9,19 @@ import SwiftUI
 import SwiftData
 
 struct ServerDetailView: View {
-    
-    //Dateninput später später
-    var server: ServerModuleItem? = nil
-    
+
+    var server: ServerModuleItem
+
     @Environment(\.dismiss) private var dismiss
     @State private var contentHasScrolled = false
     @State private var selectedInterval: DetailAppBar.Interval = .s1
+    @State private var showManageView = false
     
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
                 DetailAppBar(
-                    serverName: server?.name ?? "SERVER",
+                    serverName: server.name,
                     contentHasScrolled: $contentHasScrolled,
                     selectedInterval: $selectedInterval,
                     onClose: { dismiss() }
@@ -32,7 +32,14 @@ struct ServerDetailView: View {
                     
                     VStack(spacing: 0) {
                         
-                        // alle Module kommen hie rein!
+                        Rectangle().frame(height: 20).opacity(0)
+
+                        // Server Management Module
+                        ServerManagementModule(
+                            server: server,
+                            onManage: { showManageView = true }
+                        )
+
                         Rectangle().fill(.clear).frame(height: 12)
                     }
                     .frame(maxWidth: .infinity)
@@ -41,6 +48,22 @@ struct ServerDetailView: View {
                 .coordinateSpace(name: "scroll")
             }
             .background(Color.black.edgesIgnoringSafeArea(.all))
+        }
+        .sheet(isPresented: $showManageView) {
+            ManageServerView(
+                server: server,
+                onDismiss: {
+                    showManageView = false
+                },
+                onSave: { updatedServer in
+                    // Update the server with new values
+                    server.name = updatedServer.name
+                    server.ip = updatedServer.ip
+                    server.port = updatedServer.port
+                    server.apiKey = updatedServer.apiKey
+                    server.type = updatedServer.type
+                }
+            )
         }
     }
     
@@ -64,4 +87,8 @@ struct ServerDetailView: View {
             value = nextValue()
         }
     }
+}
+
+#Preview {
+    ServerDetailView(server: ServerModuleItem(name: "Name filler", ip: "192.168.1.100", port: "8080", apiKey: "preview-key", type: "Server"))
 }

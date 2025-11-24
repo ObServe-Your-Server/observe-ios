@@ -16,15 +16,15 @@ class LiveTotalRamFetcher: BaseStaticFetcher {
         let queryItems = [
             URLQueryItem(name: "startTime", value: "\(now - 60)"),
             URLQueryItem(name: "endTime", value: "\(now)"),
-            URLQueryItem(name: "interval", value: "5")
+            URLQueryItem(name: "step", value: "5")
         ]
-        
-        networkService.fetch(endpoint: "/metrics/ram/total-memory-in-gb", queryItems: queryItems) { [weak self] (result: Result<PrometheusResponse, Error>) in
+
+        networkService.fetch(endpoint: "/memory/total-memory-in-gb", queryItems: queryItems) { [weak self] (result: Result<[MemoryResponse], Error>) in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let response):
-                    let allValues = response.data.result.flatMap { $0.values }
-                    self?.maxRam = allValues.map { $0.value }.max()
+                    let allValues = response.compactMap { Double($0.value) }
+                    self?.maxRam = allValues.max()
                     self?.error = nil
                 case .failure(let error):
                     self?.error = error.localizedDescription

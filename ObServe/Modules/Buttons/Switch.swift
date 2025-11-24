@@ -45,7 +45,7 @@ struct Switch: View {
         ZStack {
             Rectangle().fill(Color(white: 0.12))
 
-            let glow = isOn ? Color("Green") : Color("Red")
+            let glow = isOn ? Color("ObServeGreen") : Color("ObServeRed")
             Rectangle()
                 .fill(glow)
                 .frame(width: innerBarWidth, height: innerBarHeight)

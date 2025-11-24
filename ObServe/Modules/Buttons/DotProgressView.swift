@@ -31,7 +31,7 @@ struct Dot: View {
             .frame(width: 8, height: 8, alignment: .center)
             .opacity(y == 0 ? 0.1 : 1)
             .offset(y: y)
-            .foregroundColor(Color("Blue"))
+            .foregroundColor(Color("ObServeBlue"))
     }
 }
 

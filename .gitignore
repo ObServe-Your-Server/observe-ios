@@ -5,6 +5,23 @@
 ## User settings
 xcuserdata/
 
+## Compatibility with Xcode 8 and earlier (ignoring not required starting Xcode 9)
+*.xcscmblueprint
+*.xccheckout
+
+## Compatibility with Xcode 3 and earlier (ignoring not required starting Xcode 4)
+build/
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
 ## Obj-C/Swift specific
 *.hmap
 
@@ -60,4 +77,69 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# Code Injection
+#
+# After new code Injection tools there's a generated folder /iOSInjectionProject
+# https://github.com/johnno1962/injectionforxcode
+
+iOSInjectionProject/
+
+# Mac
 .DS_Store
+
+# Xcode Patch
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+
+# Accio dependency management
+Dependencies/
+.accio/
+
+# Bundler
+vendor/bundle
+
+# SwiftUI Previews
+**/PreviewContent/
+
+# Local environment variables
+.env
+.env.local
+
+# Backup files
+*~.nib
+*.swp
+*~
+*.bak
+*.orig
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+*.gcno
+*.gcda
+*.profdata
+*.profraw
+
+# Archives
+*.xcarchive
+
+# SwiftData
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Temporary files
+.tmp/
+tmp/
+
+# Documentation
+docs/build/

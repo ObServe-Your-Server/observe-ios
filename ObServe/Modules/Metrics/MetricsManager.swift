@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import WidgetKit
 
 class MetricsManager: ObservableObject {
     // MARK: - Published Properties
@@ -13,7 +14,7 @@ class MetricsManager: ObservableObject {
     @Published var avgNetworkIn: Double = 0.0
     @Published var avgNetworkOut: Double = 0.0
     @Published var uptime: TimeInterval = 0.0
-    
+
     // MARK: - Fetchers
     let cpuFetcher: LiveCpuFetcher
     let ramFetcher: LiveRamFetcher
@@ -23,26 +24,31 @@ class MetricsManager: ObservableObject {
     let uptimeFetcher: LiveUptimeFetcher
     let totalRamFetcher: LiveTotalRamFetcher
     let networkFetcher: LiveNetworkFetcher
-    
+
     private var cancellables = Set<AnyCancellable>()
-    
+    private let serverId: UUID
+
     init(server: ServerModuleItem) {
+        self.serverId = server.id
+
         // Initialize all fetchers
-        self.cpuFetcher = LiveCpuFetcher(ip: server.ip, port: server.port)
-        self.ramFetcher = LiveRamFetcher(ip: server.ip, port: server.port)
-        self.pingFetcher = LivePingFetcher(ip: server.ip, port: server.port)
-        self.storageFetcher = LiveStorageFetcher(ip: server.ip, port: server.port)
-        self.diskTotalSizeFetcher = LiveDiskTotalSizeFetcher(ip: server.ip, port: server.port)
-        self.totalRamFetcher = LiveTotalRamFetcher(ip: server.ip, port: server.port)
-        self.uptimeFetcher = LiveUptimeFetcher(ip: server.ip, port: server.port)
-        self.networkFetcher = LiveNetworkFetcher(ip: server.ip, port: server.port)
-        
+        self.cpuFetcher = LiveCpuFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.ramFetcher = LiveRamFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.pingFetcher = LivePingFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.storageFetcher = LiveStorageFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.diskTotalSizeFetcher = LiveDiskTotalSizeFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.totalRamFetcher = LiveTotalRamFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.uptimeFetcher = LiveUptimeFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+        self.networkFetcher = LiveNetworkFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
+
         setupErrorHandling()
         setupDataObservers()
+        setupPollingIntervalObserver()
     }
     
     // MARK: - Control Methods
     func startFetching() {
+        fetchInitialHistoricalData()
         startLiveFetchers()
         startStaticFetchers()
     }
@@ -117,21 +123,128 @@ class MetricsManager: ObservableObject {
             .assign(to: \.error, on: self)
             .store(in: &cancellables)
     }
-    
+
+    // MARK: - Polling Interval Observer
+
+    private func setupPollingIntervalObserver() {
+        // Observe polling interval changes and restart fetchers
+        SettingsManager.shared.$pollingIntervalSeconds
+            .dropFirst() // Skip initial value
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] newInterval in
+                guard let self = self else { return }
+
+                print("MetricsManager: Polling interval changed to \(newInterval) seconds")
+                print("CPU fetcher current interval: \(self.cpuFetcher.interval)")
+                print("Restarting all fetchers...")
+
+                // Restart all live fetchers with new interval
+                self.cpuFetcher.restart()
+                self.ramFetcher.restart()
+                self.pingFetcher.restart()
+                self.storageFetcher.restart()
+                self.networkFetcher.restart()
+                self.uptimeFetcher.restart()
+
+                print("Fetchers restarted with new interval: \(self.cpuFetcher.interval)")
+            }
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Historical Data Initialization
+
+    /// Fetch historical data on startup to prefill cache with 150 seconds (30 points @ 5s intervals)
+    private func fetchInitialHistoricalData() {
+        // Fetch CPU historical data
+        cpuFetcher.fetchHistoricalData(seconds: 150) { [weak self] entries in
+            guard let self = self else { return }
+
+            // Convert entries to percentage values and sync to widget cache
+            let percentageValues = entries.map { $0.value * 100 }
+
+            // Save as initial history
+            if !percentageValues.isEmpty {
+                let metricData = SharedMetricData(
+                    serverId: self.serverId,
+                    metricType: "CPU",
+                    value: percentageValues.last ?? 0,
+                    timestamp: Date(),
+                    history: Array(percentageValues.suffix(30))  // Keep last 30 values
+                )
+                SharedStorageManager.shared.saveMetricData(metricData)
+            }
+        }
+
+        // Fetch RAM historical data
+        ramFetcher.fetchHistoricalData(seconds: 150) { [weak self] entries in
+            guard let self = self else { return }
+
+            // Convert entries to percentage values (if maxRAM is available)
+            if self.maxRAM > 0 {
+                let percentageValues = entries.map { ($0.value / self.maxRAM) * 100 }
+
+                // Save as initial history
+                if !percentageValues.isEmpty {
+                    let metricData = SharedMetricData(
+                        serverId: self.serverId,
+                        metricType: "RAM",
+                        value: percentageValues.last ?? 0,
+                        timestamp: Date(),
+                        history: Array(percentageValues.suffix(30))  // Keep last 30 values
+                    )
+                    SharedStorageManager.shared.saveMetricData(metricData)
+                }
+            }
+        }
+    }
+
+    // MARK: - Widget Sync
+
+    /// Sync metric data to shared storage for widget access
+    private func syncMetricToWidget(metricType: String, value: Double) {
+        guard let serverId = self.serverId as UUID? else { return }
+
+        // Load existing history
+        let cachedMetric = SharedStorageManager.shared.loadMetricData(
+            serverId: serverId,
+            metricType: metricType
+        )
+
+        var history = cachedMetric?.history ?? []
+        history.append(value)
+        if history.count > 30 {
+            history.removeFirst()
+        }
+
+        let metricData = SharedMetricData(
+            serverId: serverId,
+            metricType: metricType,
+            value: value,
+            timestamp: Date(),
+            history: history
+        )
+
+        SharedStorageManager.shared.saveMetricData(metricData)
+    }
+
     // MARK: - Data Observers
     private func setupDataObservers() {
         // CPU observer
         cpuFetcher.$entries
             .sink { [weak self] entries in
+                guard let self = self else { return }
                 if entries.isEmpty {
-                    self?.avgCPU = 0.0
+                    self.avgCPU = 0.0
                 } else {
-                    let sum = entries.map(\.value).reduce(0, +)
                     let test = entries.last?.value ?? 0.0
-                    self?.avgCPU = test
+                    self.avgCPU = test
                     // TODO: Fixen
+                    //let sum = entries.map(\.value).reduce(0, +)
                     //let avg = sum / Double(entries.count)
-                    //self?.avgCPU = avg
+                    //self.avgCPU = avg
+
+                    // Sync to widget (convert fraction to percentage)
+                    self.syncMetricToWidget(metricType: "CPU", value: test * 100)
                 }
             }
             .store(in: &cancellables)
@@ -139,15 +252,22 @@ class MetricsManager: ObservableObject {
         // RAM observer
         ramFetcher.$entries
             .sink { [weak self] entries in
+                guard let self = self else { return }
                 if entries.isEmpty {
-                    self?.avgRAM = 0.0
+                    self.avgRAM = 0.0
                 } else {
-                    let sum = entries.map(\.value).reduce(0, +)
-// TODO: Fixen
-//                    let avg = sum / Double(entries.count)
-//                    self?.avgRAM = avg
                     let test = entries.last?.value ?? 0.0
-                    self?.avgRAM = test
+                    self.avgRAM = test
+// TODO: Fixen
+//                    let sum = entries.map(\.value).reduce(0, +)
+//                    let avg = sum / Double(entries.count)
+//                    self.avgRAM = avg
+
+                    // Sync percentage to widget (not raw GB value)
+                    if self.maxRAM > 0 {
+                        let percentage = (test / self.maxRAM) * 100
+                        self.syncMetricToWidget(metricType: "RAM", value: percentage)
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -163,12 +283,18 @@ class MetricsManager: ObservableObject {
         // Ping observer
         pingFetcher.$entries
             .sink { [weak self] entries in
+                guard let self = self else { return }
                 if entries.isEmpty {
-                    self?.avgPing = 0.0
+                    self.avgPing = 0.0
                 } else {
                     let sum = entries.map(\.value).reduce(0, +)
                     let avg = sum / Double(entries.count)
-                    self?.avgPing = avg
+                    self.avgPing = avg
+
+                    // Sync to widget (use latest value)
+                    if let latestValue = entries.last?.value {
+                        self.syncMetricToWidget(metricType: "Ping", value: latestValue)
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -176,12 +302,19 @@ class MetricsManager: ObservableObject {
         // Storage observer
         storageFetcher.$entries
             .sink { [weak self] entries in
+                guard let self = self else { return }
                 if entries.isEmpty {
-                    self?.avgStorage = 0.0
+                    self.avgStorage = 0.0
                 } else {
                     let sum = entries.map(\.value).reduce(0, +)
                     let avg = sum / Double(entries.count)
-                    self?.avgStorage = avg
+                    self.avgStorage = avg
+
+                    // Sync percentage to widget (not raw GB value)
+                    if let latestValue = entries.last?.value, self.maxStorage > 0 {
+                        let percentage = (latestValue / self.maxStorage) * 100
+                        self.syncMetricToWidget(metricType: "Storage", value: percentage)
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -197,25 +330,46 @@ class MetricsManager: ObservableObject {
         // Network IN observer
         networkFetcher.$inEntries
             .sink { [weak self] entries in
+                guard let self = self else { return }
                 if entries.isEmpty {
-                    self?.avgNetworkIn = 0.0
+                    self.avgNetworkIn = 0.0
                 } else {
-                    let sum = entries.map(\.value).reduce(0, +)
-                    let avg = sum / Double(entries.count)
-                    self?.avgNetworkIn = avg
+                    let test = entries.last?.value ?? 0.0
+
+                    // Round to match display formatting (0 decimal places)
+                    let roundedValue = round(test)
+                    self.avgNetworkIn = roundedValue
+
+                    // TODO: Fixen
+                    //let sum = entries.map(\.value).reduce(0, +)
+                    //let avg = sum / Double(entries.count)
+                    //self.avgNetworkIn = avg
+
+                    // Sync to widget (use same rounded value as main app displays)
+                    self.syncMetricToWidget(metricType: "Network In", value: roundedValue)
                 }
             }
             .store(in: &cancellables)
-        
+
         // Network OUT observer
         networkFetcher.$outEntries
             .sink { [weak self] entries in
+                guard let self = self else { return }
                 if entries.isEmpty {
-                    self?.avgNetworkOut = 0.0
+                    self.avgNetworkOut = 0.0
                 } else {
-                    let sum = entries.map(\.value).reduce(0, +)
-                    let avg = sum / Double(entries.count)
-                    self?.avgNetworkOut = avg
+                    let test = entries.last?.value ?? 0.0
+                    
+                    // Round to match display formatting (0 decimal places)
+                    let roundedValue = round(test)
+                    self.avgNetworkOut = roundedValue
+                    
+                    // TODO: Fixen
+                    //let avg = sum / Double(entries.count)
+                    //self.avgNetworkOut = avg
+                    
+                    // Sync to widget (use same rounded value as main app displays)
+                    self.syncMetricToWidget(metricType: "Network Out", value: roundedValue)
                 }
             }
             .store(in: &cancellables)
@@ -223,8 +377,19 @@ class MetricsManager: ObservableObject {
         // Uptime observer
         uptimeFetcher.$uptime
             .sink { [weak self] uptime in
+                guard let self = self else { return }
                 let value = uptime ?? 0.0
-                self?.uptime = value
+                self.uptime = value
+
+                // Sync uptime to widget
+                if let serverId = self.serverId as UUID? {
+                    SharedStorageManager.shared.updateServerStatus(
+                        serverId: serverId,
+                        isConnected: true,
+                        isHealthy: true,
+                        uptime: uptime
+                    )
+                }
             }
             .store(in: &cancellables)
     }

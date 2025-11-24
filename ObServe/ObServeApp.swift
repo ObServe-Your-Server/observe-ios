@@ -10,6 +10,10 @@ import SwiftData
 
 @main
 struct ObServeApp: App {
+    @StateObject private var authManager = AuthenticationManager()
+    @State private var isCheckingAuth = true
+    @Environment(\.scenePhase) private var scenePhase
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             ServerModuleItem.self
@@ -25,8 +29,46 @@ struct ObServeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            OverView()
-                .environment(\.font, .custom("IBM Plex Sans", size: 17))
+            ZStack {
+                if isCheckingAuth {
+                    // Loading state while checking authentication
+                    VStack(spacing: 20) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                        Text("Loading...")
+                            .foregroundColor(.white)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black.ignoresSafeArea())
+                    .environment(\.font, .custom("IBM Plex Sans", size: 17))
+                    .preferredColorScheme(.dark)
+                } else if authManager.isAuthenticated {
+                    OverView()
+                        .environmentObject(authManager)
+                        .environment(\.font, .custom("IBM Plex Sans", size: 17))
+                        .preferredColorScheme(.dark)
+                } else {
+                    LoginView()
+                        .environmentObject(authManager)
+                        .environment(\.font, .custom("IBM Plex Sans", size: 17))
+                        .preferredColorScheme(.dark)
+                        .background(Color.black.ignoresSafeArea())
+                }
+            }
+            .onAppear {
+                // Validate tokens on app startup
+                authManager.validateAndRefreshIfNeeded { success in
+                    isCheckingAuth = false
+                }
+            }
+            .onChange(of: scenePhase) { oldPhase, newPhase in
+                // Manage refresh timer based on app state
+                if newPhase == .active && authManager.isAuthenticated {
+                    authManager.startRefreshTimer()
+                } else if newPhase == .background || newPhase == .inactive {
+                    authManager.stopRefreshTimer()
+                }
+            }
         }
         .modelContainer(sharedModelContainer)
     }

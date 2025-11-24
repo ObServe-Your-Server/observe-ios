@@ -1,0 +1,16 @@
+<svg width="288" height="137" viewBox="0 0 288 137" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M1 50H287V136H1V50Z" stroke="#808080" stroke-width="2"/>
+<path d="M59.221 1H232.5L258 50H32L59.221 1Z" stroke="#808080" stroke-width="2"/>
+<circle cx="226" cy="93" r="5" fill="#808080"/>
+<rect x="50" y="66" width="153" height="55" stroke="#808080" stroke-width="2"/>
+<line x1="160" y1="120" x2="160" y2="67" stroke="#808080" stroke-width="2"/>
+<path d="M181 120.5L181 65.9997" stroke="#808080" stroke-width="2"/>
+<line x1="137" y1="120" x2="137" y2="67" stroke="#808080" stroke-width="2"/>
+<line x1="93" y1="120" x2="93" y2="67" stroke="#808080" stroke-width="2"/>
+<line x1="115" y1="120" x2="115" y2="67" stroke="#808080" stroke-width="2"/>
+<line x1="71" y1="120" x2="71" y2="67" stroke="#808080" stroke-width="2"/>
+<circle cx="272.5" cy="64.5" r="2.5" fill="#808080"/>
+<circle cx="272.5" cy="123.5" r="2.5" fill="#808080"/>
+<circle cx="13.5" cy="64.5" r="2.5" fill="#808080"/>
+<circle cx="13.5" cy="123.5" r="2.5" fill="#808080"/>
+</svg>

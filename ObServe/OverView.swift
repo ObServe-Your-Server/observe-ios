@@ -12,6 +12,7 @@
 
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 struct OverView: View {
     @Environment(\.modelContext) private var modelContext
@@ -24,12 +25,17 @@ struct OverView: View {
 
     @State private var selectedServer: ServerModuleItem?
     @State private var settingsRoute: SettingsRoute?
+    @State private var accountRoute: AccountRoute?
+    @State private var serverRoute: ServerRoute?
+    @State private var alertsRoute: AlertsRoute?
+
+    @EnvironmentObject var authManager: AuthenticationManager
 
     var filteredServers: [ServerModuleItem] {
         switch sortType {
         case .all:     return servers
-        case .online:  return servers.filter { $0.isOn }
-        case .offline: return servers.filter { !$0.isOn }
+        case .online:  return servers.filter { $0.isHealthy }
+        case .offline: return servers.filter { !$0.isHealthy }
         }
     }
 
@@ -55,7 +61,7 @@ struct OverView: View {
                                         .scaledToFit()
                                         .padding(.horizontal, 100)
                                     Rectangle()
-                                        .fill(Color("Gray"))
+                                        .fill(Color("ObServeGray"))
                                         .frame(width: 2, height: 200)
                                 }
                             } else {
@@ -67,6 +73,7 @@ struct OverView: View {
                                                 withAnimation {
                                                     modelContext.delete(server)
                                                     try? modelContext.save()
+                                                    syncServersToWidget()
                                                 }
                                             }
                                         )
@@ -86,13 +93,16 @@ struct OverView: View {
                     .coordinateSpace(name: "scroll")
                 }
                 .background(Color.black.ignoresSafeArea())
+                .offset(x: showBurgermenu ? -240 : 0)
+                .animation(.spring(response: 0.28, dampingFraction: 0.9), value: showBurgermenu)
 
                 if showAddServer {
-                    AddServerOverlay(
+                    MachineOnboardingModal(
                         onDismiss: { withAnimation { showAddServer = false } },
-                        onConnect: { newServer in
+                        onComplete: { newServer, machineType in
                             modelContext.insert(newServer)
                             try? modelContext.save()
+                            syncServersToWidget()
                             withAnimation { showAddServer = false }
                         }
                     )
@@ -102,11 +112,28 @@ struct OverView: View {
                 if showBurgermenu {
                     BurgerMenu(
                         onDismiss: { showBurgermenu = false },
-                        onOverView: { showBurgermenu = false },
+                        onDashboard: { showBurgermenu = false },
+                        onServer: {
+                            showBurgermenu = false
+                            serverRoute = .init()
+                        },
+                        onAlerts: {
+                            showBurgermenu = false
+                            alertsRoute = .init()
+                        },
+                        onAccount: {
+                            showBurgermenu = false
+                            accountRoute = .init()
+                        },
                         onSettings: {
                             showBurgermenu = false
                             settingsRoute = .init()
-                        }
+                        },
+                        onLogout: {
+                            showBurgermenu = false
+                            authManager.logout()
+                        },
+                        selectedSection: .dashboard
                     )
                     .zIndex(4)
                 }
@@ -117,11 +144,57 @@ struct OverView: View {
                     .background(Color.black.ignoresSafeArea())
             }
             .navigationDestination(item: $settingsRoute) { _ in
-                SettingsOverview()
-                    .toolbar(.hidden, for: .navigationBar)
-                    .background(Color.black.ignoresSafeArea())
+                SettingsOverview(
+                    serverRoute: $serverRoute,
+                    alertsRoute: $alertsRoute,
+                    accountRoute: $accountRoute
+                )
+                .toolbar(.hidden, for: .navigationBar)
+                .background(Color.black.ignoresSafeArea())
+            }
+            .navigationDestination(item: $accountRoute) { _ in
+                AccountView(
+                    serverRoute: $serverRoute,
+                    alertsRoute: $alertsRoute,
+                    settingsRoute: $settingsRoute
+                )
+                .toolbar(.hidden, for: .navigationBar)
+                .background(Color.black.ignoresSafeArea())
+            }
+            .navigationDestination(item: $serverRoute) { _ in
+                ServerView(
+                    settingsRoute: $settingsRoute,
+                    alertsRoute: $alertsRoute,
+                    accountRoute: $accountRoute
+                )
+                .toolbar(.hidden, for: .navigationBar)
+                .background(Color.black.ignoresSafeArea())
+            }
+            .navigationDestination(item: $alertsRoute) { _ in
+                AlertsView(
+                    settingsRoute: $settingsRoute,
+                    serverRoute: $serverRoute,
+                    accountRoute: $accountRoute
+                )
+                .toolbar(.hidden, for: .navigationBar)
+                .background(Color.black.ignoresSafeArea())
+            }
+            .onAppear {
+                syncServersToWidget()
+            }
+            .onChange(of: servers.count) { oldValue, newValue in
+                syncServersToWidget()
             }
         }
+    }
+
+    // MARK: - Widget Sync
+
+    private func syncServersToWidget() {
+        let sharedServers = servers.map { $0.toSharedServer() }
+        SharedStorageManager.shared.saveServers(sharedServers)
+        WidgetCenter.shared.reloadAllTimelines()
+        print("OverView: Synced \(sharedServers.count) servers to widget")
     }
 
     // MARK: - Scroll Detection
@@ -140,6 +213,18 @@ struct OverView: View {
 }
 
 struct SettingsRoute: Identifiable, Hashable {
+    let id = UUID()
+}
+
+struct AccountRoute: Identifiable, Hashable {
+    let id = UUID()
+}
+
+struct ServerRoute: Identifiable, Hashable {
+    let id = UUID()
+}
+
+struct AlertsRoute: Identifiable, Hashable {
     let id = UUID()
 }
 

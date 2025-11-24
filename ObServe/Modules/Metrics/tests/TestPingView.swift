@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TestPingView: View {
-    @StateObject private var pingFetcher = LivePingFetcher(ip: "100.103.85.36", port: "8080")
+    @StateObject private var pingFetcher = LivePingFetcher(ip: "100.103.85.36", port: "8080", apiKey: "goofy-ass-key")
     
     var body: some View {
         VStack(spacing: 16) {

@@ -15,15 +15,15 @@ class LiveDiskTotalSizeFetcher: BaseStaticFetcher {
         let queryItems = [
             URLQueryItem(name: "startTime", value: "\(now - 60)"),
             URLQueryItem(name: "endTime", value: "\(now)"),
-            URLQueryItem(name: "interval", value: "5")
+            URLQueryItem(name: "step", value: "5")
         ]
-        
-        networkService.fetch(endpoint: "/metrics/disk/total-size-in-gb-all-volumes", queryItems: queryItems) { [weak self] (result: Result<PrometheusResponse, Error>) in
+
+        networkService.fetch(endpoint: "/disk/disk-stat", queryItems: queryItems) { [weak self] (result: Result<[DiskStatisticResponse], Error>) in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let response):
-                    let allValues = response.data.result.flatMap { $0.values }
-                    self?.maxDiskSize = allValues.map { $0.value }.max()
+                    let allValues = response.compactMap { Double($0.totalAvailableSpaceAllDisksInGb) }
+                    self?.maxDiskSize = allValues.max()
                     self?.error = nil
                 case .failure(let error):
                     self?.error = error.localizedDescription
