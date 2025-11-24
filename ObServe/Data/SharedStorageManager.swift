@@ -35,7 +35,6 @@ class SharedStorageManager {
             let data = try encoder.encode(servers)
             defaults.set(data, forKey: serversKey)
             defaults.synchronize()
-            print("SharedStorageManager: Saved \(servers.count) servers to shared storage")
         } catch {
             print("SharedStorageManager: Failed to encode servers: \(error)")
         }
@@ -52,7 +51,6 @@ class SharedStorageManager {
         do {
             let decoder = JSONDecoder()
             let servers = try decoder.decode([SharedServer].self, from: data)
-            print("SharedStorageManager: Loaded \(servers.count) servers from shared storage")
             return servers
         } catch {
             print("SharedStorageManager: Failed to decode servers: \(error)")
@@ -80,7 +78,6 @@ class SharedStorageManager {
             )
             servers[index] = updatedServer
             saveServers(servers)
-            print("SharedStorageManager: Updated server '\(updatedServer.name)' status - connected: \(isConnected), healthy: \(isHealthy), uptime: \(uptime?.description ?? "nil")")
         }
     }
 
@@ -104,7 +101,6 @@ class SharedStorageManager {
             let key = metricKey(serverId: metricData.serverId, metricType: metricData.metricType)
             defaults.set(data, forKey: key)
             defaults.synchronize()
-            print("SharedStorageManager: Saved metric data for server \(metricData.serverId) - \(metricData.metricType): \(metricData.value)")
         } catch {
             print("SharedStorageManager: Failed to encode metric data: \(error)")
         }
@@ -127,7 +123,6 @@ class SharedStorageManager {
         do {
             let decoder = JSONDecoder()
             let metricData = try decoder.decode(SharedMetricData.self, from: data)
-            print("SharedStorageManager: Loaded cached metric data for \(metricType): \(metricData.value)")
             return metricData
         } catch {
             print("SharedStorageManager: Failed to decode metric data: \(error)")

@@ -44,9 +44,6 @@ struct WidgetPercentLabel: View {
     var body: some View {
             let percent = (maximum == 0) ? 0 : min(max(value / maximum, 0), 1)
             
-            // Debug: Print the values being used
-            let _ = print("WidgetPercentLabel DEBUG: value=\(value), maximum=\(maximum), calculated percent=\(percent)")
-            
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Rectangle()

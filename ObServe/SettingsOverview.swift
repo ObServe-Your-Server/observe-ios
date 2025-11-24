@@ -15,9 +15,14 @@ struct SettingsOverview: View {
     @State private var showPollingIntervalPicker = false
     @State private var showRestartAlert = false
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var authManager: AuthenticationManager
 
     // Use SettingsManager instead of local state
     @ObservedObject private var settings = SettingsManager.shared
+
+    @Binding var serverRoute: ServerRoute?
+    @Binding var alertsRoute: AlertsRoute?
+    @Binding var accountRoute: AccountRoute?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -147,12 +152,31 @@ struct SettingsOverview: View {
                 .coordinateSpace(name: "scroll")
             }
             .background(Color.black.ignoresSafeArea())
+            .offset(x: showBurgerMenu ? -240 : 0)
+            .animation(.spring(response: 0.28, dampingFraction: 0.9), value: showBurgerMenu)
 
             if showBurgerMenu {
                 BurgerMenu(
                     onDismiss: { showBurgerMenu = false },
-                    onOverView: { dismiss() },
-                    onSettings: { showBurgerMenu = false }
+                    onDashboard: { dismiss() },
+                    onServer: {
+                        showBurgerMenu = false
+                        serverRoute = .init()
+                    },
+                    onAlerts: {
+                        showBurgerMenu = false
+                        alertsRoute = .init()
+                    },
+                    onAccount: {
+                        showBurgerMenu = false
+                        accountRoute = .init()
+                    },
+                    onSettings: { showBurgerMenu = false },
+                    onLogout: {
+                        showBurgerMenu = false
+                        authManager.logout()
+                    },
+                    selectedSection: .settings
                 )
             }
         }
@@ -290,9 +314,4 @@ public struct SettingRow: View {
 private struct SettingsScrollPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
-#Preview {
-    SettingsOverview()
-        .background(Color.black)
 }

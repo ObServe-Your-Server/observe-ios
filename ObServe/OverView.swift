@@ -25,6 +25,11 @@ struct OverView: View {
 
     @State private var selectedServer: ServerModuleItem?
     @State private var settingsRoute: SettingsRoute?
+    @State private var accountRoute: AccountRoute?
+    @State private var serverRoute: ServerRoute?
+    @State private var alertsRoute: AlertsRoute?
+
+    @EnvironmentObject var authManager: AuthenticationManager
 
     var filteredServers: [ServerModuleItem] {
         switch sortType {
@@ -88,6 +93,8 @@ struct OverView: View {
                     .coordinateSpace(name: "scroll")
                 }
                 .background(Color.black.ignoresSafeArea())
+                .offset(x: showBurgermenu ? -240 : 0)
+                .animation(.spring(response: 0.28, dampingFraction: 0.9), value: showBurgermenu)
 
                 if showAddServer {
                     MachineOnboardingModal(
@@ -105,11 +112,28 @@ struct OverView: View {
                 if showBurgermenu {
                     BurgerMenu(
                         onDismiss: { showBurgermenu = false },
-                        onOverView: { showBurgermenu = false },
+                        onDashboard: { showBurgermenu = false },
+                        onServer: {
+                            showBurgermenu = false
+                            serverRoute = .init()
+                        },
+                        onAlerts: {
+                            showBurgermenu = false
+                            alertsRoute = .init()
+                        },
+                        onAccount: {
+                            showBurgermenu = false
+                            accountRoute = .init()
+                        },
                         onSettings: {
                             showBurgermenu = false
                             settingsRoute = .init()
-                        }
+                        },
+                        onLogout: {
+                            showBurgermenu = false
+                            authManager.logout()
+                        },
+                        selectedSection: .dashboard
                     )
                     .zIndex(4)
                 }
@@ -120,9 +144,40 @@ struct OverView: View {
                     .background(Color.black.ignoresSafeArea())
             }
             .navigationDestination(item: $settingsRoute) { _ in
-                SettingsOverview()
-                    .toolbar(.hidden, for: .navigationBar)
-                    .background(Color.black.ignoresSafeArea())
+                SettingsOverview(
+                    serverRoute: $serverRoute,
+                    alertsRoute: $alertsRoute,
+                    accountRoute: $accountRoute
+                )
+                .toolbar(.hidden, for: .navigationBar)
+                .background(Color.black.ignoresSafeArea())
+            }
+            .navigationDestination(item: $accountRoute) { _ in
+                AccountView(
+                    serverRoute: $serverRoute,
+                    alertsRoute: $alertsRoute,
+                    settingsRoute: $settingsRoute
+                )
+                .toolbar(.hidden, for: .navigationBar)
+                .background(Color.black.ignoresSafeArea())
+            }
+            .navigationDestination(item: $serverRoute) { _ in
+                ServerView(
+                    settingsRoute: $settingsRoute,
+                    alertsRoute: $alertsRoute,
+                    accountRoute: $accountRoute
+                )
+                .toolbar(.hidden, for: .navigationBar)
+                .background(Color.black.ignoresSafeArea())
+            }
+            .navigationDestination(item: $alertsRoute) { _ in
+                AlertsView(
+                    settingsRoute: $settingsRoute,
+                    serverRoute: $serverRoute,
+                    accountRoute: $accountRoute
+                )
+                .toolbar(.hidden, for: .navigationBar)
+                .background(Color.black.ignoresSafeArea())
             }
             .onAppear {
                 syncServersToWidget()
@@ -158,6 +213,18 @@ struct OverView: View {
 }
 
 struct SettingsRoute: Identifiable, Hashable {
+    let id = UUID()
+}
+
+struct AccountRoute: Identifiable, Hashable {
+    let id = UUID()
+}
+
+struct ServerRoute: Identifiable, Hashable {
+    let id = UUID()
+}
+
+struct AlertsRoute: Identifiable, Hashable {
     let id = UUID()
 }
 
