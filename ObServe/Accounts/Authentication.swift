@@ -19,7 +19,11 @@ class AuthenticationManager: ObservableObject {
     private var bearerToken: String { return "Bearer \(accessToken ?? "")" }
 
     private var baseURL: String {
+        #if DEBUG
+        return "http://localhost:42000/v1/user/auth"
+        #else
         return "https://watch-tower.observe.vision/v1/user/auth"
+        #endif
     }
 
     init() {

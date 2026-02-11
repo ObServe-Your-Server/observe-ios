@@ -49,6 +49,8 @@ struct LoginView : View {
                         
                         TextField("", text: $username_or_email)
                             .textFieldStyle(PlainTextFieldStyle())
+                            .textContentType(.username)
+                            .submitLabel(.next)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
                             .padding(.horizontal, 12)
@@ -73,6 +75,8 @@ struct LoginView : View {
 
                         TextField("", text: $email)
                             .textFieldStyle(PlainTextFieldStyle())
+                            .textContentType(.emailAddress)
+                            .submitLabel(forgotPasswordPageOpen ? .done : .next)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
                             .padding(.horizontal, 12)
@@ -99,12 +103,30 @@ struct LoginView : View {
                             if isPasswordVisible {
                                 TextField("", text: $password)
                                     .textFieldStyle(PlainTextFieldStyle())
+                                    .textContentType(signUpPageOpen ? .newPassword : .password)
+                                    .submitLabel(.done)
                                     .foregroundColor(.white)
                                     .font(.system(size: 13))
+                                    .onSubmit {
+                                        if signUpPageOpen {
+                                            authManager.register(username: username_or_email, email: email, password: password, rememberMe: rememberMe)
+                                        } else {
+                                            authManager.login(username_or_email: username_or_email, password: password, rememberMe: rememberMe)
+                                        }
+                                    }
                             } else {
                                 SecureField("", text: $password)
+                                    .textContentType(signUpPageOpen ? .newPassword : .password)
+                                    .submitLabel(.done)
                                     .foregroundColor(.white)
                                     .font(.system(size: 13))
+                                    .onSubmit {
+                                        if signUpPageOpen {
+                                            authManager.register(username: username_or_email, email: email, password: password, rememberMe: rememberMe)
+                                        } else {
+                                            authManager.login(username_or_email: username_or_email, password: password, rememberMe: rememberMe)
+                                        }
+                                    }
                             }
                             
                             Button(action: {
