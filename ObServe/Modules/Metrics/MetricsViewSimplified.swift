@@ -43,25 +43,17 @@ struct MetricsViewSimplified: View {
             
             HStack(spacing: 16) {
                 UpdateLabel(
-                    label: "PING",
-                    value: metricsManager.avgPing,
-                    unit: "MS",
+                    label: "IN",
+                    value: metricsManager.avgNetworkIn,
+                    unit: "kB/s",
                     decimalPlaces: 0
                 )
-                HStack(spacing: 8) {
-                    UpdateLabel(
-                        label: "IN",
-                        value: metricsManager.avgNetworkIn,
-                        unit: "kB/s",
-                        decimalPlaces: 0
-                    )
-                    UpdateLabel(
-                        label: "OUT",
-                        value: metricsManager.avgNetworkOut,
-                        unit: "kB/s",
-                        decimalPlaces: 0
-                    )
-                }
+                UpdateLabel(
+                    label: "OUT",
+                    value: metricsManager.avgNetworkOut,
+                    unit: "kB/s",
+                    decimalPlaces: 0
+                )
             }
         }
         .alert("Metrics Error", isPresented: .constant(metricsManager.error != nil)) {

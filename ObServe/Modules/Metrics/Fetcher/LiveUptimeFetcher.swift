@@ -10,8 +10,8 @@ class LiveUptimeFetcher: BaseLiveFetcher {
     private var lastFetchedUptime: TimeInterval?
     private let syncInterval: TimeInterval = 300 // 5 minutes
 
-    override init(ip: String, port: String, apiKey: String, interval: TimeInterval = 5, windowSize: Int = 60) {
-        super.init(ip: ip, port: port, apiKey: apiKey, interval: interval, windowSize: windowSize)
+    override init(name: String = "UptimeFetcher", ip: String, port: String, apiKey: String, interval: TimeInterval = 5, windowSize: Int = 60) {
+        super.init(name: name, ip: ip, port: port, apiKey: apiKey, interval: interval, windowSize: windowSize)
     }
 
     override func start() {

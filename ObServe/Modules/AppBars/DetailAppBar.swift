@@ -38,75 +38,46 @@ struct DetailAppBar: View {
     }
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(serverName.uppercased())
-                    .foregroundColor(.white)
-
-                if showIntervalSelector {
-                    Button {
-                        let all = Interval.allCases
-                        if let i = all.firstIndex(of: selectedInterval) {
-                            selectedInterval = all[(i + 1) % all.count]
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(.white)
-
-                            Text("INTERVALL: \(selectedInterval.label)")
-                                .font(.system(size: 11))
-                                .foregroundColor(.white)
-                        }
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 3)
-                        .background(Color("ButtonBackground"))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 0)
-                                .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                        )
-                    }
-                }
-                else if showProgressIndicator {
-                    progressIndicatorView
-                }
-            }
-
-            Spacer()
-
-            Button(action: onClose) {
-                ZStack {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 30, weight: .light))
-                        .foregroundColor(.white)
-                }
-                .frame(width: 40, height: 40)
-                .background(Color("ButtonBackground"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 0)
-                        .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                )
+        BaseAppBar(
+            title: serverName.uppercased(),
+            contentHasScrolled: $contentHasScrolled,
+            rightButtonType: .close,
+            rightButtonAction: onClose
+        ) {
+            if showIntervalSelector {
+                intervalSelectorButton
+            } else if showProgressIndicator {
+                progressIndicatorView
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
-        .padding(.bottom, 10)
-        .background(Color.black)
-        .overlay(
-            VStack(spacing: 0) {
-                Spacer()
-                if contentHasScrolled {
-                    Rectangle()
-                        .fill(Color.white.opacity(0.3))
-                        .frame(height: 1)
-                        .transition(.opacity)
-                        .animation(.easeInOut(duration: 0.2), value: contentHasScrolled)
-                }
-            }
-        )
     }
-    
+
+    private var intervalSelectorButton: some View {
+        Button {
+            let all = Interval.allCases
+            if let i = all.firstIndex(of: selectedInterval) {
+                selectedInterval = all[(i + 1) % all.count]
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "clock")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.white)
+
+                Text("INTERVALL: \(selectedInterval.label)")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 5)
+            .padding(.vertical, 3)
+            .background(Color("ButtonBackground"))
+            .overlay(
+                RoundedRectangle(cornerRadius: 0)
+                    .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+            )
+        }
+    }
+
     private var progressIndicatorView: some View {
         HStack(spacing: 4) {
             ForEach(0..<totalSteps, id: \.self) { index in

@@ -87,27 +87,11 @@ struct ServerModule: View {
                     PowerButton(isConnected: $isConnected)
                         .frame(maxWidth: .infinity)
                         .disabled(isCheckingHealth)
-                    if !isConnected {
-                        RegularButton(Label: "MANAGE", action: {
-                            showManageView = true
-                        }, color: "ObServeGray")
-                        .frame(maxWidth: .infinity)
-                        .disabled(isCheckingHealth)
-                    } else {
-                        CoolButton(
-                            action: {
-                                // Simulate a restart action
-                                try? await Task.sleep(nanoseconds: 2_000_000_000)
-                            },
-                            text: "RESTART",
-                            color: "ObServeBlue",
-                            requiresConfirmation: SettingsManager.shared.safeModeEnabled,
-                            confirmationTitle: "Restart Server",
-                            confirmationMessage: "Are you sure you want to restart \(server.name)? This may temporarily interrupt monitoring."
-                        )
-                        .frame(maxWidth: .infinity)
-                        .disabled(isCheckingHealth)
-                    }
+                    RegularButton(Label: "MANAGE", action: {
+                        showManageView = true
+                    }, color: "ObServeGray")
+                    .frame(maxWidth: .infinity)
+                    .disabled(isCheckingHealth)
                 }
             }
             .padding(.horizontal, 20)

@@ -15,8 +15,10 @@ class BaseLiveFetcher: ObservableObject {
     internal var interval: TimeInterval
     internal let windowSize: Int
     internal let networkService: NetworkService
+    internal let name: String
 
-    init(ip: String, port: String, apiKey: String, interval: TimeInterval = 5, windowSize: Int = 60) {
+    init(name: String, ip: String, port: String, apiKey: String, interval: TimeInterval = 5, windowSize: Int = 60) {
+        self.name = name
         self.interval = TimeInterval(SettingsManager.shared.pollingIntervalSeconds)
         self.windowSize = windowSize
         self.networkService = NetworkService(ip: ip, port: port, apiKey: apiKey)
@@ -25,7 +27,7 @@ class BaseLiveFetcher: ObservableObject {
     func start() {
         self.interval = TimeInterval(SettingsManager.shared.pollingIntervalSeconds)
 
-        print("BaseLiveFetcher: Starting with interval \(interval) seconds")
+        print("\(name): Starting with interval \(interval) seconds")
         fetch()
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             self?.fetch()
@@ -38,10 +40,10 @@ class BaseLiveFetcher: ObservableObject {
     }
 
     func restart() {
-        print("BaseLiveFetcher: Restarting (old interval: \(interval))")
+        print("\(name): Restarting (old interval: \(interval))")
         stop()
         start()
-        print("BaseLiveFetcher: Restarted (new interval: \(interval))")
+        print("\(name): Restarted (new interval: \(interval))")
     }
     
     // Override in subclasses
