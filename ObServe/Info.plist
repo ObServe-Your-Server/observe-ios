@@ -22,5 +22,18 @@
 		<string>IBMPlexSans-Italic-VariableFont_wdth,wght.ttf</string>
 		<string>IBMPlexSans-VariableFont_wdth,wght.ttf</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.dev.ObServe.oauth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>observe</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

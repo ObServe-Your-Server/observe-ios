@@ -101,7 +101,6 @@ struct MachineOnboardingModal: View {
                 // Navigation
                 navigationView
             }
-            .frame(maxWidth: 600, maxHeight: 700)
             .background(Color.black)
         }
     }

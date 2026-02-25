@@ -28,7 +28,8 @@ struct ManageServerView: View {
     @State private var connectionStatus: ConnectionStatus = .idle
     @State private var contentHasScrolled = false
     @State private var dummyInterval: DetailAppBar.Interval = .s1
-    @State private var deleteBoolean: Bool = false
+    @State private var isApiKeyEditable = false
+    @State private var showResetApiKeyConfirmation = false
     @State private var showDeleteConfirmation: Bool = false
 
     init(server: ServerModuleItem, onDismiss: @escaping () -> Void, onSave: @escaping (ServerModuleItem) -> Void, onDelete: (() -> Void)? = nil) {
@@ -46,14 +47,13 @@ struct ManageServerView: View {
         // Find matching machine type (case-insensitive)
         let matchedType = MachineType.allCases.first(where: { $0.rawValue.uppercased() == server.type.uppercased() })
         _selectedMachineType = State(initialValue: matchedType)
+    }
 
-        // Debug logging
-        if matchedType == nil {
-            print("ManageServerView: Could not find MachineType for", server.type)
-            print("   Available types:", MachineType.allCases.map { $0.rawValue })
-        } else {
-            print("ManageServerView: Successfully matched type", server.type, "to", matchedType!.rawValue)
-        }
+    private var censoredApiKey: String {
+        guard apiKey.count > 3 else { return String(repeating: "*", count: apiKey.count) }
+        let prefix = String(apiKey.prefix(3))
+        let stars = String(repeating: "*", count: max(apiKey.count - 3, 8))
+        return prefix + stars
     }
 
     var body: some View {
@@ -86,11 +86,8 @@ struct ManageServerView: View {
                 // Navigation
                 if currentStep != .overview {
                     navigationView
-                } else {
-                    saveButtonView
                 }
             }
-            .frame(maxWidth: 600, maxHeight: 700)
             .background(Color.black)
         }
         .confirmationDialog("Delete Server", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
@@ -100,6 +97,14 @@ struct ManageServerView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Are you sure you want to delete \(server.name)? This action cannot be undone.")
+        }
+        .confirmationDialog("Reset API Key", isPresented: $showResetApiKeyConfirmation, titleVisibility: .visible) {
+            Button("Reset API Key", role: .destructive) {
+                resetApiKey()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will clear the current API key. You will need to enter a new one and save changes.")
         }
     }
 
@@ -139,26 +144,31 @@ struct ManageServerView: View {
                 Spacer().frame(height: 5)
 
                 // Server info and icon section
-                HStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    // LEFT COLUMN: NAME (top) and TYPE (bottom)
                     VStack(alignment: .leading, spacing: 16) {
-                        // Type label
+                        infoLabel(label: "NAME", value: name.isEmpty ? "My \(selectedMachineType?.rawValue ?? "Machine")" : name)
                         infoLabel(label: "TYPE", value: selectedMachineType?.rawValue ?? "Unknown")
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    VStack(alignment: .leading, spacing: 16) {
-                        // Name label
-                        infoLabel(label: "NAME", value: name.isEmpty ? "My \(selectedMachineType?.rawValue ?? "Machine")" : name)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    // Server icon
+                    // RIGHT COLUMN: Icon with decorative elements
                     VStack {
                         if let machineType = selectedMachineType {
-                            Image(machineType.imageName(isSelected: true))
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: 96, maxHeight: 96)
+                            ZStack {
+                                // Base layer: "off" state
+                                Image(machineType.imageName(isSelected: false))
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(maxWidth: 96, maxHeight: 96)
+
+                                // Overlay layer: "on" state (always visible since this is static)
+                                Image(machineType.imageName(isSelected: true))
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(maxWidth: 96, maxHeight: 96)
+                                    .opacity(1.0)
+                            }
                         } else {
                             // Fallback icon if machine type is not found
                             Image(systemName: "server.rack")
@@ -169,6 +179,9 @@ struct ManageServerView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
+                    .overlay(RoundedRectangle(cornerRadius: 0)
+                        .stroke(Color(red: 0x47/255, green: 0x47/255, blue: 0x4A/255)))
+                    .overlay(FocusCorners(color: Color.white, size: 8, thickness: 1))
                 }
                 RegularButton(Label: "CHANGE", action: {
                     currentStep = .editMachineType
@@ -259,20 +272,26 @@ struct ManageServerView: View {
                             .frame(height: 1)
                             .frame(maxWidth: .infinity)
 
-                        TextField("goofy-ahh-key", text: $apiKey)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .autocapitalization(.none)
-                            .disableAutocorrection(true)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .frame(width: 120)
-                            .background(Color.black)
-                            .foregroundColor(.white)
-                            .font(.system(size: 12))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 0)
-                                    .stroke(Color(red: 65/255, green: 65/255, blue: 65/255), lineWidth: 1)
-                            )
+                        Group {
+                            if isApiKeyEditable || apiKey.isEmpty {
+                                TextField("Enter new API key", text: $apiKey)
+                                    .textFieldStyle(PlainTextFieldStyle())
+                                    .autocapitalization(.none)
+                                    .disableAutocorrection(true)
+                            } else {
+                                Text(censoredApiKey)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .frame(width: 120, alignment: .leading)
+                        .background(Color.black)
+                        .foregroundColor(.white)
+                        .font(.system(size: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 0)
+                                .stroke(Color(red: 65/255, green: 65/255, blue: 65/255), lineWidth: 1)
+                        )
                     }
                 }
                 .padding(.horizontal, 15)
@@ -300,23 +319,54 @@ struct ManageServerView: View {
                 .padding(.leading, 10)
             }
 
-            VStack(spacing: 20) {
-                SettingRow(
-                    title: "DO YOU WANT TO DELETE THIS SERVER?",
-                    binding: $deleteBoolean
-                )
-                RegularButton(Label: "DELETE", action: {
-                    // Check if Safe Mode is enabled
+            // UNSAFE ZONE Section
+            VStack(spacing: 16) {
+                // Reset API Key Button
+                RegularButton(Label: "RESET API KEY", action: {
+                    if SettingsManager.shared.safeModeEnabled {
+                        showResetApiKeyConfirmation = true
+                    } else {
+                        resetApiKey()
+                    }
+                }, color: "ObServeGray")
+
+                // Delete Server Button
+                RegularButton(Label: "DELETE SERVER", action: {
                     if SettingsManager.shared.safeModeEnabled {
                         showDeleteConfirmation = true
                     } else {
                         deleteServer()
                     }
-                }, color: "ObServeRed", disabled: !deleteBoolean)
-                .frame(maxWidth: .infinity)
+                }, color: "ObServeRed")
             }
-            .padding(.horizontal, 15)
-            .padding(.top, 20)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 20)
+            .background(
+                RoundedRectangle(cornerRadius: 0)
+                    .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+            )
+            .overlay(alignment: .topLeading) {
+                HStack {
+                    Text("UNSAFE ZONE")
+                        .foregroundColor(.white)
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .padding(10)
+                .background(Color.black)
+                .padding(.top, -20)
+                .padding(.leading, 10)
+            }
+
+            // Save and Discard Buttons
+            HStack(spacing: 16) {
+                RegularButton(Label: "DISCARD", action: {
+                    onDismiss()
+                }, color: "ObServeGray")
+
+                RegularButton(Label: "SAVE", action: {
+                    saveChanges()
+                }, color: "ObServeGreen")
+            }
 
             Spacer()
         }
@@ -421,6 +471,28 @@ struct ManageServerView: View {
         }
     }
 
+    private func unsafeZoneOption(title: String, systemImage: String, isDestructive: Bool = false) -> some View {
+        HStack(alignment: .center, spacing: 16) {
+            Image(systemName: systemImage)
+                .font(.system(size: 12))
+                .foregroundColor(isDestructive ? Color("ObServeRed") : .gray)
+                .frame(width: 16)
+
+            Text(title)
+                .font(.system(size: 11))
+                .foregroundColor(isDestructive ? Color("ObServeRed") : .gray)
+                .lineLimit(1)
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12))
+                .foregroundColor(.gray)
+        }
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
+    }
+
     // MARK: - Navigation
     private var navigationView: some View {
         HStack(spacing: 16) {
@@ -453,7 +525,11 @@ struct ManageServerView: View {
 
     private var saveButtonView: some View {
         HStack(spacing: 16) {
-            RegularButton(Label: "SAVE CHANGES", action: {
+            RegularButton(Label: "DISCARD", action: {
+                onDismiss()
+            }, color: "ObServeGray")
+
+            RegularButton(Label: "SAVE", action: {
                 saveChanges()
             }, color: "ObServeGreen")
         }
@@ -518,6 +594,12 @@ struct ManageServerView: View {
     private func deleteServer() {
         onDelete?()
         onDismiss()
+    }
+
+    private func resetApiKey() {
+        apiKey = ""
+        isApiKeyEditable = true
+        Haptics.notification(.success)
     }
 }
 

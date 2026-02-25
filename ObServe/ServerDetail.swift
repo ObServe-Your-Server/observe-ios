@@ -49,7 +49,7 @@ struct ServerDetailView: View {
             }
             .background(Color.black.edgesIgnoringSafeArea(.all))
         }
-        .sheet(isPresented: $showManageView) {
+        .fullScreenCover(isPresented: $showManageView) {
             ManageServerView(
                 server: server,
                 onDismiss: {

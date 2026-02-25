@@ -48,7 +48,7 @@ struct ObServeApp: App {
                         .environment(\.font, .custom("IBM Plex Sans", size: 17))
                         .preferredColorScheme(.dark)
                 } else {
-                    LoginView()
+                    LoginViewOAuth()
                         .environmentObject(authManager)
                         .environment(\.font, .custom("IBM Plex Sans", size: 17))
                         .preferredColorScheme(.dark)
@@ -60,6 +60,11 @@ struct ObServeApp: App {
                 authManager.validateAndRefreshIfNeeded { success in
                     isCheckingAuth = false
                 }
+            }
+            .onOpenURL { url in
+                // OAuth callback handling
+                print("Received URL: \(url)")
+                // ASWebAuthenticationSession handles this automatically
             }
             .onChange(of: scenePhase) { oldPhase, newPhase in
                 // Manage refresh timer based on app state

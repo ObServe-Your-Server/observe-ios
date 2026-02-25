@@ -116,7 +116,7 @@ struct ServerModule: View {
             }
         }
         .padding(.vertical, 20)
-        .sheet(isPresented: $showManageView) {
+        .fullScreenCover(isPresented: $showManageView) {
             ManageServerView(
                 server: server,
                 onDismiss: {
