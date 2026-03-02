@@ -13,9 +13,17 @@ struct AboutObServeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            AboutAppBar(
+            AppBar(
+                title: "ABOUT ObServe",
                 contentHasScrolled: $contentHasScrolled,
-                onClose: { dismiss() }
+                onClose: { dismiss() },
+                secondaryIcon: "arrow.up.right",
+                secondaryLabel: "WEBSITE",
+                secondaryAction: {
+                    if let url = URL(string: "https://observe.vision") {
+                        UIApplication.shared.open(url)
+                    }
+                }
             )
 
             ScrollView {
@@ -73,10 +81,10 @@ struct AboutObServeView: View {
     private var scrollDetection: some View {
         GeometryReader { proxy in
             let offset = proxy.frame(in: .named("scroll")).minY
-            Color.clear.preference(key: AboutScrollPreferenceKey.self, value: offset)
+            Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: offset)
         }
         .frame(height: 0)
-        .onPreferenceChange(AboutScrollPreferenceKey.self) { value in
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
             withAnimation(.easeInOut(duration: 0.12)) {
                 contentHasScrolled = value < -0.5
             }
@@ -93,11 +101,6 @@ struct AboutObServeView: View {
                 .frame(height: 1)
         }
     }
-}
-
-private struct AboutScrollPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
 #Preview {

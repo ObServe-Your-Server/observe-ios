@@ -22,9 +22,16 @@ struct ResetObServeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ResetAppBar(
+            AppBar(
+                title: "RESET DATA",
                 contentHasScrolled: $contentHasScrolled,
-                onClose: { dismiss() }
+                onClose: {
+                    Haptics.click()
+                    dismiss()
+                },
+                secondaryIcon: "xmark",
+                secondaryLabel: "U SURE?",
+                secondaryAction: {}
             )
 
             ScrollView {
@@ -185,10 +192,10 @@ struct ResetObServeView: View {
     private var scrollDetection: some View {
         GeometryReader { proxy in
             let offset = proxy.frame(in: .named("scroll")).minY
-            Color.clear.preference(key: ResetScrollPreferenceKey.self, value: offset)
+            Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: offset)
         }
         .frame(height: 0)
-        .onPreferenceChange(ResetScrollPreferenceKey.self) { value in
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
             withAnimation(.easeInOut(duration: 0.12)) {
                 contentHasScrolled = value < -0.5
             }
@@ -233,11 +240,6 @@ struct ResetObServeView: View {
         }
         .disabled(disabled)
     }
-}
-
-private struct ResetScrollPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
 #Preview {

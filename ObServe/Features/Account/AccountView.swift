@@ -21,10 +21,12 @@ struct AccountView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                AccountAppBar(
+                AppBar(
+                    title: "ACCOUNT",
                     contentHasScrolled: $contentHasScrolled,
                     showBurgerMenu: $showBurgerMenu,
-                    usernameText: "ACCOUNT"
+                    secondaryIcon: "person.crop.circle",
+                    secondaryLabel: "ACCOUNT"
                 )
 
                 ScrollView {
@@ -86,10 +88,10 @@ struct AccountView: View {
     private var scrollDetection: some View {
         GeometryReader { proxy in
             let offset = proxy.frame(in: .named("scroll")).minY
-            Color.clear.preference(key: AccountScrollPreferenceKey.self, value: offset)
+            Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: offset)
         }
         .frame(height: 0)
-        .onPreferenceChange(AccountScrollPreferenceKey.self) { value in
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
             withAnimation(.easeInOut(duration: 0.12)) {
                 contentHasScrolled = value < -0.5
             }
@@ -109,7 +111,3 @@ struct AccountView: View {
     }
 }
 
-private struct AccountScrollPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}

@@ -338,9 +338,9 @@ struct LargeWidgetView: View {
 
     // Server icon based on type and status
     private var serverIconName: String {
-        let machineType = WidgetMachineType(fromString: entry.machineType) ?? .server
+        let machineType = MachineType(fromString: entry.machineType) ?? .server
         let isOnline = entry.isConnected && entry.isHealthy
-        return machineType.imageName(isOnline: isOnline)
+        return machineType.imageName(isSelected: isOnline)
     }
 
     var body: some View {

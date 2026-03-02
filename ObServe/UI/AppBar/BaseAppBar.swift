@@ -7,17 +7,18 @@
 
 import SwiftUI
 
+/// The type of right-side button displayed in the app bar.
+enum AppBarButtonType {
+    case hamburgerMenu
+    case close
+}
+
 struct BaseAppBar<SecondaryContent: View>: View {
     let title: String
     @Binding var contentHasScrolled: Bool
-    let rightButtonType: RightButtonType
+    let rightButtonType: AppBarButtonType
     let rightButtonAction: () -> Void
     @ViewBuilder let secondaryContent: () -> SecondaryContent
-
-    enum RightButtonType {
-        case hamburgerMenu
-        case close
-    }
 
     var body: some View {
         HStack {
@@ -99,7 +100,7 @@ extension BaseAppBar where SecondaryContent == EmptyView {
     init(
         title: String,
         contentHasScrolled: Binding<Bool>,
-        rightButtonType: RightButtonType,
+        rightButtonType: AppBarButtonType,
         rightButtonAction: @escaping () -> Void
     ) {
         self.title = title

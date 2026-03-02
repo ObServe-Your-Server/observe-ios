@@ -27,10 +27,12 @@ struct SettingsOverview: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                SettingsAppBar(
+                AppBar(
+                    title: "SETTINGS",
                     contentHasScrolled: $contentHasScrolled,
                     showBurgerMenu: $showBurgerMenu,
-                    versionText: "Version 1.0.0"
+                    secondaryIcon: "arrow.up.right",
+                    secondaryLabel: "Version 1.0.0"
                 )
 
                 ScrollView {
@@ -214,10 +216,10 @@ struct SettingsOverview: View {
     private var scrollDetection: some View {
         GeometryReader { proxy in
             let offset = proxy.frame(in: .named("scroll")).minY
-            Color.clear.preference(key: SettingsScrollPreferenceKey.self, value: offset)
+            Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: offset)
         }
         .frame(height: 0)
-        .onPreferenceChange(SettingsScrollPreferenceKey.self) { value in
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
             withAnimation(.easeInOut(duration: 0.12)) {
                 contentHasScrolled = value < -0.5
             }
@@ -311,7 +313,3 @@ public struct SettingRow: View {
     }
 }
 
-private struct SettingsScrollPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}

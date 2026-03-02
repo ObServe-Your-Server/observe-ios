@@ -257,37 +257,17 @@ struct OverView: View {
     var scrollDetection: some View {
         GeometryReader { proxy in
             let offset = proxy.frame(in: .named("scroll")).minY
-            Color.clear.preference(key: ScrollPreferenceKey.self, value: offset)
+            Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: offset)
         }
         .frame(height: 0)
-        .onPreferenceChange(ScrollPreferenceKey.self) { value in
-            withAnimation(.easeInOut(duration: 0.1)) {
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+            withAnimation(.easeInOut(duration: 0.12)) {
                 contentHasScrolled = value < -0.5
             }
         }
     }
 }
 
-struct SettingsRoute: Identifiable, Hashable {
-    let id = UUID()
-}
-
-struct AccountRoute: Identifiable, Hashable {
-    let id = UUID()
-}
-
-struct ServerRoute: Identifiable, Hashable {
-    let id = UUID()
-}
-
-struct AlertsRoute: Identifiable, Hashable {
-    let id = UUID()
-}
-
-struct ScrollPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
 
 #Preview {
     OverView()

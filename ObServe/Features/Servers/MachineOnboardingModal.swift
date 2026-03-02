@@ -7,50 +7,6 @@
 
 import SwiftUI
 
-enum MachineType: String, CaseIterable {
-    case server = "SERVER"
-    case singleBoard = "SINGLE BOARD"
-    case cube = "CUBE"
-    case tower = "TOWER"
-    case vm = "VM"
-    case laptop = "LAPTOP"
-
-    var icon: String {
-        switch self {
-        case .server: return "server.rack"
-        case .singleBoard: return "cpu"
-        case .cube: return "cube"
-        case .tower: return "desktopcomputer"
-        case .vm: return "square.3.layers.3d"
-        case .laptop: return "laptopcomputer"
-        }
-    }
-
-    func imageName(isSelected: Bool) -> String {
-        let suffix = isSelected ? "_on" : "_off"
-        switch self {
-        case .server: return "server" + suffix
-        case .singleBoard: return "singleBoard" + suffix
-        case .cube: return "cube" + suffix
-        case .tower: return "tower" + suffix
-        case .vm: return "vm" + suffix
-        case .laptop: return "laptop" + suffix
-        }
-    }
-
-    /// Map to the backend MachineType enum values
-    var backendType: String {
-        switch self {
-        case .server: return "SERVER"
-        case .singleBoard: return "DESKTOP"
-        case .cube: return "DESKTOP"
-        case .tower: return "DESKTOP"
-        case .vm: return "VIRTUAL_MACHINE"
-        case .laptop: return "LAPTOP"
-        }
-    }
-}
-
 enum OnboardingStep: Int, CaseIterable {
     case machineType = 0
     case naming = 1
@@ -85,7 +41,6 @@ struct MachineOnboardingModal: View {
     @State private var createdMachine: MachineEntityResponse?
     @State private var errorMessage = ""
     @State private var contentHasScrolled = false
-    @State private var dummyInterval: DetailAppBar.Interval = .s1
 
     var body: some View {
         ZStack {
@@ -94,12 +49,9 @@ struct MachineOnboardingModal: View {
 
             VStack(spacing: 0) {
                 // Header
-                DetailAppBar(
+                AppBar(
                     serverName: currentStep.title,
                     contentHasScrolled: $contentHasScrolled,
-                    selectedInterval: $dummyInterval,
-                    showIntervalSelector: false,
-                    showProgressIndicator: true,
                     currentStep: currentStep.rawValue,
                     totalSteps: OnboardingStep.allCases.count,
                     onClose: onDismiss

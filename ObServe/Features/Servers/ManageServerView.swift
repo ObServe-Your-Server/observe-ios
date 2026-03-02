@@ -23,7 +23,6 @@ struct ManageServerView: View {
     @State private var selectedMachineType: MachineType?
     @State private var name: String = ""
     @State private var contentHasScrolled = false
-    @State private var dummyInterval: DetailAppBar.Interval = .s1
     @State private var showDeleteConfirmation: Bool = false
     @State private var showRefreshApiKeyConfirmation = false
     @State private var refreshedApiKey: String?
@@ -46,14 +45,9 @@ struct ManageServerView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                DetailAppBar(
+                AppBar(
                     serverName: headerTitle,
                     contentHasScrolled: $contentHasScrolled,
-                    selectedInterval: $dummyInterval,
-                    showIntervalSelector: false,
-                    showProgressIndicator: false,
-                    currentStep: 0,
-                    totalSteps: 1,
                     onClose: {
                         if currentStep != .overview {
                             currentStep = .overview
