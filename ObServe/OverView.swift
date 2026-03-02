@@ -70,11 +70,7 @@ struct OverView: View {
                                         ServerModule(
                                             server: server,
                                             onDelete: {
-                                                withAnimation {
-                                                    modelContext.delete(server)
-                                                    try? modelContext.save()
-                                                    syncServersToWidget()
-                                                }
+                                                deleteServer(server)
                                             }
                                         )
                                         .contentShape(Rectangle())
@@ -180,10 +176,70 @@ struct OverView: View {
                 .background(Color.black.ignoresSafeArea())
             }
             .onAppear {
+                syncMachinesFromBackend()
                 syncServersToWidget()
             }
             .onChange(of: servers.count) { oldValue, newValue in
                 syncServersToWidget()
+            }
+        }
+    }
+
+    // MARK: - Backend Sync
+
+    private func syncMachinesFromBackend() {
+        WatchTowerAPI.shared.fetchMachines { [self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let remoteMachines):
+                    let existingUUIDs = Set(servers.compactMap { $0.machineUUID })
+
+                    for remote in remoteMachines {
+                        guard let uuid = UUID(uuidString: remote.uuid) else { continue }
+
+                        if !existingUUIDs.contains(uuid) {
+                            // New machine from backend — add locally
+                            let newServer = ServerModuleItem(
+                                machineUUID: uuid,
+                                name: remote.name ?? "Unknown",
+                                type: remote.type ?? "SERVER",
+                                apiKey: remote.apiKey ?? ""
+                            )
+                            newServer.isConnected = true
+                            newServer.isHealthy = true
+                            modelContext.insert(newServer)
+                        }
+                    }
+
+                    try? modelContext.save()
+                    syncServersToWidget()
+
+                case .failure(let error):
+                    print("OverView: Failed to sync machines from backend: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    private func deleteServer(_ server: ServerModuleItem) {
+        WatchTowerAPI.shared.deleteMachine(uuid: server.machineUUID) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    withAnimation {
+                        modelContext.delete(server)
+                        try? modelContext.save()
+                        syncServersToWidget()
+                    }
+                case .failure(let error):
+                    print("OverView: Failed to delete machine from backend: \(error.localizedDescription)")
+                    // Still delete locally
+                    withAnimation {
+                        modelContext.delete(server)
+                        try? modelContext.save()
+                        syncServersToWidget()
+                    }
+                }
             }
         }
     }

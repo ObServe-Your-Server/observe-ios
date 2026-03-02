@@ -9,31 +9,61 @@ import SwiftUI
 
 struct NetworkMetricsView: View {
     @ObservedObject var metricsManager: MetricsManager
-    
+
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 16) {
                 Spacer().frame(height: 12)
-                
-                // Network metrics content
-                HStack(spacing: 60) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("DOWN | UP")
-                            .foregroundColor(Color.gray)
-                            .font(.system(size: 12, weight: .medium))
-                        Text("300 | 38 MB/s")
-                            .foregroundColor(.white)
-                    }
-                    
-                    // PING
+
+                HStack(spacing: 16) {
                     UpdateLabel(
-                        label: "PING",
-                        value: metricsManager.avgPing,
-                        unit: "ms",
+                        label: "IN",
+                        value: metricsManager.avgNetworkIn,
+                        unit: "kB/s",
+                        decimalPlaces: 0
+                    )
+                    UpdateLabel(
+                        label: "OUT",
+                        value: metricsManager.avgNetworkOut,
+                        unit: "kB/s",
                         decimalPlaces: 0
                     )
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+
+                if metricsManager.ping != nil || metricsManager.uploadSpeed != nil || metricsManager.downloadSpeed != nil {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.2))
+                        .frame(height: 1)
+
+                    HStack(spacing: 16) {
+                        if let ping = metricsManager.ping {
+                            UpdateLabel(
+                                label: "PING",
+                                value: ping,
+                                unit: "ms",
+                                decimalPlaces: 1
+                            )
+                        }
+                        if let upload = metricsManager.uploadSpeed {
+                            UpdateLabel(
+                                label: "UPLOAD",
+                                value: upload,
+                                unit: "Mbps",
+                                decimalPlaces: 1
+                            )
+                        }
+                        if let download = metricsManager.downloadSpeed {
+                            UpdateLabel(
+                                label: "DOWNLOAD",
+                                value: download,
+                                unit: "Mbps",
+                                decimalPlaces: 1
+                            )
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
@@ -58,7 +88,7 @@ struct NetworkMetricsView: View {
 }
 
 #Preview {
-    let sampleServer = ServerModuleItem(name: "Test Server", ip: "192.168.1.100", port: "8080", apiKey: "preview-key", type: "Server")
+    let sampleServer = ServerModuleItem(machineUUID: UUID(), name: "Test Server", type: "Server")
     let metricsManager = MetricsManager(server: sampleServer)
 
     NetworkMetricsView(metricsManager: metricsManager)

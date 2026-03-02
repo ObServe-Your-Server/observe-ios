@@ -6,205 +6,281 @@ class MetricsManager: ObservableObject {
     // MARK: - Published Properties
     @Published var error: String?
     @Published var avgCPU: Double = 0.0
+    @Published var cpuTemperature: Double?
     @Published var avgRAM: Double = 0.0
     @Published var maxRAM: Double = 0.0
-    @Published var avgPing: Double = 0.0
     @Published var avgStorage: Double = 0.0
     @Published var maxStorage: Double = 0.0
     @Published var avgNetworkIn: Double = 0.0
     @Published var avgNetworkOut: Double = 0.0
     @Published var uptime: TimeInterval = 0.0
+    @Published var ping: Double?
+    @Published var uploadSpeed: Double?
+    @Published var downloadSpeed: Double?
 
-    // MARK: - Fetchers
-    let cpuFetcher: LiveCpuFetcher
-    let ramFetcher: LiveRamFetcher
-    let pingFetcher: LivePingFetcher
-    let storageFetcher: LiveStorageFetcher
-    let diskTotalSizeFetcher: LiveDiskTotalSizeFetcher
-    let uptimeFetcher: LiveUptimeFetcher
-    let totalRamFetcher: LiveTotalRamFetcher
-    let networkFetcher: LiveNetworkFetcher
+    // MARK: - History for charts
+    @Published var cpuEntries: [MetricEntry] = []
+    @Published var ramEntries: [MetricEntry] = []
+    @Published var storageEntries: [MetricEntry] = []
+    @Published var networkInEntries: [MetricEntry] = []
+    @Published var networkOutEntries: [MetricEntry] = []
 
+    private var pollingTimer: Timer?
+    private var uptimeTickTimer: Timer?
+    private var lastFetchedUptime: TimeInterval?
+    private var lastUptimeFetchDate: Date?
     private var cancellables = Set<AnyCancellable>()
+
     private let serverId: UUID
+    private let machineUUID: UUID
+    private let api = WatchTowerAPI.shared
+    private let windowSize = 60
 
     init(server: ServerModuleItem) {
         self.serverId = server.id
-
-        // Initialize all fetchers
-        self.cpuFetcher = LiveCpuFetcher(name: "CPUFetcher", ip: server.ip, port: server.port, apiKey: server.apiKey)
-        self.ramFetcher = LiveRamFetcher(name: "RAMFetcher", ip: server.ip, port: server.port, apiKey: server.apiKey)
-        self.pingFetcher = LivePingFetcher(name: "PingFetcher", ip: server.ip, port: server.port, apiKey: server.apiKey)
-        self.storageFetcher = LiveStorageFetcher(name: "StorageFetcher", ip: server.ip, port: server.port, apiKey: server.apiKey)
-        self.diskTotalSizeFetcher = LiveDiskTotalSizeFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
-        self.totalRamFetcher = LiveTotalRamFetcher(ip: server.ip, port: server.port, apiKey: server.apiKey)
-        self.uptimeFetcher = LiveUptimeFetcher(name: "UptimeFetcher", ip: server.ip, port: server.port, apiKey: server.apiKey)
-        self.networkFetcher = LiveNetworkFetcher(name: "NetworkFetcher", ip: server.ip, port: server.port, apiKey: server.apiKey)
-
-        setupErrorHandling()
-        setupDataObservers()
+        self.machineUUID = server.machineUUID
         setupPollingIntervalObserver()
     }
-    
+
     // MARK: - Control Methods
+
     func startFetching() {
-        fetchInitialHistoricalData()
-        startLiveFetchers()
-        startStaticFetchers()
+        fetchHistoricalData()
+        startPolling()
+        startUptimeTickTimer()
     }
-    
+
     func stopFetching() {
-        stopLiveFetchers()
+        stopPolling()
+        stopUptimeTickTimer()
     }
-    
-    private func startLiveFetchers() {
-        cpuFetcher.start()
-        ramFetcher.start()
-        pingFetcher.start()
-        storageFetcher.start()
-        networkFetcher.start()
-        uptimeFetcher.start()
+
+    private func startPolling() {
+        let interval = TimeInterval(SettingsManager.shared.pollingIntervalSeconds)
+        fetchLatest()
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.fetchLatest()
+        }
     }
-    
-    private func startStaticFetchers() {
-        diskTotalSizeFetcher.fetchIfNeeded()
-        totalRamFetcher.fetchIfNeeded()
+
+    private func stopPolling() {
+        pollingTimer?.invalidate()
+        pollingTimer = nil
     }
-    
-    private func stopLiveFetchers() {
-        cpuFetcher.stop()
-        ramFetcher.stop()
-        pingFetcher.stop()
-        storageFetcher.stop()
-        networkFetcher.stop()
-        uptimeFetcher.stop()
+
+    private func startUptimeTickTimer() {
+        uptimeTickTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            self?.updateUptimeDisplay()
+        }
     }
-    
-    // MARK: - Error Handling
-    private func setupErrorHandling() {
-        // Monitor each fetcher's error property individually
-        cpuFetcher.$error
-            .compactMap { $0 }
-            .assign(to: \.error, on: self)
-            .store(in: &cancellables)
-        
-        ramFetcher.$error
-            .compactMap { $0 }
-            .assign(to: \.error, on: self)
-            .store(in: &cancellables)
-        
-        pingFetcher.$error
-            .compactMap { $0 }
-            .assign(to: \.error, on: self)
-            .store(in: &cancellables)
-        
-        storageFetcher.$error
-            .compactMap { $0 }
-            .assign(to: \.error, on: self)
-            .store(in: &cancellables)
-        
-        networkFetcher.$error
-            .compactMap { $0 }
-            .assign(to: \.error, on: self)
-            .store(in: &cancellables)
-        
-        uptimeFetcher.$error
-            .compactMap { $0 }
-            .assign(to: \.error, on: self)
-            .store(in: &cancellables)
-        
-        diskTotalSizeFetcher.$error
-            .compactMap { $0 }
-            .assign(to: \.error, on: self)
-            .store(in: &cancellables)
-        
-        totalRamFetcher.$error
-            .compactMap { $0 }
-            .assign(to: \.error, on: self)
-            .store(in: &cancellables)
+
+    private func stopUptimeTickTimer() {
+        uptimeTickTimer?.invalidate()
+        uptimeTickTimer = nil
     }
 
     // MARK: - Polling Interval Observer
 
     private func setupPollingIntervalObserver() {
-        // Observe polling interval changes and restart fetchers
         SettingsManager.shared.$pollingIntervalSeconds
-            .dropFirst() // Skip initial value
+            .dropFirst()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] newInterval in
+            .sink { [weak self] _ in
                 guard let self = self else { return }
-
-                print("MetricsManager: Polling interval changed to \(newInterval) seconds")
-                print("CPU fetcher current interval: \(self.cpuFetcher.interval)")
-                print("Restarting all fetchers...")
-
-                // Restart all live fetchers with new interval
-                self.cpuFetcher.restart()
-                self.ramFetcher.restart()
-                self.pingFetcher.restart()
-                self.storageFetcher.restart()
-                self.networkFetcher.restart()
-                self.uptimeFetcher.restart()
-
-                print("Fetchers restarted with new interval: \(self.cpuFetcher.interval)")
+                self.stopPolling()
+                self.startPolling()
             }
             .store(in: &cancellables)
     }
 
-    // MARK: - Historical Data Initialization
+    // MARK: - Fetch Latest Metric
 
-    /// Fetch historical data on startup to prefill cache with 150 seconds (30 points @ 5s intervals)
-    private func fetchInitialHistoricalData() {
-        // Fetch CPU historical data
-        cpuFetcher.fetchHistoricalData(seconds: 150) { [weak self] entries in
-            guard let self = self else { return }
-
-            // Convert entries to percentage values and sync to widget cache
-            let percentageValues = entries.map { $0.value * 100 }
-
-            // Save as initial history
-            if !percentageValues.isEmpty {
-                let metricData = SharedMetricData(
-                    serverId: self.serverId,
-                    metricType: "CPU",
-                    value: percentageValues.last ?? 0,
-                    timestamp: Date(),
-                    history: Array(percentageValues.suffix(30))  // Keep last 30 values
-                )
-                SharedStorageManager.shared.saveMetricData(metricData)
-            }
-        }
-
-        // Fetch RAM historical data
-        ramFetcher.fetchHistoricalData(seconds: 150) { [weak self] entries in
-            guard let self = self else { return }
-
-            // Convert entries to percentage values (if maxRAM is available)
-            if self.maxRAM > 0 {
-                let percentageValues = entries.map { ($0.value / self.maxRAM) * 100 }
-
-                // Save as initial history
-                if !percentageValues.isEmpty {
-                    let metricData = SharedMetricData(
-                        serverId: self.serverId,
-                        metricType: "RAM",
-                        value: percentageValues.last ?? 0,
-                        timestamp: Date(),
-                        history: Array(percentageValues.suffix(30))  // Keep last 30 values
-                    )
-                    SharedStorageManager.shared.saveMetricData(metricData)
+    private func fetchLatest() {
+        api.fetchLatestMetric(machineUUID: machineUUID) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let metric):
+                    self?.processMetric(metric, appendToHistory: true)
+                    self?.error = nil
+                case .failure(let error):
+                    self?.error = error.localizedDescription
                 }
             }
         }
     }
 
+    // MARK: - Fetch Historical Data
+
+    private func fetchHistoricalData() {
+        api.fetchMetrics(machineUUID: machineUUID, last: 30) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let metrics):
+                    self?.cpuEntries = []
+                    self?.ramEntries = []
+                    self?.storageEntries = []
+                    self?.networkInEntries = []
+                    self?.networkOutEntries = []
+
+                    for metric in metrics {
+                        self?.processMetric(metric, appendToHistory: true)
+                    }
+
+                    // Sync historical CPU data to widget
+                    if let self = self {
+                        let cpuValues = self.cpuEntries.map { $0.value }
+                        if !cpuValues.isEmpty {
+                            let metricData = SharedMetricData(
+                                serverId: self.serverId,
+                                metricType: "CPU",
+                                value: cpuValues.last ?? 0,
+                                timestamp: Date(),
+                                history: Array(cpuValues.suffix(30))
+                            )
+                            SharedStorageManager.shared.saveMetricData(metricData)
+                        }
+
+                        let ramValues = self.ramEntries.map { $0.value }
+                        if !ramValues.isEmpty, self.maxRAM > 0 {
+                            let percentageValues = ramValues.map { ($0 / self.maxRAM) * 100 }
+                            let metricData = SharedMetricData(
+                                serverId: self.serverId,
+                                metricType: "RAM",
+                                value: percentageValues.last ?? 0,
+                                timestamp: Date(),
+                                history: Array(percentageValues.suffix(30))
+                            )
+                            SharedStorageManager.shared.saveMetricData(metricData)
+                        }
+                    }
+                case .failure(let error):
+                    print("Failed to fetch historical metrics: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    // MARK: - Process a Single Metric Response
+
+    private func processMetric(_ metric: MachineMetricResponse, appendToHistory: Bool) {
+        let timestamp = Date().timeIntervalSince1970
+
+        // CPU
+        if let cpuUsage = metric.cpuUsage {
+            avgCPU = cpuUsage / 100.0 // Store as fraction (0.0-1.0) to match existing UI expectations
+            if appendToHistory {
+                cpuEntries.append(MetricEntry(timestamp: timestamp, value: cpuUsage / 100.0))
+                if cpuEntries.count > windowSize {
+                    cpuEntries = Array(cpuEntries.suffix(windowSize))
+                }
+            }
+            syncMetricToWidget(metricType: "CPU", value: cpuUsage)
+        }
+
+        // CPU Temperature
+        cpuTemperature = metric.cpuTemperature
+
+        // RAM (bytes → GB)
+        if let memUsed = metric.memUsed {
+            let usedGB = Double(memUsed) / (1024.0 * 1024.0 * 1024.0)
+            avgRAM = usedGB
+            if appendToHistory {
+                ramEntries.append(MetricEntry(timestamp: timestamp, value: usedGB))
+                if ramEntries.count > windowSize {
+                    ramEntries = Array(ramEntries.suffix(windowSize))
+                }
+            }
+            if maxRAM > 0 {
+                let percentage = (usedGB / maxRAM) * 100
+                syncMetricToWidget(metricType: "RAM", value: percentage)
+            }
+        }
+        if let memTotal = metric.memTotal {
+            maxRAM = Double(memTotal) / (1024.0 * 1024.0 * 1024.0)
+        }
+
+        // Disks (bytes → GB)
+        if let disks = metric.disks {
+            var totalUsed: Int64 = 0
+            var totalSize: Int64 = 0
+            for disk in disks {
+                totalUsed += disk.used ?? 0
+                totalSize += disk.total ?? 0
+            }
+            let usedGB = Double(totalUsed) / (1024.0 * 1024.0 * 1024.0)
+            let totalGB = Double(totalSize) / (1024.0 * 1024.0 * 1024.0)
+            avgStorage = usedGB
+            maxStorage = totalGB
+            if appendToHistory {
+                storageEntries.append(MetricEntry(timestamp: timestamp, value: usedGB))
+                if storageEntries.count > windowSize {
+                    storageEntries = Array(storageEntries.suffix(windowSize))
+                }
+            }
+            if maxStorage > 0 {
+                let percentage = (usedGB / maxStorage) * 100
+                syncMetricToWidget(metricType: "Storage", value: percentage)
+            }
+        }
+
+        // Network (bytes → kB)
+        if let netIn = metric.netBytesIn {
+            let kbValue = round(Double(netIn) / 1024.0)
+            avgNetworkIn = kbValue
+            if appendToHistory {
+                networkInEntries.append(MetricEntry(timestamp: timestamp, value: kbValue))
+                if networkInEntries.count > windowSize {
+                    networkInEntries = Array(networkInEntries.suffix(windowSize))
+                }
+            }
+            syncMetricToWidget(metricType: "Network In", value: kbValue)
+        }
+        if let netOut = metric.netBytesOut {
+            let kbValue = round(Double(netOut) / 1024.0)
+            avgNetworkOut = kbValue
+            if appendToHistory {
+                networkOutEntries.append(MetricEntry(timestamp: timestamp, value: kbValue))
+                if networkOutEntries.count > windowSize {
+                    networkOutEntries = Array(networkOutEntries.suffix(windowSize))
+                }
+            }
+            syncMetricToWidget(metricType: "Network Out", value: kbValue)
+        }
+
+        // Speedtest
+        if let speedtest = metric.speedtest {
+            ping = speedtest.pingMs
+            uploadSpeed = speedtest.uploadMbps
+            downloadSpeed = speedtest.downloadMbps
+        }
+
+        // Uptime
+        if let uptimeSeconds = metric.uptime {
+            uptime = TimeInterval(uptimeSeconds)
+            lastFetchedUptime = TimeInterval(uptimeSeconds)
+            lastUptimeFetchDate = Date()
+
+            SharedStorageManager.shared.updateServerStatus(
+                serverId: serverId,
+                isConnected: true,
+                isHealthy: true,
+                uptime: TimeInterval(uptimeSeconds)
+            )
+        }
+    }
+
+    // MARK: - Uptime Tick
+
+    private func updateUptimeDisplay() {
+        guard let lastFetchDate = lastUptimeFetchDate,
+              let lastFetched = lastFetchedUptime else { return }
+        let elapsed = Date().timeIntervalSince(lastFetchDate)
+        uptime = lastFetched + elapsed
+    }
+
     // MARK: - Widget Sync
 
-    /// Sync metric data to shared storage for widget access
     private func syncMetricToWidget(metricType: String, value: Double) {
-        guard let serverId = self.serverId as UUID? else { return }
-
-        // Load existing history
         let cachedMetric = SharedStorageManager.shared.loadMetricData(
             serverId: serverId,
             metricType: metricType
@@ -227,170 +303,8 @@ class MetricsManager: ObservableObject {
         SharedStorageManager.shared.saveMetricData(metricData)
     }
 
-    // MARK: - Data Observers
-    private func setupDataObservers() {
-        // CPU observer
-        cpuFetcher.$entries
-            .sink { [weak self] entries in
-                guard let self = self else { return }
-                if entries.isEmpty {
-                    self.avgCPU = 0.0
-                } else {
-                    let test = entries.last?.value ?? 0.0
-                    self.avgCPU = test
-                    // TODO: Fixen
-                    //let sum = entries.map(\.value).reduce(0, +)
-                    //let avg = sum / Double(entries.count)
-                    //self.avgCPU = avg
-
-                    // Sync to widget (convert fraction to percentage)
-                    self.syncMetricToWidget(metricType: "CPU", value: test * 100)
-                }
-            }
-            .store(in: &cancellables)
-        
-        // RAM observer
-        ramFetcher.$entries
-            .sink { [weak self] entries in
-                guard let self = self else { return }
-                if entries.isEmpty {
-                    self.avgRAM = 0.0
-                } else {
-                    let test = entries.last?.value ?? 0.0
-                    self.avgRAM = test
-// TODO: Fixen
-//                    let sum = entries.map(\.value).reduce(0, +)
-//                    let avg = sum / Double(entries.count)
-//                    self.avgRAM = avg
-
-                    // Sync percentage to widget (not raw GB value)
-                    if self.maxRAM > 0 {
-                        let percentage = (test / self.maxRAM) * 100
-                        self.syncMetricToWidget(metricType: "RAM", value: percentage)
-                    }
-                }
-            }
-            .store(in: &cancellables)
-        
-        // Total RAM observer
-        totalRamFetcher.$maxRam
-            .sink { [weak self] maxRam in
-                let value = maxRam ?? 0.0
-                self?.maxRAM = value
-            }
-            .store(in: &cancellables)
-        
-        // Ping observer
-        pingFetcher.$entries
-            .sink { [weak self] entries in
-                guard let self = self else { return }
-                if entries.isEmpty {
-                    self.avgPing = 0.0
-                } else {
-                    let sum = entries.map(\.value).reduce(0, +)
-                    let avg = sum / Double(entries.count)
-                    self.avgPing = avg
-
-                    // Sync to widget (use latest value)
-                    if let latestValue = entries.last?.value {
-                        self.syncMetricToWidget(metricType: "Ping", value: latestValue)
-                    }
-                }
-            }
-            .store(in: &cancellables)
-        
-        // Storage observer
-        storageFetcher.$entries
-            .sink { [weak self] entries in
-                guard let self = self else { return }
-                if entries.isEmpty {
-                    self.avgStorage = 0.0
-                } else {
-                    let sum = entries.map(\.value).reduce(0, +)
-                    let avg = sum / Double(entries.count)
-                    self.avgStorage = avg
-
-                    // Sync percentage to widget (not raw GB value)
-                    if let latestValue = entries.last?.value, self.maxStorage > 0 {
-                        let percentage = (latestValue / self.maxStorage) * 100
-                        self.syncMetricToWidget(metricType: "Storage", value: percentage)
-                    }
-                }
-            }
-            .store(in: &cancellables)
-        
-        // Max Storage observer
-        diskTotalSizeFetcher.$maxDiskSize
-            .sink { [weak self] maxDiskSize in
-                let value = maxDiskSize ?? 0.0
-                self?.maxStorage = value
-            }
-            .store(in: &cancellables)
-        
-        // Network IN observer
-        networkFetcher.$inEntries
-            .sink { [weak self] entries in
-                guard let self = self else { return }
-                if entries.isEmpty {
-                    self.avgNetworkIn = 0.0
-                } else {
-                    let test = entries.last?.value ?? 0.0
-
-                    // Round to match display formatting (0 decimal places)
-                    let roundedValue = round(test)
-                    self.avgNetworkIn = roundedValue
-
-                    // TODO: Fixen
-                    //let sum = entries.map(\.value).reduce(0, +)
-                    //let avg = sum / Double(entries.count)
-                    //self.avgNetworkIn = avg
-
-                    // Sync to widget (use same rounded value as main app displays)
-                    self.syncMetricToWidget(metricType: "Network In", value: roundedValue)
-                }
-            }
-            .store(in: &cancellables)
-
-        // Network OUT observer
-        networkFetcher.$outEntries
-            .sink { [weak self] entries in
-                guard let self = self else { return }
-                if entries.isEmpty {
-                    self.avgNetworkOut = 0.0
-                } else {
-                    let test = entries.last?.value ?? 0.0
-                    
-                    // Round to match display formatting (0 decimal places)
-                    let roundedValue = round(test)
-                    self.avgNetworkOut = roundedValue
-                    
-                    // TODO: Fixen
-                    //let avg = sum / Double(entries.count)
-                    //self.avgNetworkOut = avg
-                    
-                    // Sync to widget (use same rounded value as main app displays)
-                    self.syncMetricToWidget(metricType: "Network Out", value: roundedValue)
-                }
-            }
-            .store(in: &cancellables)
-        
-        // Uptime observer
-        uptimeFetcher.$uptime
-            .sink { [weak self] uptime in
-                guard let self = self else { return }
-                let value = uptime ?? 0.0
-                self.uptime = value
-
-                // Sync uptime to widget
-                if let serverId = self.serverId as UUID? {
-                    SharedStorageManager.shared.updateServerStatus(
-                        serverId: serverId,
-                        isConnected: true,
-                        isHealthy: true,
-                        uptime: uptime
-                    )
-                }
-            }
-            .store(in: &cancellables)
+    deinit {
+        stopPolling()
+        stopUptimeTickTimer()
     }
 }

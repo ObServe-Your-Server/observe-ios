@@ -214,7 +214,7 @@ struct ServerManagementModule: View {
 
 #Preview {
     ServerManagementModule(
-        server: ServerModuleItem(name: "Test Server", ip: "192.168.1.100", port: "8080", apiKey: "preview-key", type: "Cube"),
+        server: ServerModuleItem(machineUUID: UUID(), name: "Test Server", type: "Cube"),
         onManage: { print("Manage tapped") }
     )
     .background(Color.black)

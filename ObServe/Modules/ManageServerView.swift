@@ -22,15 +22,11 @@ struct ManageServerView: View {
     @State private var currentStep: ManageStep = .overview
     @State private var selectedMachineType: MachineType?
     @State private var name: String = ""
-    @State private var ip: String = ""
-    @State private var port: String = ""
-    @State private var apiKey: String = ""
-    @State private var connectionStatus: ConnectionStatus = .idle
     @State private var contentHasScrolled = false
     @State private var dummyInterval: DetailAppBar.Interval = .s1
-    @State private var isApiKeyEditable = false
-    @State private var showResetApiKeyConfirmation = false
     @State private var showDeleteConfirmation: Bool = false
+    @State private var showRefreshApiKeyConfirmation = false
+    @State private var refreshedApiKey: String?
 
     init(server: ServerModuleItem, onDismiss: @escaping () -> Void, onSave: @escaping (ServerModuleItem) -> Void, onDelete: (() -> Void)? = nil) {
         self.server = server
@@ -38,22 +34,10 @@ struct ManageServerView: View {
         self.onSave = onSave
         self.onDelete = onDelete
 
-        // Initialize state with server data
         _name = State(initialValue: server.name)
-        _ip = State(initialValue: server.ip)
-        _port = State(initialValue: server.port)
-        _apiKey = State(initialValue: server.apiKey)
 
-        // Find matching machine type (case-insensitive)
         let matchedType = MachineType.allCases.first(where: { $0.rawValue.uppercased() == server.type.uppercased() })
         _selectedMachineType = State(initialValue: matchedType)
-    }
-
-    private var censoredApiKey: String {
-        guard apiKey.count > 3 else { return String(repeating: "*", count: apiKey.count) }
-        let prefix = String(apiKey.prefix(3))
-        let stars = String(repeating: "*", count: max(apiKey.count - 3, 8))
-        return prefix + stars
     }
 
     var body: some View {
@@ -62,7 +46,6 @@ struct ManageServerView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Header
                 DetailAppBar(
                     serverName: headerTitle,
                     contentHasScrolled: $contentHasScrolled,
@@ -80,10 +63,8 @@ struct ManageServerView: View {
                     }
                 )
 
-                // Content
                 contentView
 
-                // Navigation
                 if currentStep != .overview {
                     navigationView
                 }
@@ -98,13 +79,13 @@ struct ManageServerView: View {
         } message: {
             Text("Are you sure you want to delete \(server.name)? This action cannot be undone.")
         }
-        .confirmationDialog("Reset API Key", isPresented: $showResetApiKeyConfirmation, titleVisibility: .visible) {
-            Button("Reset API Key", role: .destructive) {
-                resetApiKey()
+        .confirmationDialog("Refresh API Key", isPresented: $showRefreshApiKeyConfirmation, titleVisibility: .visible) {
+            Button("Refresh API Key", role: .destructive) {
+                refreshApiKey()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will clear the current API key. You will need to enter a new one and save changes.")
+            Text("This will generate a new API key. The old key will stop working. You'll need to update the key on your machine agent.")
         }
     }
 
@@ -143,26 +124,21 @@ struct ManageServerView: View {
             VStack(alignment: .leading, spacing: 16) {
                 Spacer().frame(height: 5)
 
-                // Server info and icon section
                 HStack(spacing: 12) {
-                    // LEFT COLUMN: NAME (top) and TYPE (bottom)
                     VStack(alignment: .leading, spacing: 16) {
                         infoLabel(label: "NAME", value: name.isEmpty ? "My \(selectedMachineType?.rawValue ?? "Machine")" : name)
                         infoLabel(label: "TYPE", value: selectedMachineType?.rawValue ?? "Unknown")
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    // RIGHT COLUMN: Icon with decorative elements
                     VStack {
                         if let machineType = selectedMachineType {
                             ZStack {
-                                // Base layer: "off" state
                                 Image(machineType.imageName(isSelected: false))
                                     .resizable()
                                     .scaledToFit()
                                     .frame(maxWidth: 96, maxHeight: 96)
 
-                                // Overlay layer: "on" state (always visible since this is static)
                                 Image(machineType.imageName(isSelected: true))
                                     .resizable()
                                     .scaledToFit()
@@ -170,7 +146,6 @@ struct ManageServerView: View {
                                     .opacity(1.0)
                             }
                         } else {
-                            // Fallback icon if machine type is not found
                             Image(systemName: "server.rack")
                                 .resizable()
                                 .scaledToFit()
@@ -187,7 +162,6 @@ struct ManageServerView: View {
                     currentStep = .editMachineType
                 }, color: "ObServeGray")
                 .frame(maxWidth: .infinity)
-
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
@@ -207,130 +181,51 @@ struct ManageServerView: View {
                 .padding(.leading, 10)
             }
 
-            VStack(alignment: .center, spacing: 32) {
-                VStack(spacing: 24) {
-                    // IP Address row
+            // API Key display
+            VStack(alignment: .leading, spacing: 12) {
+                if let newKey = refreshedApiKey {
                     HStack(spacing: 0) {
-                        Text("IP")
+                        Text("NEW API-KEY")
                             .foregroundColor(.gray)
                             .font(.system(size: 12, weight: .medium))
-                            .frame(width: 20, alignment: .leading)
+                            .frame(width: 80, alignment: .leading)
 
-                        Rectangle()
-                            .fill(Color(red: 65/255, green: 65/255, blue: 65/255))
-                            .frame(height: 1)
-                            .frame(maxWidth: .infinity)
-
-                        TextField("00.000.000.00", text: $ip)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .frame(width: 120)
-                            .background(Color.black)
+                        Text(newKey)
                             .foregroundColor(.white)
-                            .font(.system(size: 12))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 0)
-                                    .stroke(Color(red: 65/255, green: 65/255, blue: 65/255), lineWidth: 1)
-                            )
+                            .font(.system(size: 12, design: .monospaced))
+                            .textSelection(.enabled)
                     }
 
-                    // Port row
-                    HStack(spacing: 0) {
-                        Text("PORT")
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundColor(.yellow)
+                        Text("Update this key on your machine agent")
                             .foregroundColor(.gray)
-                            .font(.system(size: 12, weight: .medium))
-                            .frame(width: 40, alignment: .leading)
-
-                        Rectangle()
-                            .fill(Color(red: 65/255, green: 65/255, blue: 65/255))
-                            .frame(height: 1)
-                            .frame(maxWidth: .infinity)
-
-                        TextField("0000", text: $port)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .frame(width: 80)
-                            .background(Color.black)
-                            .foregroundColor(.white)
-                            .font(.system(size: 12))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 0)
-                                    .stroke(Color(red: 65/255, green: 65/255, blue: 65/255), lineWidth: 1)
-                            )
-                    }
-
-                    HStack(spacing: 0) {
-                        Text("API-KEY")
-                            .foregroundColor(.gray)
-                            .font(.system(size: 12, weight: .medium))
-                            .frame(width: 60, alignment: .leading)
-
-                        Rectangle()
-                            .fill(Color(red: 65/255, green: 65/255, blue: 65/255))
-                            .frame(height: 1)
-                            .frame(maxWidth: .infinity)
-
-                        Group {
-                            if isApiKeyEditable || apiKey.isEmpty {
-                                TextField("Enter new API key", text: $apiKey)
-                                    .textFieldStyle(PlainTextFieldStyle())
-                                    .autocapitalization(.none)
-                                    .disableAutocorrection(true)
-                            } else {
-                                Text(censoredApiKey)
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .frame(width: 120, alignment: .leading)
-                        .background(Color.black)
-                        .foregroundColor(.white)
-                        .font(.system(size: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 0)
-                                .stroke(Color(red: 65/255, green: 65/255, blue: 65/255), lineWidth: 1)
-                        )
+                            .font(.system(size: 10))
                     }
                 }
-                .padding(.horizontal, 15)
-
-                VStack(alignment: .leading, spacing: 32) {
-                        RegularButton(Label: connectionButtonText, action: {
-                            testConnection()
-                        }, color: connectionStatus == .success ? "ObServeGreen" : (connectionStatus == .failed ? "ObServeRed" : "ObServeBlue"))
-                    }.padding(.horizontal, 15)
             }
-            .padding(.vertical, 30)
+            .padding(.horizontal, 15)
+            .padding(.vertical, refreshedApiKey != nil ? 20 : 0)
             .background(
-                RoundedRectangle(cornerRadius: 0)
-                    .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
-            )
-            .overlay(alignment: .topLeading) {
-                HStack {
-                    Text("CONNECTION")
-                        .foregroundColor(.white)
-                        .font(.system(size: 14, weight: .medium))
+                Group {
+                    if refreshedApiKey != nil {
+                        RoundedRectangle(cornerRadius: 0)
+                            .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+                    }
                 }
-                .padding(10)
-                .background(Color.black)
-                .padding(.top, -20)
-                .padding(.leading, 10)
-            }
+            )
 
             // UNSAFE ZONE Section
             VStack(spacing: 16) {
-                // Reset API Key Button
-                RegularButton(Label: "RESET API KEY", action: {
+                RegularButton(Label: "REFRESH API KEY", action: {
                     if SettingsManager.shared.safeModeEnabled {
-                        showResetApiKeyConfirmation = true
+                        showRefreshApiKeyConfirmation = true
                     } else {
-                        resetApiKey()
+                        refreshApiKey()
                     }
                 }, color: "ObServeGray")
 
-                // Delete Server Button
                 RegularButton(Label: "DELETE SERVER", action: {
                     if SettingsManager.shared.safeModeEnabled {
                         showDeleteConfirmation = true
@@ -359,20 +254,20 @@ struct ManageServerView: View {
 
             // Save and Discard Buttons
             HStack(spacing: 16) {
-                RegularButton(Label: "DISCARD", action: {
-                    onDismiss()
-                }, color: "ObServeGray")
-
                 RegularButton(Label: "SAVE", action: {
                     saveChanges()
                 }, color: "ObServeGreen")
+                
+                RegularButton(Label: "DISCARD", action: {
+                    onDismiss()
+                }, color: "ObServeGray")
             }
 
             Spacer()
         }
     }
 
-    // Step 1: Machine Type Selection
+    // Machine Type Selection
     private var machineTypeView: some View {
         VStack(spacing: 16) {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
@@ -424,12 +319,11 @@ struct ManageServerView: View {
         .buttonStyle(PlainButtonStyle())
     }
 
-    // Step 2: Naming
+    // Naming
     private var namingView: some View {
         VStack(spacing: 32) {
             Spacer()
             VStack(spacing: 24) {
-                // Selected machine type display
                 VStack(spacing: 12) {
                     if let machineType = selectedMachineType {
                         Image(machineType.imageName(isSelected: false))
@@ -439,7 +333,6 @@ struct ManageServerView: View {
                 }
                 .frame(width: 150, height: 150)
 
-                // Name input
                 VStack(alignment: .leading, spacing: 4) {
                     Text("MACHINE NAME")
                         .foregroundColor(.gray)
@@ -469,28 +362,6 @@ struct ManageServerView: View {
                 .foregroundColor(.white)
                 .font(.system(size: 14))
         }
-    }
-
-    private func unsafeZoneOption(title: String, systemImage: String, isDestructive: Bool = false) -> some View {
-        HStack(alignment: .center, spacing: 16) {
-            Image(systemName: systemImage)
-                .font(.system(size: 12))
-                .foregroundColor(isDestructive ? Color("ObServeRed") : .gray)
-                .frame(width: 16)
-
-            Text(title)
-                .font(.system(size: 11))
-                .foregroundColor(isDestructive ? Color("ObServeRed") : .gray)
-                .lineLimit(1)
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12))
-                .foregroundColor(.gray)
-        }
-        .padding(.vertical, 8)
-        .contentShape(Rectangle())
     }
 
     // MARK: - Navigation
@@ -523,19 +394,6 @@ struct ManageServerView: View {
         .padding(20)
     }
 
-    private var saveButtonView: some View {
-        HStack(spacing: 16) {
-            RegularButton(Label: "DISCARD", action: {
-                onDismiss()
-            }, color: "ObServeGray")
-
-            RegularButton(Label: "SAVE", action: {
-                saveChanges()
-            }, color: "ObServeGreen")
-        }
-        .padding(20)
-    }
-
     // MARK: - Computed Properties
     private var canProceed: Bool {
         switch currentStep {
@@ -548,43 +406,29 @@ struct ManageServerView: View {
         }
     }
 
-    private var connectionButtonText: String {
-        switch connectionStatus {
-        case .idle: return "TEST CONNECTION"
-        case .connecting: return "CONNECTING..."
-        case .success: return "SUCCESS"
-        case .failed: return "TRY AGAIN"
-        }
-    }
-
     // MARK: - Actions
-    private func testConnection() {
-        connectionStatus = .connecting
-
-        let networkService = NetworkService(ip: ip, port: port, apiKey: apiKey)
-        networkService.checkHealth { isHealthy in
-            DispatchQueue.main.async {
-                if isHealthy {
-                    self.connectionStatus = .success
-                } else {
-                    self.connectionStatus = .failed
-                }
-            }
-        }
-    }
-
     private func saveChanges() {
         let updatedServer = server
         updatedServer.name = name
-        updatedServer.ip = ip
-        updatedServer.port = port
-        updatedServer.apiKey = apiKey
         updatedServer.type = selectedMachineType?.rawValue ?? server.type
 
-        if connectionStatus == .success {
-            updatedServer.isConnected = true
-            updatedServer.isHealthy = true
-            updatedServer.lastConnected = Date()
+        // Update on backend
+        let request = UpdateMachineRequest(
+            type: selectedMachineType?.backendType,
+            name: name.isEmpty ? nil : name,
+            description: nil,
+            location: nil
+        )
+
+        WatchTowerAPI.shared.updateMachine(uuid: server.machineUUID, request: request) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    print("ManageServerView: Machine updated on backend")
+                case .failure(let error):
+                    print("ManageServerView: Failed to update on backend: \(error.localizedDescription)")
+                }
+            }
         }
 
         onSave(updatedServer)
@@ -596,20 +440,33 @@ struct ManageServerView: View {
         onDismiss()
     }
 
-    private func resetApiKey() {
-        apiKey = ""
-        isApiKeyEditable = true
-        Haptics.notification(.success)
+    private func refreshApiKey() {
+        WatchTowerAPI.shared.refreshAPIKey(uuid: server.machineUUID) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let data):
+                    // Try to decode the new API key from the response
+                    if let response = try? JSONDecoder().decode(MachineEntityResponse.self, from: data) {
+                        refreshedApiKey = response.apiKey
+                        server.apiKey = response.apiKey ?? ""
+                    } else if let rawString = String(data: data, encoding: .utf8) {
+                        refreshedApiKey = rawString.trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
+                    Haptics.notification(.success)
+                case .failure(let error):
+                    print("ManageServerView: Failed to refresh API key: \(error.localizedDescription)")
+                    Haptics.notification(.error)
+                }
+            }
+        }
     }
 }
 
 #Preview {
     ManageServerView(
         server: ServerModuleItem(
+            machineUUID: UUID(),
             name: "Test Server",
-            ip: "192.168.1.100",
-            port: "42000",
-            apiKey: "test-key",
             type: "SERVER"
         ),
         onDismiss: {},

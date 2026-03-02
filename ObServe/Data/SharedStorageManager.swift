@@ -66,10 +66,8 @@ class SharedStorageManager {
             var updatedServer = servers[index]
             updatedServer = SharedServer(
                 id: updatedServer.id,
+                machineUUID: updatedServer.machineUUID,
                 name: updatedServer.name,
-                ip: updatedServer.ip,
-                port: updatedServer.port,
-                apiKey: updatedServer.apiKey,
                 type: updatedServer.type,
                 isConnected: isConnected,
                 isHealthy: isHealthy,

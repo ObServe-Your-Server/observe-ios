@@ -56,11 +56,7 @@ struct ServerDetailView: View {
                     showManageView = false
                 },
                 onSave: { updatedServer in
-                    // Update the server with new values
                     server.name = updatedServer.name
-                    server.ip = updatedServer.ip
-                    server.port = updatedServer.port
-                    server.apiKey = updatedServer.apiKey
                     server.type = updatedServer.type
                 }
             )
@@ -90,5 +86,5 @@ struct ServerDetailView: View {
 }
 
 #Preview {
-    ServerDetailView(server: ServerModuleItem(name: "Name filler", ip: "192.168.1.100", port: "8080", apiKey: "preview-key", type: "Server"))
+    ServerDetailView(server: ServerModuleItem(machineUUID: UUID(), name: "Name filler", type: "Server"))
 }

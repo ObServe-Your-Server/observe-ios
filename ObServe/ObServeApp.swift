@@ -56,6 +56,9 @@ struct ObServeApp: App {
                 }
             }
             .onAppear {
+                // Configure the API service with auth manager
+                WatchTowerAPI.shared.configure(authManager: authManager)
+
                 // Validate tokens on app startup
                 authManager.validateAndRefreshIfNeeded { success in
                     isCheckingAuth = false

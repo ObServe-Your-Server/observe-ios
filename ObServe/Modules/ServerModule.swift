@@ -18,13 +18,11 @@ struct ServerModule: View {
     @State private var showManageView = false
 
     @StateObject private var metricsManager: MetricsManager
-    private let networkService: NetworkService
 
     init(server: ServerModuleItem, onDelete: (() -> Void)? = nil) {
         self._server = Bindable(wrappedValue: server)
         self.onDelete = onDelete
         _metricsManager = StateObject(wrappedValue: MetricsManager(server: server))
-        self.networkService = NetworkService(ip: server.ip, port: server.port, apiKey: server.apiKey)
     }
 
     private var lastConnectedString: String {
@@ -42,21 +40,27 @@ struct ServerModule: View {
         }
         return isHealthy ? "online" : "offline"
     }
-    
+
     private func performHealthCheck(onComplete: (() -> Void)? = nil) {
-        print("Starting health check for server: \(server.name) at \(server.ip):\(server.port)")
         isCheckingHealth = true
 
-        // Delay showing the orange indicator to prevent flickering
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             if self.isCheckingHealth {
                 self.showCheckingIndicator = true
             }
         }
 
-        networkService.checkHealth { healthy in
-            print("Health check result for \(self.server.name): \(healthy)")
+        // Use the metrics/latest endpoint as a health check
+        WatchTowerAPI.shared.fetchLatestMetric(machineUUID: server.machineUUID) { result in
             DispatchQueue.main.async {
+                let healthy: Bool
+                switch result {
+                case .success:
+                    healthy = true
+                case .failure:
+                    healthy = false
+                }
+
                 self.isHealthy = healthy
                 self.server.isHealthy = healthy
                 if healthy && self.isConnected {
@@ -68,7 +72,7 @@ struct ServerModule: View {
             }
         }
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 16) {
@@ -123,14 +127,8 @@ struct ServerModule: View {
                     showManageView = false
                 },
                 onSave: { updatedServer in
-                    // Update the server with new values
                     server.name = updatedServer.name
-                    server.ip = updatedServer.ip
-                    server.port = updatedServer.port
-                    server.apiKey = updatedServer.apiKey
                     server.type = updatedServer.type
-
-                    // If connection details changed, perform a new health check
                     performHealthCheck()
                 },
                 onDelete: onDelete
@@ -141,7 +139,6 @@ struct ServerModule: View {
             isHealthy = server.isHealthy
             performHealthCheck()
 
-            // Auto-connect on launch if setting is enabled
             if SettingsManager.shared.autoConnectOnLaunch && !isConnected {
                 isConnected = true
             }
@@ -156,13 +153,10 @@ struct ServerModule: View {
         .onChange(of: isConnected) { oldValue, newValue in
             server.isConnected = newValue
             if newValue {
-                // Perform health check before showing metrics
                 performHealthCheck {
-                    // Only start fetching metrics if health check passed
                     if self.isHealthy {
                         self.metricsManager.startFetching()
                     } else {
-                        // If health check failed, disconnect automatically
                         self.isConnected = false
                         self.server.isConnected = false
                     }
@@ -175,7 +169,7 @@ struct ServerModule: View {
 }
 
 #Preview {
-    let sampleServer = ServerModuleItem(name: "ObServe", ip: "100.109.12.45", port: "8080", apiKey: "preview-key", type: "Server")
+    let sampleServer = ServerModuleItem(machineUUID: UUID(), name: "ObServe", type: "Server")
     ServerModule(server: sampleServer)
         .background(Color.black)
 }

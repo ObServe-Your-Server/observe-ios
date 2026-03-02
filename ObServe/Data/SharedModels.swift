@@ -1,31 +1,20 @@
-//
-//  SharedModels.swift
-//  ObServe
-//
-//  Created by Daniel Schatz on 21.10.25.
-//
-
 import Foundation
 
 /// Shared server model for App Group communication between main app and widget
 struct SharedServer: Codable, Identifiable {
     let id: UUID
+    let machineUUID: UUID
     let name: String
-    let ip: String
-    let port: String
-    let apiKey: String
     let type: String
     let isConnected: Bool
     let isHealthy: Bool
     let lastConnected: Date?
     let uptime: TimeInterval?
 
-    init(id: UUID, name: String, ip: String, port: String, apiKey: String, type: String = "", isConnected: Bool, isHealthy: Bool, lastConnected: Date? = nil, uptime: TimeInterval? = nil) {
+    init(id: UUID, machineUUID: UUID, name: String, type: String = "", isConnected: Bool, isHealthy: Bool, lastConnected: Date? = nil, uptime: TimeInterval? = nil) {
         self.id = id
+        self.machineUUID = machineUUID
         self.name = name
-        self.ip = ip
-        self.port = port
-        self.apiKey = apiKey
         self.type = type
         self.isConnected = isConnected
         self.isHealthy = isHealthy
@@ -40,7 +29,7 @@ struct SharedMetricData: Codable {
     let metricType: String
     let value: Double
     let timestamp: Date
-    let history: [Double] // Last 30 values for grid display (150 seconds @ 5s intervals)
+    let history: [Double]
 
     init(serverId: UUID, metricType: String, value: Double, timestamp: Date, history: [Double] = []) {
         self.serverId = serverId
@@ -50,12 +39,10 @@ struct SharedMetricData: Codable {
         self.history = history
     }
 
-    /// Check if cached data is still fresh (less than 2 minutes old)
     var isFresh: Bool {
         return Date().timeIntervalSince(timestamp) < 120
     }
 
-    /// Get age of cached data in seconds
     var ageInSeconds: TimeInterval {
         return Date().timeIntervalSince(timestamp)
     }
@@ -68,7 +55,7 @@ enum MetricType: String, Codable, CaseIterable {
     case networkIn = "Network In"
     case networkOut = "Network Out"
     case storage = "Storage"
-    case ping = "Ping"
+    case cpuTemperature = "CPU Temp"
 
     var displayName: String {
         return self.rawValue
