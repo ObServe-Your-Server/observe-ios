@@ -34,12 +34,7 @@ struct MachineOnboardingModal: View {
     var onDismiss: () -> Void
     var onComplete: (ServerModuleItem, MachineType) -> Void
 
-    @State private var currentStep: OnboardingStep = .machineType
-    @State private var selectedMachineType: MachineType?
-    @State private var name = ""
-    @State private var creationStatus: CreationStatus = .idle
-    @State private var createdMachine: MachineEntityResponse?
-    @State private var errorMessage = ""
+    @StateObject private var viewModel = OnboardingViewModel()
     @State private var contentHasScrolled = false
 
     var body: some View {
@@ -50,9 +45,9 @@ struct MachineOnboardingModal: View {
             VStack(spacing: 0) {
                 // Header
                 AppBar(
-                    serverName: currentStep.title,
+                    serverName: viewModel.currentStep.title,
                     contentHasScrolled: $contentHasScrolled,
-                    currentStep: currentStep.rawValue,
+                    currentStep: viewModel.currentStep.rawValue,
                     totalSteps: OnboardingStep.allCases.count,
                     onClose: onDismiss
                 )
@@ -70,7 +65,7 @@ struct MachineOnboardingModal: View {
     // MARK: - Content Views
     private var contentView: some View {
         Group {
-            switch currentStep {
+            switch viewModel.currentStep {
             case .machineType:
                 machineTypeView
             case .naming:
@@ -102,9 +97,9 @@ struct MachineOnboardingModal: View {
 
     private func machineTypeCard(type: MachineType) -> some View {
         Button(action: {
-            selectedMachineType = type
+            viewModel.selectedMachineType = type
         }) {
-            let isSelected = selectedMachineType == type
+            let isSelected = viewModel.selectedMachineType == type
 
             VStack(spacing: 12) {
                 ZStack {
@@ -144,7 +139,7 @@ struct MachineOnboardingModal: View {
             VStack(spacing: 24) {
                 // Selected machine type display
                 VStack(spacing: 12) {
-                    if let machineType = selectedMachineType {
+                    if let machineType = viewModel.selectedMachineType {
                         Image(machineType.imageName(isSelected: false))
                             .resizable()
                             .aspectRatio(contentMode: .fit)
@@ -158,7 +153,7 @@ struct MachineOnboardingModal: View {
                         .foregroundColor(.gray)
                         .font(.system(size: 12))
 
-                    TextField("My \(selectedMachineType?.rawValue ?? "Machine")", text: $name)
+                    TextField("My \(viewModel.selectedMachineType?.rawValue ?? "Machine")", text: $viewModel.name)
                         .textFieldStyle(PlainTextFieldStyle())
                         .padding(12)
                         .background(Color(red: 15/255, green: 15/255, blue: 15/255))
@@ -177,7 +172,7 @@ struct MachineOnboardingModal: View {
         VStack(spacing: 24) {
             Spacer()
 
-            switch creationStatus {
+            switch viewModel.creationStatus {
             case .idle, .creating:
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -187,7 +182,7 @@ struct MachineOnboardingModal: View {
                     .font(.system(size: 14))
 
             case .success:
-                if let apiKey = createdMachine?.apiKey, !apiKey.isEmpty {
+                if let apiKey = viewModel.createdMachine?.apiKey, !apiKey.isEmpty {
                     VStack(spacing: 8) {
                         Text(apiKey)
                             .foregroundColor(.white)
@@ -212,21 +207,21 @@ struct MachineOnboardingModal: View {
                 Text("CREATION FAILED")
                     .foregroundColor(.white)
                     .font(.system(size: 14, weight: .medium))
-                Text(errorMessage)
+                Text(viewModel.errorMessage)
                     .foregroundColor(.gray)
                     .font(.system(size: 12))
                     .multilineTextAlignment(.center)
 
                 RegularButton(Label: "TRY AGAIN", action: {
-                    createMachineOnBackend()
+                    Task { await viewModel.createMachineOnBackend() }
                 }, color: "ObServeBlue")
             }
 
             Spacer()
         }
         .onAppear {
-            if creationStatus == .idle {
-                createMachineOnBackend()
+            if viewModel.creationStatus == .idle {
+                Task { await viewModel.createMachineOnBackend() }
             }
         }
     }
@@ -242,18 +237,18 @@ struct MachineOnboardingModal: View {
                 // Server info and icon section
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 16) {
-                        infoLabel(label: "TYPE", value: selectedMachineType?.rawValue ?? "Unknown")
+                        infoLabel(label: "TYPE", value: viewModel.selectedMachineType?.rawValue ?? "Unknown")
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     VStack(alignment: .leading, spacing: 16) {
-                        infoLabel(label: "NAME", value: name.isEmpty ? "My \(selectedMachineType?.rawValue ?? "Machine")" : name)
+                        infoLabel(label: "NAME", value: viewModel.resolvedName)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     // Server icon
                     VStack {
-                        if let machineType = selectedMachineType {
+                        if let machineType = viewModel.selectedMachineType {
                             Image(machineType.imageName(isSelected: true))
                                 .resizable()
                                 .scaledToFit()
@@ -263,9 +258,7 @@ struct MachineOnboardingModal: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                 }
                 RegularButton(Label: "CHANGE", action: {
-                    currentStep = .machineType
-                    creationStatus = .idle
-                    createdMachine = nil
+                    viewModel.resetToStart()
                 }, color: "ObServeGray")
                 .frame(maxWidth: .infinity)
             }
@@ -287,7 +280,7 @@ struct MachineOnboardingModal: View {
                 .padding(.leading, 10)
             }
 
-            if let apiKey = createdMachine?.apiKey, !apiKey.isEmpty {
+            if let apiKey = viewModel.createdMachine?.apiKey, !apiKey.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 0) {
                         Text("API-KEY")
@@ -349,104 +342,10 @@ struct MachineOnboardingModal: View {
     // MARK: - Navigation
     private var navigationView: some View {
         HStack(spacing: 16) {
-            RegularButton(Label: "BACK", action: previousStep, color: "ObServeGray")
-            RegularButton(Label: nextButtonLabel, action: nextStep, color: "ObServeBlue", disabled: !canProceed)
+            RegularButton(Label: "BACK", action: { viewModel.previousStep() }, color: "ObServeGray")
+            RegularButton(Label: viewModel.nextButtonLabel, action: { viewModel.nextStep(onComplete: onComplete) }, color: "ObServeBlue", disabled: !viewModel.canProceed)
         }
         .padding(20)
-    }
-
-    // MARK: - Computed Properties
-    private var nextButtonLabel: String {
-        switch currentStep {
-        case .machineType: return "NEXT"
-        case .naming: return "CREATE"
-        case .creating: return "NEXT"
-        case .confirmation: return "FINISH"
-        }
-    }
-
-    private var canProceed: Bool {
-        switch currentStep {
-        case .machineType:
-            return selectedMachineType != nil
-        case .naming:
-            return true
-        case .creating:
-            return creationStatus == .success
-        case .confirmation:
-            return true
-        }
-    }
-
-    // MARK: - Actions
-    private func previousStep() {
-        if currentStep.rawValue > 0 {
-            currentStep = OnboardingStep(rawValue: currentStep.rawValue - 1) ?? .machineType
-        }
-    }
-
-    private func nextStep() {
-        switch currentStep {
-        case .machineType:
-            if selectedMachineType != nil {
-                currentStep = .naming
-            }
-        case .naming:
-            currentStep = .creating
-        case .creating:
-            if creationStatus == .success {
-                currentStep = .confirmation
-            }
-        case .confirmation:
-            completeOnboarding()
-        }
-    }
-
-    private func createMachineOnBackend() {
-        guard let machineType = selectedMachineType else { return }
-
-        creationStatus = .creating
-        errorMessage = ""
-
-        let machineName = name.isEmpty ? "My \(machineType.rawValue)" : name
-        let request = CreateMachineRequest(
-            type: machineType.backendType,
-            name: machineName,
-            description: nil,
-            location: nil
-        )
-
-        WatchTowerAPI.shared.createMachine(request: request) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let machine):
-                    self.createdMachine = machine
-                    self.creationStatus = .success
-                case .failure(let error):
-                    self.errorMessage = error.localizedDescription
-                    self.creationStatus = .failed
-                }
-            }
-        }
-    }
-
-    private func completeOnboarding() {
-        guard let machineType = selectedMachineType,
-              let created = createdMachine,
-              let uuid = UUID(uuidString: created.uuid) else { return }
-
-        let newServer = ServerModuleItem(
-            machineUUID: uuid,
-            name: name.isEmpty ? "My \(machineType.rawValue)" : name,
-            type: machineType.rawValue,
-            apiKey: created.apiKey ?? ""
-        )
-
-        newServer.isConnected = true
-        newServer.isHealthy = true
-        newServer.lastConnected = Date()
-
-        onComplete(newServer, machineType)
     }
 }
 

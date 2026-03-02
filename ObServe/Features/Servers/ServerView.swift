@@ -13,9 +13,7 @@ struct ServerView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authManager: AuthenticationManager
 
-    @Binding var settingsRoute: SettingsRoute?
-    @Binding var alertsRoute: AlertsRoute?
-    @Binding var accountRoute: AccountRoute?
+    var router: Router
 
     var body: some View {
         ZStack {
@@ -78,26 +76,14 @@ struct ServerView: View {
 
             if showBurgerMenu {
                 BurgerMenu(
+                    router: router,
+                    selectedSection: .server,
                     onDismiss: { showBurgerMenu = false },
                     onDashboard: { dismiss() },
-                    onServer: { showBurgerMenu = false },
-                    onAlerts: {
-                        showBurgerMenu = false
-                        alertsRoute = .init()
-                    },
-                    onAccount: {
-                        showBurgerMenu = false
-                        accountRoute = .init()
-                    },
-                    onSettings: {
-                        showBurgerMenu = false
-                        settingsRoute = .init()
-                    },
                     onLogout: {
                         showBurgerMenu = false
                         authManager.logout()
-                    },
-                    selectedSection: .server
+                    }
                 )
             }
         }

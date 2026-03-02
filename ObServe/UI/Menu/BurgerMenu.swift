@@ -39,14 +39,11 @@ enum MenuSection: String, CaseIterable {
 }
 
 struct BurgerMenu: View {
+    var router: Router
+    var selectedSection: MenuSection
     var onDismiss: () -> Void
     var onDashboard: () -> Void
-    var onServer: () -> Void
-    var onAlerts: () -> Void
-    var onAccount: () -> Void
-    var onSettings: () -> Void
     var onLogout: () -> Void
-    var selectedSection: MenuSection
 
     @State private var showPanel = false
 
@@ -133,12 +130,12 @@ struct BurgerMenu: View {
 
     private func handleSectionTap(_ section: MenuSection) {
         switch section {
-        case .dashboard: onDashboard()
-        case .server: onServer()
-        case .alerts: onAlerts()
-        case .account: onAccount()
-        case .settings: onSettings()
-        case .logout: onLogout()
+        case .dashboard:
+            onDashboard()
+        case .logout:
+            onLogout()
+        default:
+            router.navigate(to: section)
         }
     }
 }

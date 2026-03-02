@@ -24,12 +24,10 @@ struct OverView: View {
     @State private var sortType: AppBar.SortType = .all
 
     @State private var selectedServer: ServerModuleItem?
-    @State private var settingsRoute: SettingsRoute?
-    @State private var accountRoute: AccountRoute?
-    @State private var serverRoute: ServerRoute?
-    @State private var alertsRoute: AlertsRoute?
+    @State private var router = Router()
 
     @EnvironmentObject var authManager: AuthenticationManager
+    @State private var viewModel: OverViewModel?
 
     var filteredServers: [ServerModuleItem] {
         switch sortType {
@@ -51,7 +49,7 @@ struct OverView: View {
                     )
 
                     ScrollView {
-                        scrollDetection
+                        ScrollDetector(contentHasScrolled: $contentHasScrolled)
                         VStack(spacing: 0) {
                             if servers.isEmpty {
                                 VStack(spacing: 0) {
@@ -70,7 +68,7 @@ struct OverView: View {
                                         ServerModule(
                                             server: server,
                                             onDelete: {
-                                                deleteServer(server)
+                                                Task { await viewModel?.deleteServer(server, allServers: servers) }
                                             }
                                         )
                                         .contentShape(Rectangle())
@@ -98,7 +96,7 @@ struct OverView: View {
                         onComplete: { newServer, machineType in
                             modelContext.insert(newServer)
                             try? modelContext.save()
-                            syncServersToWidget()
+                            viewModel?.syncServersToWidget(servers)
                             withAnimation { showAddServer = false }
                         }
                     )
@@ -107,29 +105,14 @@ struct OverView: View {
 
                 if showBurgermenu {
                     BurgerMenu(
+                        router: router,
+                        selectedSection: .dashboard,
                         onDismiss: { showBurgermenu = false },
                         onDashboard: { showBurgermenu = false },
-                        onServer: {
-                            showBurgermenu = false
-                            serverRoute = .init()
-                        },
-                        onAlerts: {
-                            showBurgermenu = false
-                            alertsRoute = .init()
-                        },
-                        onAccount: {
-                            showBurgermenu = false
-                            accountRoute = .init()
-                        },
-                        onSettings: {
-                            showBurgermenu = false
-                            settingsRoute = .init()
-                        },
                         onLogout: {
                             showBurgermenu = false
                             authManager.logout()
-                        },
-                        selectedSection: .dashboard
+                        }
                     )
                     .zIndex(4)
                 }
@@ -139,133 +122,39 @@ struct OverView: View {
                     .toolbar(.hidden, for: .navigationBar)
                     .background(Color.black.ignoresSafeArea())
             }
-            .navigationDestination(item: $settingsRoute) { _ in
-                SettingsOverview(
-                    serverRoute: $serverRoute,
-                    alertsRoute: $alertsRoute,
-                    accountRoute: $accountRoute
-                )
+            .navigationDestination(item: $router.settingsRoute) { _ in
+                SettingsOverview(router: router)
                 .toolbar(.hidden, for: .navigationBar)
                 .background(Color.black.ignoresSafeArea())
             }
-            .navigationDestination(item: $accountRoute) { _ in
-                AccountView(
-                    serverRoute: $serverRoute,
-                    alertsRoute: $alertsRoute,
-                    settingsRoute: $settingsRoute
-                )
+            .navigationDestination(item: $router.accountRoute) { _ in
+                AccountView(router: router)
                 .toolbar(.hidden, for: .navigationBar)
                 .background(Color.black.ignoresSafeArea())
             }
-            .navigationDestination(item: $serverRoute) { _ in
-                ServerView(
-                    settingsRoute: $settingsRoute,
-                    alertsRoute: $alertsRoute,
-                    accountRoute: $accountRoute
-                )
+            .navigationDestination(item: $router.serverRoute) { _ in
+                ServerView(router: router)
                 .toolbar(.hidden, for: .navigationBar)
                 .background(Color.black.ignoresSafeArea())
             }
-            .navigationDestination(item: $alertsRoute) { _ in
-                AlertsView(
-                    settingsRoute: $settingsRoute,
-                    serverRoute: $serverRoute,
-                    accountRoute: $accountRoute
-                )
+            .navigationDestination(item: $router.alertsRoute) { _ in
+                AlertsView(router: router)
                 .toolbar(.hidden, for: .navigationBar)
                 .background(Color.black.ignoresSafeArea())
             }
             .onAppear {
-                syncMachinesFromBackend()
-                syncServersToWidget()
+                if viewModel == nil {
+                    viewModel = OverViewModel(modelContext: modelContext)
+                }
+                Task { await viewModel?.syncMachinesFromBackend(existingServers: servers) }
+                viewModel?.syncServersToWidget(servers)
             }
             .onChange(of: servers.count) { oldValue, newValue in
-                syncServersToWidget()
+                viewModel?.syncServersToWidget(servers)
             }
         }
     }
 
-    // MARK: - Backend Sync
-
-    private func syncMachinesFromBackend() {
-        WatchTowerAPI.shared.fetchMachines { [self] result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let remoteMachines):
-                    let existingUUIDs = Set(servers.compactMap { $0.machineUUID })
-
-                    for remote in remoteMachines {
-                        guard let uuid = UUID(uuidString: remote.uuid) else { continue }
-
-                        if !existingUUIDs.contains(uuid) {
-                            // New machine from backend — add locally
-                            let newServer = ServerModuleItem(
-                                machineUUID: uuid,
-                                name: remote.name ?? "Unknown",
-                                type: remote.type ?? "SERVER",
-                                apiKey: remote.apiKey ?? ""
-                            )
-                            newServer.isConnected = true
-                            newServer.isHealthy = true
-                            modelContext.insert(newServer)
-                        }
-                    }
-
-                    try? modelContext.save()
-                    syncServersToWidget()
-
-                case .failure(let error):
-                    print("OverView: Failed to sync machines from backend: \(error.localizedDescription)")
-                }
-            }
-        }
-    }
-
-    private func deleteServer(_ server: ServerModuleItem) {
-        WatchTowerAPI.shared.deleteMachine(uuid: server.machineUUID) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    withAnimation {
-                        modelContext.delete(server)
-                        try? modelContext.save()
-                        syncServersToWidget()
-                    }
-                case .failure(let error):
-                    print("OverView: Failed to delete machine from backend: \(error.localizedDescription)")
-                    // Still delete locally
-                    withAnimation {
-                        modelContext.delete(server)
-                        try? modelContext.save()
-                        syncServersToWidget()
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Widget Sync
-
-    private func syncServersToWidget() {
-        let sharedServers = servers.map { $0.toSharedServer() }
-        SharedStorageManager.shared.saveServers(sharedServers)
-        WidgetCenter.shared.reloadAllTimelines()
-        print("OverView: Synced \(sharedServers.count) servers to widget")
-    }
-
-    // MARK: - Scroll Detection
-    var scrollDetection: some View {
-        GeometryReader { proxy in
-            let offset = proxy.frame(in: .named("scroll")).minY
-            Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: offset)
-        }
-        .frame(height: 0)
-        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-            withAnimation(.easeInOut(duration: 0.12)) {
-                contentHasScrolled = value < -0.5
-            }
-        }
-    }
 }
 
 

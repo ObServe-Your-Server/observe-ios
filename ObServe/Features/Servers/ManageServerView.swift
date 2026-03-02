@@ -14,29 +14,18 @@ enum ManageStep {
 }
 
 struct ManageServerView: View {
-    var server: ServerModuleItem
     var onDismiss: () -> Void
     var onSave: (ServerModuleItem) -> Void
     var onDelete: (() -> Void)? = nil
 
-    @State private var currentStep: ManageStep = .overview
-    @State private var selectedMachineType: MachineType?
-    @State private var name: String = ""
+    @StateObject private var viewModel: ManageServerViewModel
     @State private var contentHasScrolled = false
-    @State private var showDeleteConfirmation: Bool = false
-    @State private var showRefreshApiKeyConfirmation = false
-    @State private var refreshedApiKey: String?
 
     init(server: ServerModuleItem, onDismiss: @escaping () -> Void, onSave: @escaping (ServerModuleItem) -> Void, onDelete: (() -> Void)? = nil) {
-        self.server = server
         self.onDismiss = onDismiss
         self.onSave = onSave
         self.onDelete = onDelete
-
-        _name = State(initialValue: server.name)
-
-        let matchedType = MachineType.allCases.first(where: { $0.rawValue.uppercased() == server.type.uppercased() })
-        _selectedMachineType = State(initialValue: matchedType)
+        _viewModel = StateObject(wrappedValue: ManageServerViewModel(server: server))
     }
 
     var body: some View {
@@ -46,11 +35,11 @@ struct ManageServerView: View {
 
             VStack(spacing: 0) {
                 AppBar(
-                    serverName: headerTitle,
+                    serverName: viewModel.headerTitle,
                     contentHasScrolled: $contentHasScrolled,
                     onClose: {
-                        if currentStep != .overview {
-                            currentStep = .overview
+                        if viewModel.currentStep != .overview {
+                            viewModel.currentStep = .overview
                         } else {
                             onDismiss()
                         }
@@ -59,23 +48,23 @@ struct ManageServerView: View {
 
                 contentView
 
-                if currentStep != .overview {
+                if viewModel.currentStep != .overview {
                     navigationView
                 }
             }
             .background(Color.black)
         }
-        .confirmationDialog("Delete Server", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
-            Button("Delete \(server.name)", role: .destructive) {
-                deleteServer()
+        .confirmationDialog("Delete Server", isPresented: $viewModel.showDeleteConfirmation, titleVisibility: .visible) {
+            Button("Delete \(viewModel.server.name)", role: .destructive) {
+                viewModel.deleteServer(onDelete: onDelete, onDismiss: onDismiss)
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Are you sure you want to delete \(server.name)? This action cannot be undone.")
+            Text("Are you sure you want to delete \(viewModel.server.name)? This action cannot be undone.")
         }
-        .confirmationDialog("Refresh API Key", isPresented: $showRefreshApiKeyConfirmation, titleVisibility: .visible) {
+        .confirmationDialog("Refresh API Key", isPresented: $viewModel.showRefreshApiKeyConfirmation, titleVisibility: .visible) {
             Button("Refresh API Key", role: .destructive) {
-                refreshApiKey()
+                Task { await viewModel.refreshApiKey() }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -86,7 +75,7 @@ struct ManageServerView: View {
     // MARK: - Content Views
     private var contentView: some View {
         Group {
-            switch currentStep {
+            switch viewModel.currentStep {
             case .overview:
                 overviewView
             case .editMachineType:
@@ -99,17 +88,6 @@ struct ManageServerView: View {
         .padding(.horizontal, 20)
     }
 
-    private var headerTitle: String {
-        switch currentStep {
-        case .overview:
-            return "MANAGE \(server.name.uppercased())"
-        case .editMachineType:
-            return "MACHINE TYPE"
-        case .editNaming:
-            return "MACHINE NAME"
-        }
-    }
-
     // Overview - Main Management View
     private var overviewView: some View {
         VStack(spacing: 24) {
@@ -120,13 +98,13 @@ struct ManageServerView: View {
 
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 16) {
-                        infoLabel(label: "NAME", value: name.isEmpty ? "My \(selectedMachineType?.rawValue ?? "Machine")" : name)
-                        infoLabel(label: "TYPE", value: selectedMachineType?.rawValue ?? "Unknown")
+                        infoLabel(label: "NAME", value: viewModel.resolvedName)
+                        infoLabel(label: "TYPE", value: viewModel.selectedMachineType?.rawValue ?? "Unknown")
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     VStack {
-                        if let machineType = selectedMachineType {
+                        if let machineType = viewModel.selectedMachineType {
                             ZStack {
                                 Image(machineType.imageName(isSelected: false))
                                     .resizable()
@@ -153,7 +131,7 @@ struct ManageServerView: View {
                     .overlay(FocusCorners(color: Color.white, size: 8, thickness: 1))
                 }
                 RegularButton(Label: "CHANGE", action: {
-                    currentStep = .editMachineType
+                    viewModel.currentStep = .editMachineType
                 }, color: "ObServeGray")
                 .frame(maxWidth: .infinity)
             }
@@ -177,7 +155,7 @@ struct ManageServerView: View {
 
             // API Key display
             VStack(alignment: .leading, spacing: 12) {
-                if let newKey = refreshedApiKey {
+                if let newKey = viewModel.refreshedApiKey {
                     HStack(spacing: 0) {
                         Text("NEW API-KEY")
                             .foregroundColor(.gray)
@@ -200,10 +178,10 @@ struct ManageServerView: View {
                 }
             }
             .padding(.horizontal, 15)
-            .padding(.vertical, refreshedApiKey != nil ? 20 : 0)
+            .padding(.vertical, viewModel.refreshedApiKey != nil ? 20 : 0)
             .background(
                 Group {
-                    if refreshedApiKey != nil {
+                    if viewModel.refreshedApiKey != nil {
                         RoundedRectangle(cornerRadius: 0)
                             .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
                     }
@@ -213,18 +191,14 @@ struct ManageServerView: View {
             // UNSAFE ZONE Section
             VStack(spacing: 16) {
                 RegularButton(Label: "REFRESH API KEY", action: {
-                    if SettingsManager.shared.safeModeEnabled {
-                        showRefreshApiKeyConfirmation = true
-                    } else {
-                        refreshApiKey()
-                    }
+                    viewModel.handleRefreshApiKeyTap()
                 }, color: "ObServeGray")
 
                 RegularButton(Label: "DELETE SERVER", action: {
                     if SettingsManager.shared.safeModeEnabled {
-                        showDeleteConfirmation = true
+                        viewModel.showDeleteConfirmation = true
                     } else {
-                        deleteServer()
+                        viewModel.deleteServer(onDelete: onDelete, onDismiss: onDismiss)
                     }
                 }, color: "ObServeRed")
             }
@@ -249,7 +223,7 @@ struct ManageServerView: View {
             // Save and Discard Buttons
             HStack(spacing: 16) {
                 RegularButton(Label: "SAVE", action: {
-                    saveChanges()
+                    Task { await viewModel.saveChanges(onSave: onSave, onDismiss: onDismiss) }
                 }, color: "ObServeGreen")
                 
                 RegularButton(Label: "DISCARD", action: {
@@ -278,9 +252,9 @@ struct ManageServerView: View {
 
     private func machineTypeCard(type: MachineType) -> some View {
         Button(action: {
-            selectedMachineType = type
+            viewModel.selectedMachineType = type
         }) {
-            let isSelected = selectedMachineType == type
+            let isSelected = viewModel.selectedMachineType == type
 
             VStack(spacing: 12) {
                 ZStack {
@@ -319,7 +293,7 @@ struct ManageServerView: View {
             Spacer()
             VStack(spacing: 24) {
                 VStack(spacing: 12) {
-                    if let machineType = selectedMachineType {
+                    if let machineType = viewModel.selectedMachineType {
                         Image(machineType.imageName(isSelected: false))
                             .resizable()
                             .aspectRatio(contentMode: .fit)
@@ -332,7 +306,7 @@ struct ManageServerView: View {
                         .foregroundColor(.gray)
                         .font(.system(size: 12))
 
-                    TextField("My \(selectedMachineType?.rawValue ?? "Machine")", text: $name)
+                    TextField("My \(viewModel.selectedMachineType?.rawValue ?? "Machine")", text: $viewModel.name)
                         .textFieldStyle(PlainTextFieldStyle())
                         .padding(12)
                         .background(Color(red: 15/255, green: 15/255, blue: 15/255))
@@ -362,97 +336,14 @@ struct ManageServerView: View {
     private var navigationView: some View {
         HStack(spacing: 16) {
             RegularButton(Label: "BACK", action: {
-                switch currentStep {
-                case .editMachineType:
-                    currentStep = .overview
-                case .editNaming:
-                    currentStep = .editMachineType
-                default:
-                    break
-                }
+                viewModel.navigateBack()
             }, color: "ObServeGray")
 
             RegularButton(Label: "NEXT", action: {
-                switch currentStep {
-                case .editMachineType:
-                    if selectedMachineType != nil {
-                        currentStep = .editNaming
-                    }
-                case .editNaming:
-                    currentStep = .overview
-                default:
-                    break
-                }
-            }, color: "ObServeBlue", disabled: !canProceed)
+                viewModel.navigateNext()
+            }, color: "ObServeBlue", disabled: !viewModel.canProceed)
         }
         .padding(20)
-    }
-
-    // MARK: - Computed Properties
-    private var canProceed: Bool {
-        switch currentStep {
-        case .editMachineType:
-            return selectedMachineType != nil
-        case .editNaming:
-            return true
-        default:
-            return true
-        }
-    }
-
-    // MARK: - Actions
-    private func saveChanges() {
-        let updatedServer = server
-        updatedServer.name = name
-        updatedServer.type = selectedMachineType?.rawValue ?? server.type
-
-        // Update on backend
-        let request = UpdateMachineRequest(
-            type: selectedMachineType?.backendType,
-            name: name.isEmpty ? nil : name,
-            description: nil,
-            location: nil
-        )
-
-        WatchTowerAPI.shared.updateMachine(uuid: server.machineUUID, request: request) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    print("ManageServerView: Machine updated on backend")
-                case .failure(let error):
-                    print("ManageServerView: Failed to update on backend: \(error.localizedDescription)")
-                }
-            }
-        }
-
-        onSave(updatedServer)
-        onDismiss()
-    }
-
-    private func deleteServer() {
-        onDelete?()
-        onDismiss()
-    }
-
-    private func refreshApiKey() {
-        WatchTowerAPI.shared.refreshAPIKey(uuid: server.machineUUID) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let data):
-                    // Try to decode the new API key from the response
-                    if let response = try? JSONDecoder().decode(MachineEntityResponse.self, from: data) {
-                        refreshedApiKey = response.apiKey
-                        server.apiKey = response.apiKey ?? ""
-                    } else if let rawString = String(data: data, encoding: .utf8) {
-                        refreshedApiKey = rawString.trimmingCharacters(in: .whitespacesAndNewlines)
-                    }
-                    Haptics.notification(.success)
-                case .failure(let error):
-                    print("ManageServerView: Failed to refresh API key: \(error.localizedDescription)")
-                    Haptics.notification(.error)
-                }
-            }
-        }
     }
 }
 

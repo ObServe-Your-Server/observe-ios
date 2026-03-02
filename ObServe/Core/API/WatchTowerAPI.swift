@@ -296,6 +296,89 @@ class WatchTowerAPI {
         }
         fetch(path: "/v1/machines/\(machineUUID.uuidString)/metrics", queryItems: queryItems, completion: completion)
     }
+
+    // MARK: - Async/Await Core Methods
+
+    func fetch<T: Decodable>(path: String, queryItems: [URLQueryItem] = []) async throws -> T {
+        try await withCheckedThrowingContinuation { continuation in
+            fetch(path: path, queryItems: queryItems) { (result: Result<T, Error>) in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
+    func post<Body: Encodable, Response: Decodable>(path: String, body: Body) async throws -> Response {
+        try await withCheckedThrowingContinuation { continuation in
+            post(path: path, body: body) { (result: Result<Response, Error>) in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
+    func post<Body: Encodable>(path: String, body: Body) async throws -> Data {
+        try await withCheckedThrowingContinuation { continuation in
+            post(path: path, body: body) { (result: Result<Data, Error>) in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
+    func put<Body: Encodable>(path: String, body: Body) async throws -> Data {
+        try await withCheckedThrowingContinuation { continuation in
+            put(path: path, body: body) { (result: Result<Data, Error>) in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
+    func delete(path: String) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            delete(path: path) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
+    // MARK: - Async/Await Convenience Methods
+
+    func fetchMachines() async throws -> [MachineEntityResponse] {
+        try await fetch(path: "/v1/machines")
+    }
+
+    func createMachine(request: CreateMachineRequest) async throws -> MachineEntityResponse {
+        try await post(path: "/v1/machines", body: request)
+    }
+
+    func deleteMachine(uuid: UUID) async throws {
+        try await delete(path: "/v1/machines/\(uuid.uuidString)")
+    }
+
+    func updateMachine(uuid: UUID, request: UpdateMachineRequest) async throws -> Data {
+        try await put(path: "/v1/machines/\(uuid.uuidString)", body: request)
+    }
+
+    func refreshAPIKey(uuid: UUID) async throws -> Data {
+        try await withCheckedThrowingContinuation { continuation in
+            refreshAPIKey(uuid: uuid) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
+    func fetchLatestMetric(machineUUID: UUID) async throws -> MachineMetricResponse {
+        try await fetch(path: "/v1/machines/\(machineUUID.uuidString)/metrics/latest")
+    }
+
+    func fetchMetrics(machineUUID: UUID, lastMinutes: Int? = nil, last: Int? = nil) async throws -> [MachineMetricResponse] {
+        var queryItems: [URLQueryItem] = []
+        if let lastMinutes = lastMinutes {
+            queryItems.append(URLQueryItem(name: "lastMinutes", value: "\(lastMinutes)"))
+        }
+        if let last = last {
+            queryItems.append(URLQueryItem(name: "last", value: "\(last)"))
+        }
+        return try await fetch(path: "/v1/machines/\(machineUUID.uuidString)/metrics", queryItems: queryItems)
+    }
 }
 
 // MARK: - API Errors

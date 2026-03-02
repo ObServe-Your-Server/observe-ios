@@ -35,7 +35,7 @@ struct ResetObServeView: View {
             )
 
             ScrollView {
-                scrollDetection
+                ScrollDetector(contentHasScrolled: $contentHasScrolled)
 
                 VStack(spacing: 35) {
                     VStack(spacing: 10) {
@@ -186,20 +186,6 @@ struct ResetObServeView: View {
         resetAllSettings()
 
         Haptics.notification(.success)
-    }
-
-    // MARK: - Scroll Detection
-    private var scrollDetection: some View {
-        GeometryReader { proxy in
-            let offset = proxy.frame(in: .named("scroll")).minY
-            Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: offset)
-        }
-        .frame(height: 0)
-        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-            withAnimation(.easeInOut(duration: 0.12)) {
-                contentHasScrolled = value < -0.5
-            }
-        }
     }
 
     // MARK: - UI Components

@@ -16,6 +16,12 @@ struct ServerDetailView: View {
     @State private var contentHasScrolled = false
     @State private var selectedInterval: AppBar.Interval = .s1
     @State private var showManageView = false
+    @StateObject private var metricsManager: MetricsManager
+
+    init(server: ServerModuleItem) {
+        self.server = server
+        _metricsManager = StateObject(wrappedValue: MetricsManager(server: server))
+    }
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -28,7 +34,7 @@ struct ServerDetailView: View {
                 )
                 
                 ScrollView {
-                    scrollDetection
+                    ScrollDetector(contentHasScrolled: $contentHasScrolled)
                     
                     VStack(spacing: 0) {
                         
@@ -37,6 +43,7 @@ struct ServerDetailView: View {
                         // Server Management Module
                         ServerManagementModule(
                             server: server,
+                            metricsManager: metricsManager,
                             onManage: { showManageView = true }
                         )
 
@@ -61,21 +68,16 @@ struct ServerDetailView: View {
                 }
             )
         }
-    }
-    
-    // MARK: - Scroll Detection
-    var scrollDetection: some View {
-        GeometryReader { proxy in
-            let offset = proxy.frame(in: .named("scroll")).minY
-            Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: offset)
-        }
-        .frame(height: 0)
-        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-            withAnimation(.easeInOut(duration: 0.12)) {
-                contentHasScrolled = value < -0.5
+        .onAppear {
+            if server.isConnected {
+                metricsManager.startFetching()
             }
         }
+        .onDisappear {
+            metricsManager.stopFetching()
+        }
     }
+    
 }
 
 #Preview {

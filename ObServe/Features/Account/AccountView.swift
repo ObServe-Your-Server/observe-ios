@@ -14,9 +14,7 @@ struct AccountView: View {
 
     @EnvironmentObject private var authManager: AuthenticationManager
 
-    @Binding var serverRoute: ServerRoute?
-    @Binding var alertsRoute: AlertsRoute?
-    @Binding var settingsRoute: SettingsRoute?
+    var router: Router
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -30,7 +28,7 @@ struct AccountView: View {
                 )
 
                 ScrollView {
-                    scrollDetection
+                    ScrollDetector(contentHasScrolled: $contentHasScrolled)
 
                     VStack(spacing: 35) {
                         VStack(alignment: .leading, spacing: 20) {
@@ -59,41 +57,15 @@ struct AccountView: View {
 
             if showBurgerMenu {
                 BurgerMenu(
+                    router: router,
+                    selectedSection: .account,
                     onDismiss: { showBurgerMenu = false },
                     onDashboard: { dismiss() },
-                    onServer: {
-                        showBurgerMenu = false
-                        serverRoute = .init()
-                    },
-                    onAlerts: {
-                        showBurgerMenu = false
-                        alertsRoute = .init()
-                    },
-                    onAccount: { showBurgerMenu = false },
-                    onSettings: {
-                        showBurgerMenu = false
-                        settingsRoute = .init()
-                    },
                     onLogout: {
                         showBurgerMenu = false
                         authManager.logout()
-                    },
-                    selectedSection: .account
+                    }
                 )
-            }
-        }
-    }
-
-    // MARK: - Scroll Detection
-    private var scrollDetection: some View {
-        GeometryReader { proxy in
-            let offset = proxy.frame(in: .named("scroll")).minY
-            Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: offset)
-        }
-        .frame(height: 0)
-        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-            withAnimation(.easeInOut(duration: 0.12)) {
-                contentHasScrolled = value < -0.5
             }
         }
     }

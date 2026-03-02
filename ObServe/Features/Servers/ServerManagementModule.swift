@@ -18,12 +18,12 @@ struct ServerManagementModule: View {
     @State private var isBlinking = false
     @State private var lightOpacity: Double = 1.0
 
-    @StateObject private var metricsManager: MetricsManager
+    @ObservedObject var metricsManager: MetricsManager
 
-    init(server: ServerModuleItem, onManage: @escaping () -> Void) {
+    init(server: ServerModuleItem, metricsManager: MetricsManager, onManage: @escaping () -> Void) {
         self._server = Bindable(wrappedValue: server)
+        self.metricsManager = metricsManager
         self.onManage = onManage
-        _metricsManager = StateObject(wrappedValue: MetricsManager(server: server))
         _status = State(initialValue: server.isHealthy ? "HEALTHY" : "UNHEALTHY")
     }
 
@@ -194,27 +194,14 @@ struct ServerManagementModule: View {
                 )
             }
         }
-        .onAppear {
-            if server.isConnected {
-                metricsManager.startFetching()
-            }
-        }
-        .onDisappear {
-            metricsManager.stopFetching()
-        }
-        .onChange(of: server.isConnected) { oldValue, newValue in
-            if newValue {
-                metricsManager.startFetching()
-            } else {
-                metricsManager.stopFetching()
-            }
-        }
     }
 }
 
 #Preview {
+    let server = ServerModuleItem(machineUUID: UUID(), name: "Test Server", type: "Cube")
     ServerManagementModule(
-        server: ServerModuleItem(machineUUID: UUID(), name: "Test Server", type: "Cube"),
+        server: server,
+        metricsManager: MetricsManager(server: server),
         onManage: { print("Manage tapped") }
     )
     .background(Color.black)

@@ -27,7 +27,7 @@ struct AboutObServeView: View {
             )
 
             ScrollView {
-                scrollDetection
+                ScrollDetector(contentHasScrolled: $contentHasScrolled)
 
                 VStack(spacing: 18) {
                     sectionHeader("THE DEVELOPERS")
@@ -77,19 +77,6 @@ struct AboutObServeView: View {
         .background(Color.black.ignoresSafeArea())
     }
 
-    // MARK: - Scroll Detection
-    private var scrollDetection: some View {
-        GeometryReader { proxy in
-            let offset = proxy.frame(in: .named("scroll")).minY
-            Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: offset)
-        }
-        .frame(height: 0)
-        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-            withAnimation(.easeInOut(duration: 0.12)) {
-                contentHasScrolled = value < -0.5
-            }
-        }
-    }
     // MARK: - Kleine Helfer
     @ViewBuilder
     private func sectionHeader(_ text: String) -> some View {

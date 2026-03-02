@@ -13,16 +13,13 @@ struct SettingsOverview: View {
     @State private var showAboutModal = false
     @State private var showResetModal = false
     @State private var showPollingIntervalPicker = false
-    @State private var showRestartAlert = false
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authManager: AuthenticationManager
 
     // Use SettingsManager instead of local state
     @ObservedObject private var settings = SettingsManager.shared
 
-    @Binding var serverRoute: ServerRoute?
-    @Binding var alertsRoute: AlertsRoute?
-    @Binding var accountRoute: AccountRoute?
+    var router: Router
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -36,7 +33,7 @@ struct SettingsOverview: View {
                 )
 
                 ScrollView {
-                    scrollDetection
+                    ScrollDetector(contentHasScrolled: $contentHasScrolled)
 
                     VStack(spacing: 35) {
                         VStack(spacing: 10) {
@@ -159,26 +156,14 @@ struct SettingsOverview: View {
 
             if showBurgerMenu {
                 BurgerMenu(
+                    router: router,
+                    selectedSection: .settings,
                     onDismiss: { showBurgerMenu = false },
                     onDashboard: { dismiss() },
-                    onServer: {
-                        showBurgerMenu = false
-                        serverRoute = .init()
-                    },
-                    onAlerts: {
-                        showBurgerMenu = false
-                        alertsRoute = .init()
-                    },
-                    onAccount: {
-                        showBurgerMenu = false
-                        accountRoute = .init()
-                    },
-                    onSettings: { showBurgerMenu = false },
                     onLogout: {
                         showBurgerMenu = false
                         authManager.logout()
-                    },
-                    selectedSection: .settings
+                    }
                 )
             }
         }
@@ -191,38 +176,13 @@ struct SettingsOverview: View {
         .confirmationDialog("Polling Interval", isPresented: $showPollingIntervalPicker, titleVisibility: .visible) {
             ForEach(SettingsManager.pollingIntervalOptions, id: \.self) { interval in
                 Button(intervalLabel(for: interval)) {
-                    print("⚙️ Settings: User selected \(interval) seconds")
                     settings.pollingIntervalSeconds = interval
-                    print("⚙️ Settings: Value set to \(settings.pollingIntervalSeconds)")
                     Haptics.click()
-                    showRestartAlert = true
                 }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("How often should ObServe fetch new metric data?")
-        }
-        .alert("Restart Required", isPresented: $showRestartAlert) {
-            Button("Restart Now", role: .destructive) {
-                exit(0)
-            }
-            Button("Later", role: .cancel) {}
-        } message: {
-            Text("Please restart the app to apply the new polling interval.")
-        }
-    }
-
-    // MARK: - Scroll Detection (steuert die Linie in der AppBar)
-    private var scrollDetection: some View {
-        GeometryReader { proxy in
-            let offset = proxy.frame(in: .named("scroll")).minY
-            Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: offset)
-        }
-        .frame(height: 0)
-        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-            withAnimation(.easeInOut(duration: 0.12)) {
-                contentHasScrolled = value < -0.5
-            }
         }
     }
 
