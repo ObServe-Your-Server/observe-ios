@@ -18,6 +18,7 @@ struct ServerModule: View {
     @State private var showManageView = false
 
     @StateObject private var metricsManager: MetricsManager
+    @ObservedObject private var networkMonitor = NetworkMonitor.shared
 
     init(server: ServerModuleItem, onDelete: (() -> Void)? = nil) {
         self._server = Bindable(wrappedValue: server)
@@ -163,6 +164,13 @@ struct ServerModule: View {
                 }
             } else {
                 metricsManager.stopFetching()
+            }
+        }
+        .onChange(of: networkMonitor.isConnected) { _, isConnected in
+            if !isConnected && self.isConnected {
+                self.isConnected = false
+            } else if isConnected && server.isConnected {
+                self.isConnected = true
             }
         }
     }

@@ -90,7 +90,7 @@ class SettingsManager: ObservableObject {
 
         // Polling interval defaults to 5 seconds
         // Use object(forKey:) to properly detect nil (no value) vs actual saved values
-        self.pollingIntervalSeconds = defaults.object(forKey: Keys.pollingIntervalSeconds) as? Int ?? 5
+        self.pollingIntervalSeconds = defaults.object(forKey: Keys.pollingIntervalSeconds) as? Int ?? 2
     }
 
     // MARK: - Reset Methods
@@ -101,13 +101,14 @@ class SettingsManager: ObservableObject {
         safeModeEnabled = true
         hapticsEnabled = true
         autoConnectOnLaunch = false
-        pollingIntervalSeconds = 5
+        pollingIntervalSeconds = 2
     }
 
     /// Get polling interval label for UI display
     func pollingIntervalLabel() -> String {
         switch pollingIntervalSeconds {
         case 1: return "1 second"
+        case 2: return "2 seconds"
         case 5: return "5 seconds"
         case 10: return "10 seconds"
         case 30: return "30 seconds"
@@ -117,5 +118,5 @@ class SettingsManager: ObservableObject {
     }
 
     /// Get all valid polling interval options
-    static let pollingIntervalOptions = [5, 10, 30, 60]
+    static let pollingIntervalOptions = [1, 2, 5, 10, 30, 60]
 }

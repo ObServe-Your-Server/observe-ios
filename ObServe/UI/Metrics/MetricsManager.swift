@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import WidgetKit
 
+@MainActor
 class MetricsManager: ObservableObject {
     // MARK: - Published Properties
     @Published var error: String?
@@ -11,6 +12,7 @@ class MetricsManager: ObservableObject {
     @Published var maxRAM: Double = 0.0
     @Published var avgStorage: Double = 0.0
     @Published var maxStorage: Double = 0.0
+    @Published var disks: [DiskPayloadResponse] = []
     @Published var avgNetworkIn: Double = 0.0
     @Published var avgNetworkOut: Double = 0.0
     @Published var uptime: TimeInterval = 0.0
@@ -36,30 +38,66 @@ class MetricsManager: ObservableObject {
     private let api = WatchTowerAPI.shared
     private let windowSize = 60
 
+    // MARK: - Backoff & State
+    /// Whether startFetching() has been called and stopFetching() has not yet been called.
+    private var isFetchingActive: Bool = false
+    /// Number of consecutive fetch failures since the last success.
+    private var consecutiveFailures: Int = 0
+    /// Maximum backoff delay in seconds.
+    private let maxBackoffInterval: TimeInterval = 60
+
     init(server: ServerModuleItem) {
         self.serverId = server.id
         self.machineUUID = server.machineUUID
         setupPollingIntervalObserver()
+        setupNetworkObserver()
     }
 
     // MARK: - Control Methods
 
     func startFetching() {
+        isFetchingActive = true
+        consecutiveFailures = 0
         fetchHistoricalData()
-        startPolling()
+        scheduleNextFetch(delay: 0)
         startUptimeTickTimer()
     }
 
     func stopFetching() {
+        isFetchingActive = false
+        consecutiveFailures = 0
         stopPolling()
         stopUptimeTickTimer()
     }
 
-    private func startPolling() {
-        let interval = TimeInterval(SettingsManager.shared.pollingIntervalSeconds)
-        fetchLatest()
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            self?.fetchLatest()
+    // MARK: - Polling
+
+    /// Schedules a one-shot timer that fires after `delay` seconds and calls fetchLatest().
+    /// For the normal repeating case (delay == pollingInterval), a repeating timer is used.
+    private func scheduleNextFetch(delay: TimeInterval) {
+        stopPolling()
+        guard isFetchingActive else { return }
+
+        let baseInterval = TimeInterval(SettingsManager.shared.pollingIntervalSeconds)
+
+        if delay == 0 || delay == baseInterval {
+            // Normal path: fire immediately (delay == 0) then use repeating timer
+            if delay == 0 {
+                fetchLatest()
+                pollingTimer = Timer.scheduledTimer(withTimeInterval: baseInterval, repeats: true) { [weak self] _ in
+                    Task { @MainActor [weak self] in self?.fetchLatest() }
+                }
+            } else {
+                // Exact base interval — just start a clean repeating timer
+                pollingTimer = Timer.scheduledTimer(withTimeInterval: baseInterval, repeats: true) { [weak self] _ in
+                    Task { @MainActor [weak self] in self?.fetchLatest() }
+                }
+            }
+        } else {
+            // Backoff path: one-shot timer, then on success we'll switch back to repeating
+            pollingTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
+                Task { @MainActor [weak self] in self?.fetchLatest() }
+            }
         }
     }
 
@@ -70,7 +108,7 @@ class MetricsManager: ObservableObject {
 
     private func startUptimeTickTimer() {
         uptimeTickTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.updateUptimeDisplay()
+            Task { @MainActor [weak self] in self?.updateUptimeDisplay() }
         }
     }
 
@@ -79,31 +117,69 @@ class MetricsManager: ObservableObject {
         uptimeTickTimer = nil
     }
 
-    // MARK: - Polling Interval Observer
+    // MARK: - Observers
 
     private func setupPollingIntervalObserver() {
         SettingsManager.shared.$pollingIntervalSeconds
             .dropFirst()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                guard let self = self else { return }
-                self.stopPolling()
-                self.startPolling()
+                guard let self = self, self.isFetchingActive else { return }
+                self.consecutiveFailures = 0
+                self.scheduleNextFetch(delay: 0)
             }
             .store(in: &cancellables)
+    }
+
+    private func setupNetworkObserver() {
+        Task { @MainActor in
+            NetworkMonitor.shared.$isConnected
+                .dropFirst()
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] isConnected in
+                    guard let self = self, self.isFetchingActive else { return }
+                    if isConnected {
+                        // Connectivity restored — reset backoff and resume immediately
+                        self.consecutiveFailures = 0
+                        self.scheduleNextFetch(delay: 0)
+                    } else {
+                        // No connectivity — pause polling to avoid log spam
+                        self.stopPolling()
+                    }
+                }
+                .store(in: &self.cancellables)
+        }
     }
 
     // MARK: - Fetch Latest Metric
 
     private func fetchLatest() {
+        // Don't fire requests while offline
+        guard NetworkMonitor.shared.isConnected else { return }
+
         api.fetchLatestMetric(machineUUID: machineUUID) { [weak self] result in
             DispatchQueue.main.async {
+                guard let self = self else { return }
                 switch result {
                 case .success(let metric):
-                    self?.processMetric(metric, appendToHistory: true)
-                    self?.error = nil
+                    self.consecutiveFailures = 0
+                    self.processMetric(metric, appendToHistory: true)
+                    self.error = nil
+                    // Switch back to a clean repeating timer at the base interval
+                    if self.isFetchingActive {
+                        self.stopPolling()
+                        let baseInterval = TimeInterval(SettingsManager.shared.pollingIntervalSeconds)
+                        self.pollingTimer = Timer.scheduledTimer(withTimeInterval: baseInterval, repeats: true) { [weak self] _ in
+                            Task { @MainActor [weak self] in self?.fetchLatest() }
+                        }
+                    }
                 case .failure(let error):
-                    self?.error = error.localizedDescription
+                    self.error = error.localizedDescription
+                    self.consecutiveFailures += 1
+                    // Exponential backoff: base * 2^(failures-1), capped at maxBackoffInterval
+                    let base = TimeInterval(SettingsManager.shared.pollingIntervalSeconds)
+                    let backoff = min(base * pow(2.0, Double(self.consecutiveFailures - 1)), self.maxBackoffInterval)
+                    self.scheduleNextFetch(delay: backoff)
                 }
             }
         }
@@ -200,10 +276,10 @@ class MetricsManager: ObservableObject {
         }
 
         // Disks (bytes → GB)
-        if let disks = metric.disks {
+        if let diskData = metric.disks {
             var totalUsed: Int64 = 0
             var totalSize: Int64 = 0
-            for disk in disks {
+            for disk in diskData {
                 totalUsed += disk.used ?? 0
                 totalSize += disk.total ?? 0
             }
@@ -211,6 +287,7 @@ class MetricsManager: ObservableObject {
             let totalGB = Double(totalSize) / (1024.0 * 1024.0 * 1024.0)
             avgStorage = usedGB
             maxStorage = totalGB
+            disks = diskData
             if appendToHistory {
                 storageEntries.append(MetricEntry(timestamp: timestamp, value: usedGB))
                 if storageEntries.count > windowSize {
@@ -304,7 +381,7 @@ class MetricsManager: ObservableObject {
     }
 
     deinit {
-        stopPolling()
-        stopUptimeTickTimer()
+        pollingTimer?.invalidate()
+        uptimeTickTimer?.invalidate()
     }
 }

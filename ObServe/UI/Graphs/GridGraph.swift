@@ -128,7 +128,7 @@ struct GridContentView: View {
 
         // Calculate grid positioning for label alignment
         let gridLeftOffset = labelSpace + axisGap * 2 + 8  // 8pt is the horizontal padding
-        let gridRightOffset = gridLeftOffset + gridWidth
+        let _ = gridLeftOffset + gridWidth
 
         // Daten auf Spaltenbreite bringen
         let displayData: [Double] = {

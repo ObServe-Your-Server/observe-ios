@@ -29,6 +29,39 @@ struct OverView: View {
     @EnvironmentObject var authManager: AuthenticationManager
     @State private var viewModel: OverViewModel?
 
+    @ObservedObject private var networkMonitor = NetworkMonitor.shared
+
+    @ViewBuilder
+    private func networkBanner(label: String, color: String) -> some View {
+        ZStack {
+            Text(label)
+                .foregroundColor(Color(color))
+                .font(.system(size: 12))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity)
+        }
+        .innerShadow(
+            color: Color(color),
+            blur: 25,
+            spread: 12,
+            offsetX: 0,
+            offsetY: 0,
+            opacity: 0.1
+        )
+        .background(Color.black)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Color(color).opacity(0.5))
+                .frame(height: 1)
+        }
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color(color).opacity(0.5))
+                .frame(height: 1)
+        }
+    }
+
     var filteredServers: [ServerModuleItem] {
         switch sortType {
         case .all:     return servers
@@ -47,6 +80,16 @@ struct OverView: View {
                         showBurgerMenu: $showBurgermenu,
                         selectedSortType: $sortType
                     )
+
+                    if !networkMonitor.isConnected {
+                        networkBanner(label: "NO INTERNET CONNECTION", color: "ObServeRed")
+                            .padding(.top, 8)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                    } else if networkMonitor.showReconnectedBanner {
+                        networkBanner(label: "INTERNET CONNECTED", color: "ObServeGreen")
+                            .padding(.top, 8)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                    }
 
                     ScrollView {
                         ScrollDetector(contentHasScrolled: $contentHasScrolled)
@@ -89,6 +132,8 @@ struct OverView: View {
                 .background(Color.black.ignoresSafeArea())
                 .offset(x: showBurgermenu ? -240 : 0)
                 .animation(.spring(response: 0.28, dampingFraction: 0.9), value: showBurgermenu)
+                .animation(.easeInOut(duration: 0.25), value: networkMonitor.isConnected)
+                .animation(.easeInOut(duration: 0.25), value: networkMonitor.showReconnectedBanner)
 
                 if showAddServer {
                     MachineOnboardingModal(

@@ -17,6 +17,7 @@ struct ServerManagementModule: View {
     // Blinking animation state
     @State private var isBlinking = false
     @State private var lightOpacity: Double = 1.0
+    @State private var showNoteEditor = false
 
     @ObservedObject var metricsManager: MetricsManager
 
@@ -25,6 +26,16 @@ struct ServerManagementModule: View {
         self.metricsManager = metricsManager
         self.onManage = onManage
         _status = State(initialValue: server.isHealthy ? "HEALTHY" : "UNHEALTHY")
+    }
+
+    private var storageHeaderText: String {
+        let used = metricsManager.avgStorage
+        let total = metricsManager.maxStorage
+        if total >= 1000 {
+            return String(format: "%.2f / %.2f TB", used / 1000, total / 1000)
+        } else {
+            return String(format: "%.2f / %.2f GB", used, total)
+        }
     }
 
     /// Convert server type to proper image name
@@ -78,15 +89,15 @@ struct ServerManagementModule: View {
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 16) {
                         // Top row: UPTIME aligned with OS-VERSION
-                        UpdateLabel(label: "UPTIME", value: metricsManager.uptime, showDaysInUptime: false)
-                        UpdateLabel(
-                            label: "STORAGE",
-                            value: metricsManager.avgStorage,
-                            max: metricsManager.maxStorage,
-                            unit: "GB",
-                            decimalPlaces: 2,
-                            showPercent: true
-                        )
+                        UpdateLabel(label: "UPTIME", value: metricsManager.uptime, showDaysInUptime: true)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("STATUS")
+                                .foregroundColor(Color.gray)
+                                .font(.system(size: 12, weight: .medium))
+                            Text(status)
+                                .foregroundColor(.white)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     
@@ -118,22 +129,92 @@ struct ServerManagementModule: View {
                         Haptics.click()
                     }
                 }
+                .padding(.bottom, 4)
                 
-                HStack(spacing: 10) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("OS VERSION")
-                            .foregroundColor(Color.gray)
-                            .font(.system(size: 12, weight: .medium))
-                        Text(osVersion)
-                            .foregroundColor(.white)
-                    }.frame(maxWidth: .infinity, alignment: .leading)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("STATUS")
-                            .foregroundColor(Color.gray)
-                            .font(.system(size: 12, weight: .medium))
-                        Text(status)
-                            .foregroundColor(.white)
-                    }.frame(maxWidth: .infinity, alignment: .leading)
+                VStack(spacing: 10) {
+                    VStack(spacing: 2) {
+                        HStack {
+                            Text("MACHINE TYPE")
+                                .foregroundColor(Color.gray)
+                                .font(.system(size: 12, weight: .medium))
+                            Spacer()
+                            Text(server.type.uppercased())
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 6)
+                        .background(RoundedRectangle(cornerRadius: 0).fill(Color(red: 0.102, green: 0.102, blue: 0.102)))
+                        HStack {
+                            Text("OS VERSION")
+                                .foregroundColor(Color.gray)
+                                .font(.system(size: 12, weight: .medium))
+                            Spacer()
+                            // TODO: Backend agent should send OS version instead of generic placeholder
+                            Text(osVersion)
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 6)
+                        .background(RoundedRectangle(cornerRadius: 0).fill(Color(red: 0.102, green: 0.102, blue: 0.102)))
+                    }
+                    .padding(.bottom, 12)
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("STORAGE")
+                                .foregroundColor(Color.gray)
+                                .font(.system(size: 12, weight: .medium))
+                            Spacer()
+                            Text(storageHeaderText)
+                                .foregroundColor(.white)
+                        }
+                        VStack(spacing: 8) {
+                            ForEach(Array(metricsManager.disks.enumerated()), id: \.offset) { index, disk in
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        CutCornerShape()
+                                            .fill(Color(white: 0.25).opacity(0.25))
+                                            .frame(width: 42, height: 26)
+                                        CutCornerShape()
+                                            .stroke(Color(white: 0.30), lineWidth: 1)
+                                            .frame(width: 42, height: 26)
+                                        Text("\(index + 1)")
+                                            .foregroundColor(.white)
+                                    }
+                                    // TODO: Backend agent should send human-readable disk names instead of device paths
+                                    Text((disk.name ?? "Unknown").replacingOccurrences(of: "/dev/", with: ""))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    DiskFillMeter(used: disk.used ?? 0, total: max(disk.total ?? 1, 1))
+                                }
+                            }
+                        }.padding(.bottom, 12)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("NOTE")
+                                .foregroundColor(Color.gray)
+                                .font(.system(size: 12, weight: .medium))
+                            HStack {
+                                Text(server.machineDescription.isEmpty ? "Write a note..." : server.machineDescription)
+                                    .foregroundColor(server.machineDescription.isEmpty ? Color.gray : .white)
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(Color.gray)
+                                    .font(.system(size: 12))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 10)
+                            .contentShape(Rectangle())
+                            .overlay(RoundedRectangle(cornerRadius: 0).stroke(Color.white.opacity(0.3), lineWidth: 1))
+                            .onTapGesture {
+                                showNoteEditor = true
+                                Haptics.click()
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 // Action buttons - matching ServerModule styling
                 HStack(spacing: 12) {
@@ -142,7 +223,7 @@ struct ServerManagementModule: View {
                     }, color: "ObServeGray")
                     .frame(maxWidth: .infinity)
 
-                    BoldButtonWhite(Label: "MANAGE", action: {
+                    RegularButtonWhite(Label: "MANAGE", action: {
                         onManage()
                     }, color: "ObServeGray")
                     .frame(maxWidth: .infinity)
@@ -154,9 +235,12 @@ struct ServerManagementModule: View {
                 RoundedRectangle(cornerRadius: 0)
                     .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
             )
+            .fullScreenCover(isPresented: $showNoteEditor) {
+                NoteEditorView(note: $server.machineDescription, onDismiss: { showNoteEditor = false })
+            }
             .overlay(alignment: .topLeading) {
                 HStack {
-                    Text(server.type.uppercased())
+                    Text("MACHINE")
                         .foregroundColor(.white)
                         .font(.system(size: 14, weight: .medium))
                 }
@@ -193,6 +277,98 @@ struct ServerManagementModule: View {
                     metricType: "RAM"
                 )
             }
+        }
+    }
+}
+
+private struct CutCornerShape: Shape {
+    var cornerSize: CGFloat = 6
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - cornerSize, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + cornerSize))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct DiskFillMeter: View {
+    let used: Int64
+    let total: Int64
+
+    var body: some View {
+        let fraction = total > 0 ? Double(used) / Double(total) : 0
+        let filledCount = Int((fraction * 10).rounded())
+        HStack(spacing: 2) {
+            ForEach(0..<10, id: \.self) { i in
+                Rectangle()
+                    .fill(i < filledCount ? Color.white : Color(red: 0.102, green: 0.102, blue: 0.102))
+                    .frame(width: 8, height: 28)
+            }
+        }
+    }
+}
+
+private struct NoteEditorView: View {
+    @Binding var note: String
+    var onDismiss: () -> Void
+    @State private var draftNote: String = ""
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 0) {
+                Text("NOTE")
+                    .foregroundColor(.white)
+                    .font(.system(size: 14, weight: .medium))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 20)
+                    .padding(.bottom, 16)
+
+                TextEditor(text: $draftNote)
+                    .foregroundColor(.white)
+                    .font(.system(size: 14))
+                    .scrollContentBackground(.hidden)
+                    .background(Color.black)
+                    .padding(.horizontal, 16)
+                    .focused($isFocused)
+                    .overlay(alignment: .topLeading) {
+                        if draftNote.isEmpty {
+                            Text("Write a note...")
+                                .foregroundColor(Color.gray)
+                                .font(.system(size: 14))
+                                .padding(.horizontal, 20)
+                                .padding(.top, 8)
+                                .allowsHitTesting(false)
+                        }
+                    }
+
+                Spacer()
+
+                HStack(spacing: 12) {
+                    RegularButton(Label: "DISCARD", action: {
+                        onDismiss()
+                    }, color: "ObServeGray")
+                    .frame(maxWidth: .infinity)
+
+                    RegularButton(Label: "SAVE", action: {
+                        note = draftNote
+                        onDismiss()
+                    }, color: "ObServeBlue")
+                    .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 32)
+            }
+        }
+        .onAppear {
+            draftNote = note
+            isFocused = true
         }
     }
 }
