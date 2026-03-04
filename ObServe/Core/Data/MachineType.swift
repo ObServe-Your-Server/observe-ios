@@ -10,20 +10,25 @@ import Foundation
 
 enum MachineType: String, CaseIterable {
     case server = "SERVER"
-    case singleBoard = "SINGLE BOARD"
+    case singleBoard = "SINGLE_BOARD"
     case cube = "CUBE"
-    case tower = "TOWER"
+    case desktop = "DESKTOP"
     case vm = "VM"
-    case laptop = "LAPTOP"
+    case container = "CONTAINER"
+
+    /// Cases shown in the UI type picker (excludes laptop which is backend-only)
+    static var uiCases: [MachineType] {
+        [.server, .singleBoard, .cube, .desktop, .vm, .container]
+    }
 
     var icon: String {
         switch self {
         case .server: return "server.rack"
         case .singleBoard: return "cpu"
         case .cube: return "cube"
-        case .tower: return "desktopcomputer"
+        case .desktop: return "desktopcomputer"
         case .vm: return "square.3.layers.3d"
-        case .laptop: return "laptopcomputer"
+        case .container: return "shippingbox"
         }
     }
 
@@ -33,21 +38,9 @@ enum MachineType: String, CaseIterable {
         case .server: return "server" + suffix
         case .singleBoard: return "singleBoard" + suffix
         case .cube: return "cube" + suffix
-        case .tower: return "tower" + suffix
+        case .desktop: return "desktop" + suffix
         case .vm: return "vm" + suffix
-        case .laptop: return "laptop" + suffix
-        }
-    }
-
-    /// Map to the backend MachineType enum values
-    var backendType: String {
-        switch self {
-        case .server: return "SERVER"
-        case .singleBoard: return "DESKTOP"
-        case .cube: return "DESKTOP"
-        case .tower: return "DESKTOP"
-        case .vm: return "VIRTUAL_MACHINE"
-        case .laptop: return "LAPTOP"
+        case .container: return "container" + suffix
         }
     }
 

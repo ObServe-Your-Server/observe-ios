@@ -8,16 +8,22 @@ struct SharedServer: Codable, Identifiable {
     let type: String
     let isConnected: Bool
     let isHealthy: Bool
+    let statusRawValue: String
     let lastConnected: Date?
     let uptime: TimeInterval?
 
-    init(id: UUID, machineUUID: UUID, name: String, type: String = "", isConnected: Bool, isHealthy: Bool, lastConnected: Date? = nil, uptime: TimeInterval? = nil) {
+    var machineStatus: MachineStatus {
+        MachineStatus(rawValue: statusRawValue) ?? .unknown
+    }
+
+    init(id: UUID, machineUUID: UUID, name: String, type: String = "", isConnected: Bool, isHealthy: Bool, statusRawValue: String = MachineStatus.unknown.rawValue, lastConnected: Date? = nil, uptime: TimeInterval? = nil) {
         self.id = id
         self.machineUUID = machineUUID
         self.name = name
         self.type = type
         self.isConnected = isConnected
         self.isHealthy = isHealthy
+        self.statusRawValue = statusRawValue
         self.lastConnected = lastConnected
         self.uptime = uptime
     }

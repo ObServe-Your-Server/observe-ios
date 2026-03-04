@@ -19,6 +19,10 @@ class MetricsManager: ObservableObject {
     @Published var ping: Double?
     @Published var uploadSpeed: Double?
     @Published var downloadSpeed: Double?
+    @Published var osName: String?
+    @Published var kernelVersion: String?
+    @Published var cpuName: String?
+    @Published var cpuCount: Int64?
 
     // MARK: - History for charts
     @Published var cpuEntries: [MetricEntry] = []
@@ -26,6 +30,13 @@ class MetricsManager: ObservableObject {
     @Published var storageEntries: [MetricEntry] = []
     @Published var networkInEntries: [MetricEntry] = []
     @Published var networkOutEntries: [MetricEntry] = []
+    @Published var pingHistory: [PingEntry] = []
+    @Published var downloadHistory: [Double] = []
+    @Published var uploadHistory: [Double] = []
+
+    struct PingEntry {
+        let value: Double? // nil = no data / failed
+    }
 
     private var pollingTimer: Timer?
     private var uptimeTickTimer: Timer?
@@ -33,10 +44,18 @@ class MetricsManager: ObservableObject {
     private var lastUptimeFetchDate: Date?
     private var cancellables = Set<AnyCancellable>()
 
+    private var lastNetBytesIn: Int64?
+    private var lastNetBytesOut: Int64?
+    private var lastNetworkSampleTime: Date?
+
     private let serverId: UUID
     private let machineUUID: UUID
     private let api = WatchTowerAPI.shared
     private let windowSize = 60
+    private let pingHistorySize = 10
+
+    // MARK: - Status Callback
+    var onStatusChanged: ((MachineStatus) -> Void)?
 
     // MARK: - Backoff & State
     /// Whether startFetching() has been called and stopFetching() has not yet been called.
@@ -63,9 +82,16 @@ class MetricsManager: ObservableObject {
         startUptimeTickTimer()
     }
 
+    func fetchLatestOnce() {
+        fetchLatest()
+    }
+
     func stopFetching() {
         isFetchingActive = false
         consecutiveFailures = 0
+        lastNetBytesIn = nil
+        lastNetBytesOut = nil
+        lastNetworkSampleTime = nil
         stopPolling()
         stopUptimeTickTimer()
     }
@@ -176,6 +202,8 @@ class MetricsManager: ObservableObject {
                 case .failure(let error):
                     self.error = error.localizedDescription
                     self.consecutiveFailures += 1
+                    self.onStatusChanged?(.offline)
+                    SharedStorageManager.shared.updateServerStatus(serverId: self.serverId, isConnected: false, machineStatus: .offline, uptime: nil)
                     // Exponential backoff: base * 2^(failures-1), capped at maxBackoffInterval
                     let base = TimeInterval(SettingsManager.shared.pollingIntervalSeconds)
                     let backoff = min(base * pow(2.0, Double(self.consecutiveFailures - 1)), self.maxBackoffInterval)
@@ -256,6 +284,14 @@ class MetricsManager: ObservableObject {
         // CPU Temperature
         cpuTemperature = metric.cpuTemperature
 
+        // CPU Hardware Info
+        if let name = metric.cpuName { cpuName = name }
+        if let count = metric.cpuCount { cpuCount = count }
+
+        // OS Info
+        if let os = metric.osName { osName = os }
+        if let kernel = metric.kernelVersion { kernelVersion = kernel }
+
         // RAM (bytes → GB)
         if let memUsed = metric.memUsed {
             let usedGB = Double(memUsed) / (1024.0 * 1024.0 * 1024.0)
@@ -300,29 +336,39 @@ class MetricsManager: ObservableObject {
             }
         }
 
-        // Network (bytes → kB)
+        // Network: API sends cumulative bytes totals, so compute bytes/sec from delta
+        let now = Date()
+        let elapsed = lastNetworkSampleTime.map { now.timeIntervalSince($0) } ?? 0
+
         if let netIn = metric.netBytesIn {
-            let kbValue = round(Double(netIn) / 1024.0)
-            avgNetworkIn = kbValue
-            if appendToHistory {
-                networkInEntries.append(MetricEntry(timestamp: timestamp, value: kbValue))
-                if networkInEntries.count > windowSize {
-                    networkInEntries = Array(networkInEntries.suffix(windowSize))
+            if let prev = lastNetBytesIn, elapsed > 0 {
+                let rate = Double(max(0, netIn - prev)) / elapsed
+                avgNetworkIn = rate
+                if appendToHistory {
+                    networkInEntries.append(MetricEntry(timestamp: timestamp, value: rate))
+                    if networkInEntries.count > windowSize {
+                        networkInEntries = Array(networkInEntries.suffix(windowSize))
+                    }
                 }
+                syncMetricToWidget(metricType: "Network In", value: rate)
             }
-            syncMetricToWidget(metricType: "Network In", value: kbValue)
+            lastNetBytesIn = netIn
         }
         if let netOut = metric.netBytesOut {
-            let kbValue = round(Double(netOut) / 1024.0)
-            avgNetworkOut = kbValue
-            if appendToHistory {
-                networkOutEntries.append(MetricEntry(timestamp: timestamp, value: kbValue))
-                if networkOutEntries.count > windowSize {
-                    networkOutEntries = Array(networkOutEntries.suffix(windowSize))
+            if let prev = lastNetBytesOut, elapsed > 0 {
+                let rate = Double(max(0, netOut - prev)) / elapsed
+                avgNetworkOut = rate
+                if appendToHistory {
+                    networkOutEntries.append(MetricEntry(timestamp: timestamp, value: rate))
+                    if networkOutEntries.count > windowSize {
+                        networkOutEntries = Array(networkOutEntries.suffix(windowSize))
+                    }
                 }
+                syncMetricToWidget(metricType: "Network Out", value: rate)
             }
-            syncMetricToWidget(metricType: "Network Out", value: kbValue)
+            lastNetBytesOut = netOut
         }
+        lastNetworkSampleTime = now
 
         // Speedtest
         if let speedtest = metric.speedtest {
@@ -330,20 +376,43 @@ class MetricsManager: ObservableObject {
             uploadSpeed = speedtest.uploadMbps
             downloadSpeed = speedtest.downloadMbps
         }
+        if appendToHistory {
+            let pingValue = metric.speedtest?.pingMs
+            pingHistory.append(PingEntry(value: pingValue))
+            if pingHistory.count > pingHistorySize {
+                pingHistory = Array(pingHistory.suffix(pingHistorySize))
+            }
+
+            if let dl = metric.speedtest?.downloadMbps {
+                downloadHistory.append(dl)
+                if downloadHistory.count > windowSize {
+                    downloadHistory = Array(downloadHistory.suffix(windowSize))
+                }
+            }
+            if let ul = metric.speedtest?.uploadMbps {
+                uploadHistory.append(ul)
+                if uploadHistory.count > windowSize {
+                    uploadHistory = Array(uploadHistory.suffix(windowSize))
+                }
+            }
+        }
 
         // Uptime
         if let uptimeSeconds = metric.uptime {
             uptime = TimeInterval(uptimeSeconds)
             lastFetchedUptime = TimeInterval(uptimeSeconds)
             lastUptimeFetchDate = Date()
-
-            SharedStorageManager.shared.updateServerStatus(
-                serverId: serverId,
-                isConnected: true,
-                isHealthy: true,
-                uptime: TimeInterval(uptimeSeconds)
-            )
         }
+
+        // Compute and emit overall machine status
+        let status = MachineStatus.compute(from: metric, isConnected: true)
+        onStatusChanged?(status)
+        SharedStorageManager.shared.updateServerStatus(
+            serverId: serverId,
+            isConnected: true,
+            machineStatus: status,
+            uptime: metric.uptime.map { TimeInterval($0) }
+        )
     }
 
     // MARK: - Uptime Tick

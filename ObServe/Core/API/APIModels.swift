@@ -14,6 +14,10 @@ struct MachineMetricResponse: Decodable {
     let netBytesOut: Int64?
     let uptime: Int64?
     let speedtest: SpeedtestPayloadResponse?
+    let osName: String?
+    let kernelVersion: String?
+    let cpuName: String?
+    let cpuCount: Int64?
 }
 
 struct DiskPayloadResponse: Decodable {

@@ -23,7 +23,9 @@ class WatchTowerAPI {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue(authManager.bearerToken, forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if method != "DELETE" && method != "GET" {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
         return request
     }
 
@@ -231,7 +233,7 @@ class WatchTowerAPI {
             return
         }
 
-        URLSession.shared.dataTask(with: request) { _, response, error in
+        URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 completion(.failure(error))
                 return
@@ -243,6 +245,9 @@ class WatchTowerAPI {
                     return
                 }
                 if httpResponse.statusCode >= 400 {
+                    if let data = data, let body = String(data: data, encoding: .utf8) {
+                        print("WatchTowerAPI DELETE \(path) failed [\(httpResponse.statusCode)]: \(body)")
+                    }
                     completion(.failure(APIError.serverError(httpResponse.statusCode)))
                     return
                 }

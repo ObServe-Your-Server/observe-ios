@@ -16,9 +16,11 @@ struct ExpandableMetricBox: View {
     let showPercent: Bool
     let serverId: UUID?
     let metricType: String?
+    let headerRows: [(label: String, value: String)]
+    let cpuTemperature: Double?
     @State private var isExpanded: Bool = false
 
-    init(title: String, currentValue: Double, maximum: Double, unit: String? = nil, decimalPlaces: Int = 1, showPercent: Bool = false, serverId: UUID? = nil, metricType: String? = nil) {
+    init(title: String, currentValue: Double, maximum: Double, unit: String? = nil, decimalPlaces: Int = 1, showPercent: Bool = false, serverId: UUID? = nil, metricType: String? = nil, headerRows: [(label: String, value: String)] = [], cpuTemperature: Double? = nil) {
         self.title = title
         self.currentValue = currentValue
         self.maximum = maximum
@@ -27,12 +29,34 @@ struct ExpandableMetricBox: View {
         self.showPercent = showPercent
         self.serverId = serverId
         self.metricType = metricType
+        self.headerRows = headerRows
+        self.cpuTemperature = cpuTemperature
     }
     
     var body: some View {
         VStack(spacing: 0) {
             // Always create the chart to keep collecting data
             if isExpanded {
+                if !headerRows.isEmpty {
+                    VStack(spacing: 2) {
+                        ForEach(headerRows, id: \.label) { row in
+                            HStack {
+                                Text(row.label)
+                                    .foregroundColor(Color.gray)
+                                    .font(.system(size: 12, weight: .medium))
+                                Spacer()
+                                Text(row.value)
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 6)
+                            .background(RoundedRectangle(cornerRadius: 0).fill(Color(red: 0.102, green: 0.102, blue: 0.102)))
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                }
                 HStack {
                     Spacer()
                     TimeSeriesGridChart(
@@ -45,6 +69,12 @@ struct ExpandableMetricBox: View {
                     Spacer()
                 }
                 .clipped()
+
+                if let temp = cpuTemperature {
+                    TemperatureGraph(temperature: temp)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 16)
+                }
             }
 
             // Content area
@@ -100,14 +130,14 @@ struct ExpandableMetricBox: View {
                     .foregroundColor(.white)
                     .font(.system(size: 14, weight: .medium))
 
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                    .foregroundColor(.white)
-                    .font(.system(size: 12, weight: .medium))
             }
             .padding(10)
             .background(Color.black)
             .padding(.top, -18)
             .padding(.leading, 10)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            ExpandCornerIndicator()
         }
         .onTapGesture {
             withAnimation(.easeInOut(duration: 0.3)) {

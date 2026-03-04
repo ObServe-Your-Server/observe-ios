@@ -6,6 +6,15 @@
 //
 import SwiftUI
 
+func formatBytes(_ bytes: Double) -> String {
+    let kb = bytes / 1024.0
+    if kb >= 1024.0 {
+        return String(format: "%.2f MB/s", kb / 1024.0)
+    } else {
+        return String(format: "%.0f kB/s", kb)
+    }
+}
+
 func formatValue(_ value: Double, decimalPlaces: Int = 2) -> String {
     let formatter = NumberFormatter()
     formatter.minimumFractionDigits = 0
@@ -46,6 +55,7 @@ struct UpdateLabel: View {
     var decimalPlaces: Int = 2
     var showPercent: Bool = false
     var showDaysInUptime: Bool = true
+    var formattedText: String? = nil
 
     @State private var oldValue: Double = 0.0
 
@@ -60,6 +70,11 @@ struct UpdateLabel: View {
                         .foregroundColor(.white)
                         .lineLimit(1)
                         .truncationMode(.tail)
+                        .contentTransition(.numericText(countsDown: value < oldValue))
+                        .animation(.easeInOut, value: value)
+                } else if let text = formattedText {
+                    Text(text)
+                        .foregroundColor(.white)
                         .contentTransition(.numericText(countsDown: value < oldValue))
                         .animation(.easeInOut, value: value)
                 } else {

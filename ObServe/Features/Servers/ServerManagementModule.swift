@@ -11,13 +11,13 @@ struct ServerManagementModule: View {
     @Bindable var server: ServerModuleItem
     var onManage: () -> Void
 
-    @State private var osVersion = "Linux 6.8.12-15"
-    @State private var status = ""
+    @State private var osVersion = "Unknown"
 
     // Blinking animation state
     @State private var isBlinking = false
     @State private var lightOpacity: Double = 1.0
     @State private var showNoteEditor = false
+    @State private var isExpanded = false
 
     @ObservedObject var metricsManager: MetricsManager
 
@@ -25,7 +25,6 @@ struct ServerManagementModule: View {
         self._server = Bindable(wrappedValue: server)
         self.metricsManager = metricsManager
         self.onManage = onManage
-        _status = State(initialValue: server.isHealthy ? "HEALTHY" : "UNHEALTHY")
     }
 
     private var storageHeaderText: String {
@@ -46,14 +45,16 @@ struct ServerManagementModule: View {
         switch serverType.uppercased() {
         case "SERVER":
             return "server" + suffix
-        case "SINGLE BOARD":
+        case "SINGLE_BOARD":
             return "singleBoard" + suffix
         case "CUBE":
             return "cube" + suffix
-        case "TOWER":
-            return "tower" + suffix
+        case "DESKTOP":
+            return "desktop" + suffix
         case "VM":
             return "vm" + suffix
+        case "CONTAINER":
+            return "container" + suffix
         case "LAPTOP":
             return "laptop" + suffix
         default:
@@ -86,7 +87,7 @@ struct ServerManagementModule: View {
                 Spacer().frame(height: 5)
                 
                 // Server info and icon section
-                HStack(spacing: 12) {
+                HStack(spacing: 18) {
                     VStack(alignment: .leading, spacing: 16) {
                         // Top row: UPTIME aligned with OS-VERSION
                         UpdateLabel(label: "UPTIME", value: metricsManager.uptime, showDaysInUptime: true)
@@ -95,7 +96,7 @@ struct ServerManagementModule: View {
                             Text("STATUS")
                                 .foregroundColor(Color.gray)
                                 .font(.system(size: 12, weight: .medium))
-                            Text(status)
+                            Text(server.machineStatus.rawValue)
                                 .foregroundColor(.white)
                         }
                     }
@@ -131,93 +132,96 @@ struct ServerManagementModule: View {
                 }
                 .padding(.bottom, 4)
                 
-                VStack(spacing: 10) {
-                    VStack(spacing: 2) {
-                        HStack {
-                            Text("MACHINE TYPE")
-                                .foregroundColor(Color.gray)
-                                .font(.system(size: 12, weight: .medium))
-                            Spacer()
-                            Text(server.type.uppercased())
-                                .foregroundColor(.white)
+                if isExpanded {
+                    VStack(spacing: 10) {
+                        VStack(spacing: 2) {
+                            HStack {
+                                Text("MACHINE TYPE")
+                                    .foregroundColor(Color.gray)
+                                    .font(.system(size: 12, weight: .medium))
+                                Spacer()
+                                Text(server.type.uppercased())
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 6)
+                            .background(RoundedRectangle(cornerRadius: 0).fill(Color(red: 0.102, green: 0.102, blue: 0.102)))
+                            HStack {
+                                Text("OS VERSION")
+                                    .foregroundColor(Color.gray)
+                                    .font(.system(size: 12, weight: .medium))
+                                Spacer()
+                                Text(metricsManager.osName ?? osVersion)
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 6)
+                            .background(RoundedRectangle(cornerRadius: 0).fill(Color(red: 0.102, green: 0.102, blue: 0.102)))
                         }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 6)
-                        .background(RoundedRectangle(cornerRadius: 0).fill(Color(red: 0.102, green: 0.102, blue: 0.102)))
-                        HStack {
-                            Text("OS VERSION")
-                                .foregroundColor(Color.gray)
-                                .font(.system(size: 12, weight: .medium))
-                            Spacer()
-                            // TODO: Backend agent should send OS version instead of generic placeholder
-                            Text(osVersion)
-                                .foregroundColor(.white)
-                        }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 6)
-                        .background(RoundedRectangle(cornerRadius: 0).fill(Color(red: 0.102, green: 0.102, blue: 0.102)))
-                    }
-                    .padding(.bottom, 12)
-                    
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text("STORAGE")
-                                .foregroundColor(Color.gray)
-                                .font(.system(size: 12, weight: .medium))
-                            Spacer()
-                            Text(storageHeaderText)
-                                .foregroundColor(.white)
-                        }
-                        VStack(spacing: 8) {
-                            ForEach(Array(metricsManager.disks.enumerated()), id: \.offset) { index, disk in
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        CutCornerShape()
-                                            .fill(Color(white: 0.25).opacity(0.25))
-                                            .frame(width: 42, height: 26)
-                                        CutCornerShape()
-                                            .stroke(Color(white: 0.30), lineWidth: 1)
-                                            .frame(width: 42, height: 26)
-                                        Text("\(index + 1)")
+                        .padding(.bottom, 12)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text("STORAGE")
+                                    .foregroundColor(Color.gray)
+                                    .font(.system(size: 12, weight: .medium))
+                                Spacer()
+                                Text(storageHeaderText)
+                                    .foregroundColor(.white)
+                            }
+                            VStack(spacing: 8) {
+                                ForEach(Array(metricsManager.disks.enumerated()), id: \.offset) { index, disk in
+                                    HStack(spacing: 12) {
+                                        ZStack {
+                                            CutCornerShape()
+                                                .fill(Color(white: 0.25).opacity(0.25))
+                                                .frame(width: 42, height: 26)
+                                            CutCornerShape()
+                                                .stroke(Color(white: 0.30), lineWidth: 1)
+                                                .frame(width: 42, height: 26)
+                                            Text("\(index + 1)")
+                                                .foregroundColor(.white)
+                                        }
+                                        // TODO: Backend agent should send human-readable disk names instead of device paths
+                                        Text((disk.name ?? "Unknown").replacingOccurrences(of: "/dev/", with: ""))
                                             .foregroundColor(.white)
+                                        Spacer()
+                                        DiskFillMeter(used: disk.used ?? 0, total: max(disk.total ?? 1, 1))
                                     }
-                                    // TODO: Backend agent should send human-readable disk names instead of device paths
-                                    Text((disk.name ?? "Unknown").replacingOccurrences(of: "/dev/", with: ""))
-                                        .foregroundColor(.white)
+                                }
+                            }.padding(.bottom, 12)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("NOTE")
+                                    .foregroundColor(Color.gray)
+                                    .font(.system(size: 12, weight: .medium))
+                                HStack {
+                                    Text(server.machineDescription.isEmpty ? "Write a note..." : server.machineDescription)
+                                        .foregroundColor(server.machineDescription.isEmpty ? Color.gray : .white)
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
                                     Spacer()
-                                    DiskFillMeter(used: disk.used ?? 0, total: max(disk.total ?? 1, 1))
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(Color.gray)
+                                        .font(.system(size: 12))
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 10)
+                                .contentShape(Rectangle())
+                                .overlay(RoundedRectangle(cornerRadius: 0).stroke(Color.white.opacity(0.3), lineWidth: 1))
+                                .onTapGesture {
+                                    showNoteEditor = true
+                                    Haptics.click()
                                 }
                             }
-                        }.padding(.bottom, 12)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("NOTE")
-                                .foregroundColor(Color.gray)
-                                .font(.system(size: 12, weight: .medium))
-                            HStack {
-                                Text(server.machineDescription.isEmpty ? "Write a note..." : server.machineDescription)
-                                    .foregroundColor(server.machineDescription.isEmpty ? Color.gray : .white)
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .foregroundColor(Color.gray)
-                                    .font(.system(size: 12))
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 10)
-                            .contentShape(Rectangle())
-                            .overlay(RoundedRectangle(cornerRadius: 0).stroke(Color.white.opacity(0.3), lineWidth: 1))
-                            .onTapGesture {
-                                showNoteEditor = true
-                                Haptics.click()
-                            }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 // Action buttons - matching ServerModule styling
-                HStack(spacing: 12) {
+                HStack(spacing: 18) {
                     RegularButtonWhite(Label: "LOGS", action: {
                         // Schedule action
                     }, color: "ObServeGray")
@@ -249,9 +253,17 @@ struct ServerManagementModule: View {
                 .padding(.top, -20)
                 .padding(.leading, 10)
             }
-            
-            // Network metrics view below the server management module
-            NetworkMetricsView(metricsManager: metricsManager)
+            .overlay(alignment: .bottomTrailing) {
+                ExpandCornerIndicator()
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isExpanded.toggle()
+                }
+                Haptics.click()
+            }
+            Spacer().frame(height: 20)
             
             // CPU and RAM expandable metric boxes
             VStack(spacing: 20) {
@@ -263,7 +275,12 @@ struct ServerManagementModule: View {
                     decimalPlaces: 2,
                     showPercent: false,
                     serverId: server.id,
-                    metricType: "CPU"
+                    metricType: "CPU",
+                    headerRows: [
+                        (label: "NAME", value: metricsManager.cpuName ?? "Unknown"),
+                        (label: "CORES", value: metricsManager.cpuCount.map { "\($0)" } ?? "Unknown")
+                    ],
+                    cpuTemperature: metricsManager.cpuTemperature
                 )
 
                 ExpandableMetricBox(
@@ -274,9 +291,19 @@ struct ServerManagementModule: View {
                     decimalPlaces: 2,
                     showPercent: false,
                     serverId: server.id,
-                    metricType: "RAM"
+                    metricType: "RAM",
+                    headerRows: [
+                        // TODO: Backend should send RAM chip name
+                        (label: "NAME", value: "Corsair shit"),
+                        (label: "MAX", value: metricsManager.maxRAM > 0
+                            ? String(format: "%.1f GB", metricsManager.maxRAM)
+                            : "Unknown")
+                    ]
                 )
             }
+            // Network metrics view below the server management module
+            NetworkMetricsView(metricsManager: metricsManager)
+            
         }
     }
 }

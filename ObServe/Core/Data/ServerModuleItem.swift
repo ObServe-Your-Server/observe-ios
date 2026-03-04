@@ -13,6 +13,12 @@ class ServerModuleItem {
     var lastConnected: Date?
     var isConnected: Bool = false
     var isHealthy: Bool = false
+    var statusRawValue: String = MachineStatus.unknown.rawValue
+
+    var machineStatus: MachineStatus {
+        get { MachineStatus(rawValue: statusRawValue) ?? .unknown }
+        set { statusRawValue = newValue.rawValue; isHealthy = newValue.isHealthy }
+    }
 
     init(machineUUID: UUID, name: String, type: String, apiKey: String = "", machineDescription: String = "", location: String = "") {
         self.machineUUID = machineUUID
@@ -32,6 +38,7 @@ class ServerModuleItem {
             type: self.type,
             isConnected: self.isConnected,
             isHealthy: self.isHealthy,
+            statusRawValue: self.statusRawValue,
             lastConnected: self.lastConnected,
             uptime: nil
         )

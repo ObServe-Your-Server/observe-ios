@@ -87,7 +87,7 @@ class ManageServerViewModel: ObservableObject {
         updatedServer.type = selectedMachineType?.rawValue ?? server.type
 
         let request = UpdateMachineRequest(
-            type: selectedMachineType?.backendType,
+            type: selectedMachineType?.rawValue,
             name: name.isEmpty ? nil : name,
             description: nil,
             location: nil

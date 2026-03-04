@@ -38,7 +38,7 @@ struct ServerDetailView: View {
                     
                     VStack(spacing: 0) {
                         
-                        Rectangle().frame(height: 20).opacity(0)
+                        Rectangle().frame(height: 8).opacity(0)
 
                         // Server Management Module
                         ServerManagementModule(
@@ -71,6 +71,10 @@ struct ServerDetailView: View {
         .onAppear {
             if server.isConnected {
                 metricsManager.startFetching()
+                // Second fetch after 1s to get an initial network rate (needs two samples to compute delta)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    metricsManager.fetchLatestOnce()
+                }
             }
         }
         .onDisappear {

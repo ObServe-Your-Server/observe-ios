@@ -77,18 +77,18 @@ struct ServerModule: View {
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 16) {
-                Spacer().frame(height: 12)
+                Spacer().frame(height: 0)
 
                 if isConnected && isHealthy {
                     MetricsViewSimplified(metricsManager: metricsManager)
                 } else {
-                    HStack(spacing: 16) {
+                    HStack(spacing: 18) {
                         DateLabel(label: "LAST CONNECTED", date: lastConnectedString)
                         DateLabel(label: "STATUS", date: statusString)
                     }
                 }
 
-                HStack(spacing: 12) {
+                HStack(spacing: 18) {
                     PowerButton(isConnected: $isConnected)
                         .frame(maxWidth: .infinity)
                         .disabled(isCheckingHealth)
@@ -120,7 +120,8 @@ struct ServerModule: View {
                 .padding(.leading, 10)
             }
         }
-        .padding(.vertical, 20)
+        .padding(.bottom, 20)
+        .padding(.top, 10)
         .fullScreenCover(isPresented: $showManageView) {
             ManageServerView(
                 server: server,
@@ -138,6 +139,10 @@ struct ServerModule: View {
         .onAppear {
             isConnected = server.isConnected
             isHealthy = server.isHealthy
+            metricsManager.onStatusChanged = { [self] newStatus in
+                server.machineStatus = newStatus
+                isHealthy = newStatus.isHealthy
+            }
             performHealthCheck()
 
             if SettingsManager.shared.autoConnectOnLaunch && !isConnected {

@@ -85,7 +85,7 @@ class OnboardingViewModel: ObservableObject {
         errorMessage = ""
 
         let request = CreateMachineRequest(
-            type: machineType.backendType,
+            type: machineType.rawValue,
             name: resolvedName,
             description: nil,
             location: nil

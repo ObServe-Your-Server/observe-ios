@@ -59,7 +59,7 @@ class SharedStorageManager {
     }
 
     /// Update a single server's connection status
-    func updateServerStatus(serverId: UUID, isConnected: Bool, isHealthy: Bool, uptime: TimeInterval? = nil) {
+    func updateServerStatus(serverId: UUID, isConnected: Bool, machineStatus: MachineStatus, uptime: TimeInterval? = nil) {
         var servers = loadServers()
 
         if let index = servers.firstIndex(where: { $0.id == serverId }) {
@@ -70,7 +70,8 @@ class SharedStorageManager {
                 name: updatedServer.name,
                 type: updatedServer.type,
                 isConnected: isConnected,
-                isHealthy: isHealthy,
+                isHealthy: machineStatus.isHealthy,
+                statusRawValue: machineStatus.rawValue,
                 lastConnected: isConnected ? Date() : updatedServer.lastConnected,
                 uptime: uptime
             )

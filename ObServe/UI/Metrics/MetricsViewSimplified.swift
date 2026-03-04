@@ -11,7 +11,7 @@ struct MetricsViewSimplified: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 16) {
+            HStack(spacing: 18) {
                 UpdateLabel(label: "UPTIME", value: metricsManager.uptime)
                 UpdateLabel(
                     label: "MEMORY",
@@ -23,7 +23,7 @@ struct MetricsViewSimplified: View {
                 )
             }
             
-            HStack(spacing: 16) {
+            HStack(spacing: 18) {
                 UpdateLabel(
                     label: "CPU USAGE",
                     value: metricsManager.avgCPU * 100,
@@ -41,19 +41,9 @@ struct MetricsViewSimplified: View {
                 )
             }
             
-            HStack(spacing: 16) {
-                UpdateLabel(
-                    label: "IN",
-                    value: metricsManager.avgNetworkIn,
-                    unit: "kB/s",
-                    decimalPlaces: 0
-                )
-                UpdateLabel(
-                    label: "OUT",
-                    value: metricsManager.avgNetworkOut,
-                    unit: "kB/s",
-                    decimalPlaces: 0
-                )
+            HStack(spacing: 18) {
+                UpdateLabel(label: "IN", value: metricsManager.avgNetworkIn, formattedText: formatBytes(metricsManager.avgNetworkIn))
+                UpdateLabel(label: "OUT", value: metricsManager.avgNetworkOut, formattedText: formatBytes(metricsManager.avgNetworkOut))
             }
         }
         .alert("Metrics Error", isPresented: .constant(metricsManager.error != nil)) {

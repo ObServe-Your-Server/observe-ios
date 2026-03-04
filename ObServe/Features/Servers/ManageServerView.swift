@@ -221,7 +221,7 @@ struct ManageServerView: View {
             }
 
             // Save and Discard Buttons
-            HStack(spacing: 16) {
+            HStack(spacing: 18) {
                 RegularButton(Label: "SAVE", action: {
                     Task { await viewModel.saveChanges(onSave: onSave, onDismiss: onDismiss) }
                 }, color: "ObServeGreen")

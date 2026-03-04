@@ -341,7 +341,7 @@ struct MachineOnboardingModal: View {
 
     // MARK: - Navigation
     private var navigationView: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 18) {
             RegularButton(Label: "BACK", action: { viewModel.previousStep() }, color: "ObServeGray")
             RegularButton(Label: viewModel.nextButtonLabel, action: { viewModel.nextStep(onComplete: onComplete) }, color: "ObServeBlue", disabled: !viewModel.canProceed)
         }

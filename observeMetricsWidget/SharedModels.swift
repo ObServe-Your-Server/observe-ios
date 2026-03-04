@@ -1,5 +1,15 @@
 import Foundation
 
+enum MachineStatus: String, Codable, CaseIterable {
+    case healthy  = "HEALTHY"
+    case warning  = "WARNING"
+    case critical = "CRITICAL"
+    case offline  = "OFFLINE"
+    case unknown  = "UNKNOWN"
+
+    var isHealthy: Bool { self == .healthy }
+}
+
 /// Shared server model for App Group communication between main app and widget
 struct SharedServer: Codable, Identifiable {
     let id: UUID
@@ -8,16 +18,22 @@ struct SharedServer: Codable, Identifiable {
     let type: String
     let isConnected: Bool
     let isHealthy: Bool
+    let statusRawValue: String
     let lastConnected: Date?
     let uptime: TimeInterval?
 
-    init(id: UUID, machineUUID: UUID, name: String, type: String = "", isConnected: Bool, isHealthy: Bool, lastConnected: Date? = nil, uptime: TimeInterval? = nil) {
+    var machineStatus: MachineStatus {
+        MachineStatus(rawValue: statusRawValue) ?? .unknown
+    }
+
+    init(id: UUID, machineUUID: UUID, name: String, type: String = "", isConnected: Bool, isHealthy: Bool, statusRawValue: String = MachineStatus.unknown.rawValue, lastConnected: Date? = nil, uptime: TimeInterval? = nil) {
         self.id = id
         self.machineUUID = machineUUID
         self.name = name
         self.type = type
         self.isConnected = isConnected
         self.isHealthy = isHealthy
+        self.statusRawValue = statusRawValue
         self.lastConnected = lastConnected
         self.uptime = uptime
     }
