@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ServerManagementModule: View {
     @Bindable var server: ServerModuleItem
+    var onLogs: () -> Void
     var onManage: () -> Void
 
     @State private var osVersion = "Unknown"
@@ -21,9 +22,10 @@ struct ServerManagementModule: View {
 
     @ObservedObject var metricsManager: MetricsManager
 
-    init(server: ServerModuleItem, metricsManager: MetricsManager, onManage: @escaping () -> Void) {
+    init(server: ServerModuleItem, metricsManager: MetricsManager, onLogs: @escaping () -> Void, onManage: @escaping () -> Void) {
         self._server = Bindable(wrappedValue: server)
         self.metricsManager = metricsManager
+        self.onLogs = onLogs
         self.onManage = onManage
     }
 
@@ -223,7 +225,8 @@ struct ServerManagementModule: View {
                 // Action buttons - matching ServerModule styling
                 HStack(spacing: 18) {
                     RegularButtonWhite(Label: "LOGS", action: {
-                        // Schedule action
+                        onLogs()
+                        Haptics.click()
                     }, color: "ObServeGray")
                     .frame(maxWidth: .infinity)
 
@@ -405,6 +408,7 @@ private struct NoteEditorView: View {
     ServerManagementModule(
         server: server,
         metricsManager: MetricsManager(server: server),
+        onLogs: {},
         onManage: { print("Manage tapped") }
     )
     .background(Color.black)

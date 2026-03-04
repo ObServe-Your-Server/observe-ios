@@ -48,6 +48,13 @@ class MetricsManager: ObservableObject {
     private var lastNetBytesOut: Int64?
     private var lastNetworkSampleTime: Date?
 
+    // MARK: - Logging State
+    private let logsManager = ServerLogsManager.shared
+    private var previousMachineStatus: MachineStatus?
+    private var wasOffline: Bool = false
+    private var lastLoggedAt: [String: Date] = [:]
+    private let logThrottleInterval: TimeInterval = 60
+
     private let serverId: UUID
     private let machineUUID: UUID
     private let api = WatchTowerAPI.shared
@@ -60,6 +67,8 @@ class MetricsManager: ObservableObject {
     // MARK: - Backoff & State
     /// Whether startFetching() has been called and stopFetching() has not yet been called.
     private var isFetchingActive: Bool = false
+    /// When set, overrides the global SettingsManager polling interval for this instance only.
+    var overrideIntervalSeconds: Int? = nil
     /// Number of consecutive fetch failures since the last success.
     private var consecutiveFailures: Int = 0
     /// Maximum backoff delay in seconds.
@@ -96,6 +105,13 @@ class MetricsManager: ObservableObject {
         stopUptimeTickTimer()
     }
 
+    func setOverrideInterval(_ seconds: Int) {
+        overrideIntervalSeconds = seconds
+        guard isFetchingActive else { return }
+        consecutiveFailures = 0
+        scheduleNextFetch(delay: 0)
+    }
+
     // MARK: - Polling
 
     /// Schedules a one-shot timer that fires after `delay` seconds and calls fetchLatest().
@@ -104,7 +120,7 @@ class MetricsManager: ObservableObject {
         stopPolling()
         guard isFetchingActive else { return }
 
-        let baseInterval = TimeInterval(SettingsManager.shared.pollingIntervalSeconds)
+        let baseInterval = TimeInterval(overrideIntervalSeconds ?? SettingsManager.shared.pollingIntervalSeconds)
 
         if delay == 0 || delay == baseInterval {
             // Normal path: fire immediately (delay == 0) then use repeating timer
@@ -189,12 +205,16 @@ class MetricsManager: ObservableObject {
                 switch result {
                 case .success(let metric):
                     self.consecutiveFailures = 0
+                    if self.wasOffline {
+                        self.logsManager.addLog(serverId: self.serverId, severity: .info, title: "SERVER CAME BACK ONLINE")
+                        self.wasOffline = false
+                    }
                     self.processMetric(metric, appendToHistory: true)
                     self.error = nil
                     // Switch back to a clean repeating timer at the base interval
                     if self.isFetchingActive {
                         self.stopPolling()
-                        let baseInterval = TimeInterval(SettingsManager.shared.pollingIntervalSeconds)
+                        let baseInterval = TimeInterval(self.overrideIntervalSeconds ?? SettingsManager.shared.pollingIntervalSeconds)
                         self.pollingTimer = Timer.scheduledTimer(withTimeInterval: baseInterval, repeats: true) { [weak self] _ in
                             Task { @MainActor [weak self] in self?.fetchLatest() }
                         }
@@ -202,10 +222,19 @@ class MetricsManager: ObservableObject {
                 case .failure(let error):
                     self.error = error.localizedDescription
                     self.consecutiveFailures += 1
+                    if self.consecutiveFailures == 1 {
+                        self.logsManager.addLog(
+                            serverId: self.serverId,
+                            severity: .critical,
+                            title: "SERVER WENT OFFLINE",
+                            detail: error.localizedDescription
+                        )
+                        self.wasOffline = true
+                    }
                     self.onStatusChanged?(.offline)
                     SharedStorageManager.shared.updateServerStatus(serverId: self.serverId, isConnected: false, machineStatus: .offline, uptime: nil)
                     // Exponential backoff: base * 2^(failures-1), capped at maxBackoffInterval
-                    let base = TimeInterval(SettingsManager.shared.pollingIntervalSeconds)
+                    let base = TimeInterval(self.overrideIntervalSeconds ?? SettingsManager.shared.pollingIntervalSeconds)
                     let backoff = min(base * pow(2.0, Double(self.consecutiveFailures - 1)), self.maxBackoffInterval)
                     self.scheduleNextFetch(delay: backoff)
                 }
@@ -227,7 +256,7 @@ class MetricsManager: ObservableObject {
                     self?.networkOutEntries = []
 
                     for metric in metrics {
-                        self?.processMetric(metric, appendToHistory: true)
+                        self?.processMetric(metric, appendToHistory: true, isHistorical: true)
                     }
 
                     // Sync historical CPU data to widget
@@ -266,7 +295,7 @@ class MetricsManager: ObservableObject {
 
     // MARK: - Process a Single Metric Response
 
-    private func processMetric(_ metric: MachineMetricResponse, appendToHistory: Bool) {
+    private func processMetric(_ metric: MachineMetricResponse, appendToHistory: Bool, isHistorical: Bool = false) {
         let timestamp = Date().timeIntervalSince1970
 
         // CPU
@@ -413,6 +442,98 @@ class MetricsManager: ObservableObject {
             machineStatus: status,
             uptime: metric.uptime.map { TimeInterval($0) }
         )
+
+        if !isHistorical {
+            logMetricAlerts(from: metric)
+            logStatusTransition(from: previousMachineStatus, to: status)
+        }
+        previousMachineStatus = status
+    }
+
+    // MARK: - Logging Helpers
+
+    private func shouldLog(key: String) -> Bool {
+        let now = Date()
+        if let last = lastLoggedAt[key], now.timeIntervalSince(last) < logThrottleInterval {
+            return false
+        }
+        lastLoggedAt[key] = now
+        return true
+    }
+
+    private func logMetricAlerts(from metric: MachineMetricResponse) {
+        if let cpu = metric.cpuUsage {
+            if cpu >= 95, shouldLog(key: "cpu_critical") {
+                logsManager.addLog(serverId: serverId, severity: .critical,
+                    title: "CPU CRITICAL", detail: String(format: "CPU usage at %.1f%%", cpu))
+            } else if cpu >= 80, shouldLog(key: "cpu_warning") {
+                logsManager.addLog(serverId: serverId, severity: .warning,
+                    title: "CPU HIGH", detail: String(format: "CPU usage at %.1f%%", cpu))
+            }
+        }
+
+        if let temp = metric.cpuTemperature {
+            if temp >= 85, shouldLog(key: "temp_critical") {
+                logsManager.addLog(serverId: serverId, severity: .critical,
+                    title: "CPU TEMPERATURE CRITICAL", detail: String(format: "%.1f°C", temp))
+            } else if temp >= 75, shouldLog(key: "temp_warning") {
+                logsManager.addLog(serverId: serverId, severity: .warning,
+                    title: "CPU TEMPERATURE HIGH", detail: String(format: "%.1f°C", temp))
+            }
+        }
+
+        if let used = metric.memUsed, let total = metric.memTotal, total > 0 {
+            let pct = Double(used) / Double(total) * 100
+            if pct >= 95, shouldLog(key: "mem_critical") {
+                logsManager.addLog(serverId: serverId, severity: .critical,
+                    title: "MEMORY CRITICAL", detail: String(format: "Memory at %.1f%%", pct))
+            } else if pct >= 85, shouldLog(key: "mem_warning") {
+                logsManager.addLog(serverId: serverId, severity: .warning,
+                    title: "MEMORY HIGH", detail: String(format: "Memory at %.1f%%", pct))
+            }
+        }
+
+        for disk in metric.disks ?? [] {
+            if let used = disk.used, let total = disk.total, total > 0 {
+                let pct = Double(used) / Double(total) * 100
+                let name = (disk.name ?? "Disk").replacingOccurrences(of: "/dev/", with: "")
+                let keyBase = "disk_\(name)"
+                if pct >= 95, shouldLog(key: "\(keyBase)_critical") {
+                    logsManager.addLog(serverId: serverId, severity: .critical,
+                        title: "DISK CRITICAL", detail: String(format: "%@ at %.1f%%", name, pct))
+                } else if pct >= 85, shouldLog(key: "\(keyBase)_warning") {
+                    logsManager.addLog(serverId: serverId, severity: .warning,
+                        title: "DISK HIGH", detail: String(format: "%@ at %.1f%%", name, pct))
+                }
+            }
+        }
+    }
+
+    private func logStatusTransition(from previous: MachineStatus?, to current: MachineStatus) {
+        guard let previous = previous, previous != current, previous != .unknown else { return }
+        // Offline transitions are handled in the fetch failure path
+        guard current != .offline else { return }
+
+        let severity: LogSeverity
+        let title: String
+
+        switch current {
+        case .critical:
+            severity = .critical
+            title = "STATUS CHANGED TO CRITICAL"
+        case .warning:
+            severity = .warning
+            title = "STATUS CHANGED TO WARNING"
+        case .healthy:
+            severity = .info
+            title = "STATUS RETURNED TO HEALTHY"
+        default:
+            severity = .info
+            title = "STATUS CHANGED TO \(current.rawValue.uppercased())"
+        }
+
+        logsManager.addLog(serverId: serverId, severity: severity, title: title,
+            detail: "Previous: \(previous.rawValue)")
     }
 
     // MARK: - Uptime Tick

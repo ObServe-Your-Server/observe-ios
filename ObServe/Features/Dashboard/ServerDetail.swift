@@ -14,8 +14,9 @@ struct ServerDetailView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var contentHasScrolled = false
-    @State private var selectedInterval: AppBar.Interval = .s1
+    @State private var selectedInterval: AppBar.Interval = .s2
     @State private var showManageView = false
+    @State private var showLogsView = false
     @StateObject private var metricsManager: MetricsManager
 
     init(server: ServerModuleItem) {
@@ -44,6 +45,7 @@ struct ServerDetailView: View {
                         ServerManagementModule(
                             server: server,
                             metricsManager: metricsManager,
+                            onLogs: { showLogsView = true },
                             onManage: { showManageView = true }
                         )
 
@@ -55,6 +57,9 @@ struct ServerDetailView: View {
                 .coordinateSpace(name: "scroll")
             }
             .background(Color.black.edgesIgnoringSafeArea(.all))
+        }
+        .fullScreenCover(isPresented: $showLogsView) {
+            ServerLogsView(server: server)
         }
         .fullScreenCover(isPresented: $showManageView) {
             ManageServerView(
@@ -71,11 +76,15 @@ struct ServerDetailView: View {
         .onAppear {
             if server.isConnected {
                 metricsManager.startFetching()
+                metricsManager.setOverrideInterval(Int(selectedInterval.seconds))
                 // Second fetch after 1s to get an initial network rate (needs two samples to compute delta)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     metricsManager.fetchLatestOnce()
                 }
             }
+        }
+        .onChange(of: selectedInterval) { _, newValue in
+            metricsManager.setOverrideInterval(Int(newValue.seconds))
         }
         .onDisappear {
             metricsManager.stopFetching()

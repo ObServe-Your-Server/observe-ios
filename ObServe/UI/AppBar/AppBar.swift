@@ -37,10 +37,9 @@ struct AppBar: View {
     }
 
     enum Interval: CaseIterable {
-        case s1, s2, s5, s10
+        case s2, s5, s10
         var label: String {
             switch self {
-            case .s1:  return "1S"
             case .s2:  return "2S"
             case .s5:  return "5S"
             case .s10: return "10S"
@@ -48,7 +47,6 @@ struct AppBar: View {
         }
         var seconds: Double {
             switch self {
-            case .s1:  return 1
             case .s2:  return 2
             case .s5:  return 5
             case .s10: return 10
@@ -269,7 +267,7 @@ extension AppBar {
     AppBar(
         serverName: "ASUS PN-42",
         contentHasScrolled: .constant(false),
-        selectedInterval: .constant(.s1),
+        selectedInterval: .constant(.s2),
         onClose: {}
     )
     .background(Color.black)

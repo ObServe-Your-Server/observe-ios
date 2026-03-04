@@ -243,7 +243,6 @@ struct SettingsOverview: View {
 
     private func intervalLabel(for seconds: Int) -> String {
         switch seconds {
-        case 1: return "1 second"
         case 5: return "5 seconds"
         case 10: return "10 seconds"
         case 30: return "30 seconds"

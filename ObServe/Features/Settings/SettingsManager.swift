@@ -107,7 +107,6 @@ class SettingsManager: ObservableObject {
     /// Get polling interval label for UI display
     func pollingIntervalLabel() -> String {
         switch pollingIntervalSeconds {
-        case 1: return "1 second"
         case 2: return "2 seconds"
         case 5: return "5 seconds"
         case 10: return "10 seconds"
@@ -118,5 +117,5 @@ class SettingsManager: ObservableObject {
     }
 
     /// Get all valid polling interval options
-    static let pollingIntervalOptions = [1, 2, 5, 10, 30, 60]
+    static let pollingIntervalOptions = [2, 5, 10, 30, 60]
 }
