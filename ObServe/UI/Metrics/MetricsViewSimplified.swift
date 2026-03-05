@@ -8,7 +8,19 @@ import SwiftUI
 
 struct MetricsViewSimplified: View {
     @ObservedObject var metricsManager: MetricsManager
-    
+
+    private var storageUnit: String {
+        metricsManager.maxStorage >= 1000 ? "TB" : "GB"
+    }
+
+    private var storageValue: Double {
+        metricsManager.maxStorage >= 1000 ? metricsManager.avgStorage / 1000 : metricsManager.avgStorage
+    }
+
+    private var storageMax: Double {
+        metricsManager.maxStorage >= 1000 ? metricsManager.maxStorage / 1000 : metricsManager.maxStorage
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 18) {
@@ -33,11 +45,12 @@ struct MetricsViewSimplified: View {
                 )
                 UpdateLabel(
                     label: "STORAGE",
-                    value: metricsManager.avgStorage,
-                    max: metricsManager.maxStorage,
-                    unit: "GB",
+                    value: storageValue,
+                    max: storageMax,
+                    unit: storageUnit,
                     decimalPlaces: 2,
-                    showPercent: true
+                    showPercent: true,
+                    forceDecimals: storageUnit == "TB"
                 )
             }
             

@@ -55,27 +55,27 @@ struct BaseAppBar<SecondaryContent: View>: View {
     private var rightButton: some View {
         switch rightButtonType {
         case .hamburgerMenu:
-            Button(action: rightButtonAction) {
-                VStack(spacing: 7) {
-                    Rectangle()
-                        .fill(Color.gray)
-                        .frame(width: 24, height: 2.5)
-                    Rectangle()
-                        .fill(Color.gray)
-                        .frame(width: 24, height: 2.5)
-                    Rectangle()
-                        .fill(Color.gray)
-                        .frame(width: 24, height: 2.5)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(10)
-                .frame(width: 40, height: 40)
-                .background(Color("ButtonBackground"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 0)
-                        .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                )
+            VStack(spacing: 7) {
+                Rectangle()
+                    .fill(Color.gray)
+                    .frame(width: 24, height: 2.5)
+                Rectangle()
+                    .fill(Color.gray)
+                    .frame(width: 24, height: 2.5)
+                Rectangle()
+                    .fill(Color.gray)
+                    .frame(width: 24, height: 2.5)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(10)
+            .frame(width: 40, height: 40)
+            .background(Color("ButtonBackground"))
+            .overlay(
+                RoundedRectangle(cornerRadius: 0)
+                    .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+            .onTapGesture { rightButtonAction() }
 
         case .close:
             Button(action: rightButtonAction) {

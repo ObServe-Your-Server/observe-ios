@@ -29,11 +29,11 @@ struct NetworkMetricsView: View {
                 if isExpanded {
                     // Header row — gray box style
                     HStack {
-                        Text("TBD")
+                        Text("IP")
                             .foregroundColor(Color.gray)
                             .font(.system(size: 12, weight: .medium))
                         Spacer()
-                        Text("TBD")
+                        Text(metricsManager.localIp ?? "Unknown")
                             .foregroundColor(.white)
                             .font(.system(size: 14, weight: .medium))
                     }

@@ -130,8 +130,14 @@ struct OverView: View {
                     .coordinateSpace(name: "scroll")
                 }
                 .background(Color.black.ignoresSafeArea())
+                .overlay(
+                    Color.black
+                        .opacity(showBurgermenu ? 0.6 : 0.0)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                )
                 .offset(x: showBurgermenu ? -240 : 0)
-                .animation(.spring(response: 0.28, dampingFraction: 0.9), value: showBurgermenu)
+                .animation(showBurgermenu ? .spring(response: 0.28, dampingFraction: 0.9) : .spring(response: 0.2, dampingFraction: 0.95), value: showBurgermenu)
                 .animation(.easeInOut(duration: 0.25), value: networkMonitor.isConnected)
                 .animation(.easeInOut(duration: 0.25), value: networkMonitor.showReconnectedBanner)
 
@@ -148,19 +154,17 @@ struct OverView: View {
                     .zIndex(3)
                 }
 
-                if showBurgermenu {
-                    BurgerMenu(
-                        router: router,
-                        selectedSection: .dashboard,
-                        onDismiss: { showBurgermenu = false },
-                        onDashboard: { showBurgermenu = false },
-                        onLogout: {
-                            showBurgermenu = false
-                            authManager.logout()
-                        }
-                    )
-                    .zIndex(4)
-                }
+                BurgerMenu(
+                    router: router,
+                    selectedSection: .dashboard,
+                    isOpen: $showBurgermenu,
+                    onDashboard: { showBurgermenu = false },
+                    onLogout: {
+                        showBurgermenu = false
+                        authManager.logout()
+                    }
+                )
+                .zIndex(4)
             }
             .fullScreenCover(item: $selectedServer) { server in
                 ServerDetailView(server: server)

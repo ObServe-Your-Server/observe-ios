@@ -52,21 +52,25 @@ struct AccountView: View {
                 }
             }
             .background(Color.black.ignoresSafeArea())
+            .overlay(
+                Color.black
+                    .opacity(showBurgerMenu ? 0.6 : 0.0)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            )
             .offset(x: showBurgerMenu ? -240 : 0)
-            .animation(.spring(response: 0.28, dampingFraction: 0.9), value: showBurgerMenu)
+            .animation(showBurgerMenu ? .spring(response: 0.28, dampingFraction: 0.9) : .spring(response: 0.2, dampingFraction: 0.95), value: showBurgerMenu)
 
-            if showBurgerMenu {
-                BurgerMenu(
-                    router: router,
-                    selectedSection: .account,
-                    onDismiss: { showBurgerMenu = false },
-                    onDashboard: { dismiss() },
-                    onLogout: {
-                        showBurgerMenu = false
-                        authManager.logout()
-                    }
-                )
-            }
+            BurgerMenu(
+                router: router,
+                selectedSection: .account,
+                isOpen: $showBurgerMenu,
+                onDashboard: { dismiss() },
+                onLogout: {
+                    showBurgerMenu = false
+                    authManager.logout()
+                }
+            )
         }
     }
 

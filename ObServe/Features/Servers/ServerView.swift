@@ -26,21 +26,21 @@ struct ServerView: View {
 
                     Spacer()
 
-                    Button {
+                    VStack(spacing: 7) {
+                        Rectangle().fill(Color.gray).frame(width: 24, height: 2.5)
+                        Rectangle().fill(Color.gray).frame(width: 24, height: 2.5)
+                        Rectangle().fill(Color.gray).frame(width: 24, height: 2.5)
+                    }
+                    .padding(10)
+                    .frame(width: 40, height: 40)
+                    .background(Color("ButtonBackground"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 0)
+                            .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture {
                         showBurgerMenu = true
-                    } label: {
-                        VStack(spacing: 7) {
-                            Rectangle().fill(Color.gray).frame(width: 24, height: 2.5)
-                            Rectangle().fill(Color.gray).frame(width: 24, height: 2.5)
-                            Rectangle().fill(Color.gray).frame(width: 24, height: 2.5)
-                        }
-                        .padding(10)
-                        .frame(width: 40, height: 40)
-                        .background(Color("ButtonBackground"))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 0)
-                                .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                        )
                     }
                 }
                 .padding(.horizontal, 20)
@@ -71,21 +71,25 @@ struct ServerView: View {
                     .frame(maxWidth: .infinity)
                 }
             }
+            .overlay(
+                Color.black
+                    .opacity(showBurgerMenu ? 0.6 : 0.0)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            )
             .offset(x: showBurgerMenu ? -240 : 0)
-            .animation(.spring(response: 0.28, dampingFraction: 0.9), value: showBurgerMenu)
+            .animation(showBurgerMenu ? .spring(response: 0.28, dampingFraction: 0.9) : .spring(response: 0.2, dampingFraction: 0.95), value: showBurgerMenu)
 
-            if showBurgerMenu {
-                BurgerMenu(
-                    router: router,
-                    selectedSection: .server,
-                    onDismiss: { showBurgerMenu = false },
-                    onDashboard: { dismiss() },
-                    onLogout: {
-                        showBurgerMenu = false
-                        authManager.logout()
-                    }
-                )
-            }
+            BurgerMenu(
+                router: router,
+                selectedSection: .server,
+                isOpen: $showBurgerMenu,
+                onDashboard: { dismiss() },
+                onLogout: {
+                    showBurgerMenu = false
+                    authManager.logout()
+                }
+            )
         }
         .background(Color.black)
         .toolbar(.hidden, for: .navigationBar)

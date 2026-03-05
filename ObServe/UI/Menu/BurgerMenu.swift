@@ -41,23 +41,22 @@ enum MenuSection: String, CaseIterable {
 struct BurgerMenu: View {
     var router: Router
     var selectedSection: MenuSection
-    var onDismiss: () -> Void
+    @Binding var isOpen: Bool
     var onDashboard: () -> Void
     var onLogout: () -> Void
 
-    @State private var showPanel = false
-
     private let menuWidth: CGFloat = 240
+
+    private let openSpring = Animation.spring(response: 0.28, dampingFraction: 0.9)
+    private let closeSpring = Animation.spring(response: 0.2, dampingFraction: 0.95)
 
     var body: some View {
         ZStack(alignment: .trailing) {
 
-            Color.black
-                .opacity(showPanel ? 0.6 : 0.0)
+            Color.clear
+                .contentShape(Rectangle())
                 .ignoresSafeArea()
-                .onTapGesture { dismissAnimated() }
-                .animation(.easeInOut(duration: 0.18), value: showPanel)
-
+                .onTapGesture { dismiss() }
 
             VStack(spacing: 0) {
                 // Header with app icon and version
@@ -88,7 +87,7 @@ struct BurgerMenu: View {
                             section: section,
                             isSelected: selectedSection == section,
                             action: {
-                                dismissAnimated {
+                                dismiss {
                                     handleSectionTap(section)
                                 }
                             }
@@ -107,24 +106,19 @@ struct BurgerMenu: View {
                     .frame(maxHeight: .infinity),
                 alignment: .leading
             )
-            .offset(x: showPanel ? 0 : menuWidth)
-            .animation(.spring(response: 0.28, dampingFraction: 0.9), value: showPanel)
+            .offset(x: isOpen ? 0 : menuWidth)
         }
-        .onAppear {
-            withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
-                showPanel = true
-            }
-        }
+        .animation(isOpen ? openSpring : closeSpring, value: isOpen)
+        .allowsHitTesting(isOpen)
     }
 
     // MARK: - Helpers
-    private func dismissAnimated(after action: (() -> Void)? = nil) {
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.95)) {
-            showPanel = false
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
-            onDismiss()
-            action?()
+    private func dismiss(after action: (() -> Void)? = nil) {
+        isOpen = false
+        if let action {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                action()
+            }
         }
     }
 

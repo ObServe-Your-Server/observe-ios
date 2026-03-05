@@ -15,7 +15,10 @@ func formatBytes(_ bytes: Double) -> String {
     }
 }
 
-func formatValue(_ value: Double, decimalPlaces: Int = 2) -> String {
+func formatValue(_ value: Double, decimalPlaces: Int = 2, forceDecimals: Bool = false) -> String {
+    if forceDecimals {
+        return String(format: "%.\(decimalPlaces)f", value)
+    }
     let formatter = NumberFormatter()
     formatter.minimumFractionDigits = 0
 
@@ -56,6 +59,7 @@ struct UpdateLabel: View {
     var showPercent: Bool = false
     var showDaysInUptime: Bool = true
     var formattedText: String? = nil
+    var forceDecimals: Bool = false
 
     @State private var oldValue: Double = 0.0
 
@@ -78,7 +82,7 @@ struct UpdateLabel: View {
                         .contentTransition(.numericText(countsDown: value < oldValue))
                         .animation(.easeInOut, value: value)
                 } else {
-                    Text("\(formatValue(value, decimalPlaces: decimalPlaces))\((max == 0) ? "" : " / \(formatValue(max))")\(unit.isEmpty ? "" : " \(unit)")")
+                    Text("\(formatValue(value, decimalPlaces: decimalPlaces, forceDecimals: forceDecimals))\((max == 0) ? "" : " / \(formatValue(max, decimalPlaces: decimalPlaces, forceDecimals: forceDecimals))")\(unit.isEmpty ? "" : " \(unit)")")
                         .foregroundColor(.white)
                         .contentTransition(.numericText(countsDown: value < oldValue))
                         .animation(.easeInOut, value: value)

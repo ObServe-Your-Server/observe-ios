@@ -23,6 +23,7 @@ class MetricsManager: ObservableObject {
     @Published var kernelVersion: String?
     @Published var cpuName: String?
     @Published var cpuCount: Int64?
+    @Published var localIp: String?
 
     // MARK: - History for charts
     @Published var cpuEntries: [MetricEntry] = []
@@ -320,6 +321,9 @@ class MetricsManager: ObservableObject {
         // OS Info
         if let os = metric.osName { osName = os }
         if let kernel = metric.kernelVersion { kernelVersion = kernel }
+
+        // Network Info
+        if let ip = metric.localIp { localIp = ip }
 
         // RAM (bytes → GB)
         if let memUsed = metric.memUsed {
