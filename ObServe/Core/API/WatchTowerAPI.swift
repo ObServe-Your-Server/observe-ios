@@ -285,6 +285,11 @@ class WatchTowerAPI {
         post(path: "/v1/machines/\(uuid.uuidString)/api-key/refresh", body: EmptyBody(), completion: completion)
     }
 
+    /// Fetch the authenticated user's profile info
+    func fetchUserInfo(completion: @escaping (Result<UserInfoResponse, Error>) -> Void) {
+        fetch(path: "/v1/users/me", completion: completion)
+    }
+
     /// Fetch latest metric for a machine
     func fetchLatestMetric(machineUUID: UUID, completion: @escaping (Result<MachineMetricResponse, Error>) -> Void) {
         fetch(path: "/v1/machines/\(machineUUID.uuidString)/metrics/latest", completion: completion)
@@ -368,6 +373,10 @@ class WatchTowerAPI {
                 continuation.resume(with: result)
             }
         }
+    }
+
+    func fetchUserInfo() async throws -> UserInfoResponse {
+        try await fetch(path: "/v1/users/me")
     }
 
     func fetchLatestMetric(machineUUID: UUID) async throws -> MachineMetricResponse {

@@ -251,6 +251,30 @@ class OAuthManager: NSObject, ObservableObject {
         isAuthenticating = false
         authError = nil
     }
+
+    // MARK: - Authentik Self-Service Flows
+
+    /// Opens an Authentik self-service flow (e.g. user settings, password change)
+    /// in a web browser session. These flows don't return a callback; the user
+    /// simply completes the flow and dismisses the browser.
+    func openAuthentikFlow(urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+
+        let session = ASWebAuthenticationSession(
+            url: url,
+            callbackURLScheme: "observe"
+        ) { _, _ in
+            // No callback handling needed for self-service flows.
+            // The user dismisses the browser when done.
+        }
+
+        session.prefersEphemeralWebBrowserSession = false
+        session.presentationContextProvider = self
+        session.start()
+
+        // Keep a reference so the session isn't deallocated
+        authSession = session
+    }
 }
 
 // MARK: - ASWebAuthenticationPresentationContextProviding

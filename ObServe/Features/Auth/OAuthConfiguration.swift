@@ -22,6 +22,10 @@ struct OAuthConfiguration {
 
     // MARK: - Scopes
     static let scopes = ["openid", "profile", "email", "offline_access"]
+
+    // MARK: - Authentik Self-Service Flows
+    static let userSettingsFlowURL = "\(authentikBaseURL)/if/flow/default-user-settings-flow/"
+    static let passwordChangeFlowURL = "\(authentikBaseURL)/if/flow/default-password-change/"
 }
 
 // MARK: - PKCE Utilities

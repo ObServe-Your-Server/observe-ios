@@ -24,6 +24,7 @@ class MetricsManager: ObservableObject {
     @Published var cpuName: String?
     @Published var cpuCount: Int64?
     @Published var localIp: String?
+    @Published var hostname: String?
 
     // MARK: - History for charts
     @Published var cpuEntries: [MetricEntry] = []
@@ -324,6 +325,7 @@ class MetricsManager: ObservableObject {
 
         // Network Info
         if let ip = metric.localIp { localIp = ip }
+        if let h = metric.hostname { hostname = h }
 
         // RAM (bytes → GB)
         if let memUsed = metric.memUsed {

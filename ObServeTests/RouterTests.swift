@@ -12,12 +12,9 @@ struct RouterTests {
 
     // MARK: - Initial State
 
-    @Test func initialStateIsAllNil() {
+    @Test func initialStateIsDashboard() {
         let router = Router()
-        #expect(router.settingsRoute == nil)
-        #expect(router.accountRoute == nil)
-        #expect(router.serverRoute == nil)
-        #expect(router.alertsRoute == nil)
+        #expect(router.activePage == .dashboard)
     }
 
     // MARK: - navigate(to:)
@@ -25,76 +22,61 @@ struct RouterTests {
     @Test func navigateToSettings() {
         let router = Router()
         router.navigate(to: .settings)
-        #expect(router.settingsRoute != nil)
-        #expect(router.accountRoute == nil)
-        #expect(router.serverRoute == nil)
-        #expect(router.alertsRoute == nil)
+        #expect(router.activePage == .settings)
     }
 
     @Test func navigateToAccount() {
         let router = Router()
         router.navigate(to: .account)
-        #expect(router.accountRoute != nil)
-        #expect(router.settingsRoute == nil)
-        #expect(router.serverRoute == nil)
-        #expect(router.alertsRoute == nil)
+        #expect(router.activePage == .account)
     }
 
     @Test func navigateToServer() {
         let router = Router()
         router.navigate(to: .server)
-        #expect(router.serverRoute != nil)
-        #expect(router.settingsRoute == nil)
-        #expect(router.accountRoute == nil)
-        #expect(router.alertsRoute == nil)
+        #expect(router.activePage == .server)
     }
 
     @Test func navigateToAlerts() {
         let router = Router()
         router.navigate(to: .alerts)
-        #expect(router.alertsRoute != nil)
-        #expect(router.settingsRoute == nil)
-        #expect(router.accountRoute == nil)
-        #expect(router.serverRoute == nil)
+        #expect(router.activePage == .alerts)
     }
 
-    @Test func navigateToDashboardDoesNothing() {
+    @Test func navigateToDashboard() {
         let router = Router()
+        router.navigate(to: .settings)
         router.navigate(to: .dashboard)
-        #expect(router.settingsRoute == nil)
-        #expect(router.accountRoute == nil)
-        #expect(router.serverRoute == nil)
-        #expect(router.alertsRoute == nil)
+        #expect(router.activePage == .dashboard)
     }
 
-    @Test func navigateToLogoutDoesNothing() {
+    @Test func navigateToLogoutDoesNotChangePage() {
         let router = Router()
+        router.navigate(to: .settings)
         router.navigate(to: .logout)
-        #expect(router.settingsRoute == nil)
-        #expect(router.accountRoute == nil)
-        #expect(router.serverRoute == nil)
-        #expect(router.alertsRoute == nil)
+        // logout is handled externally; activePage should remain unchanged
+        #expect(router.activePage == .settings)
     }
 
     // MARK: - Multiple Navigations
 
-    @Test func navigateToMultipleSections() {
+    @Test func navigateMultipleTimes() {
         let router = Router()
         router.navigate(to: .settings)
+        #expect(router.activePage == .settings)
         router.navigate(to: .account)
-        // Both should be set (NavigationStack handles which is presented)
-        #expect(router.settingsRoute != nil)
-        #expect(router.accountRoute != nil)
+        #expect(router.activePage == .account)
+        router.navigate(to: .dashboard)
+        #expect(router.activePage == .dashboard)
     }
 
-    // MARK: - Route Clearing
+    // MARK: - Direct Assignment
 
-    @Test func clearingRouteManually() {
+    @Test func directPageAssignment() {
         let router = Router()
-        router.navigate(to: .settings)
-        #expect(router.settingsRoute != nil)
-
-        router.settingsRoute = nil
-        #expect(router.settingsRoute == nil)
+        router.activePage = .alerts
+        #expect(router.activePage == .alerts)
+        router.activePage = .dashboard
+        #expect(router.activePage == .dashboard)
     }
 }

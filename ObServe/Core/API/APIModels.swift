@@ -17,6 +17,7 @@ struct MachineMetricResponse: Decodable {
     let speedtest: SpeedtestPayloadResponse?
     let osName: String?
     let kernelVersion: String?
+    let hostname: String?
     let cpuName: String?
     let cpuCount: Int64?
 }
@@ -61,4 +62,16 @@ struct UpdateMachineRequest: Encodable {
     let name: String?
     let description: String?
     let location: String?
+}
+
+// MARK: - User Responses
+
+struct UserInfoResponse: Decodable {
+    let sub: String?
+    let preferredUsername: String?
+    let email: String?
+    let name: String?
+    let givenName: String?
+    let nickname: String?
+    let roles: Set<String>?
 }

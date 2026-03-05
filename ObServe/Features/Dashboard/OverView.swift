@@ -71,136 +71,142 @@ struct OverView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack(alignment: .bottom) {
-                VStack(spacing: 0) {
-                    AppBar(
-                        machineCount: filteredServers.count,
-                        contentHasScrolled: $contentHasScrolled,
-                        showBurgerMenu: $showBurgermenu,
-                        selectedSortType: $sortType
-                    )
-
-                    if !networkMonitor.isConnected {
-                        networkBanner(label: "NO INTERNET CONNECTION", color: "ObServeRed")
-                            .padding(.top, 8)
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                    } else if networkMonitor.showReconnectedBanner {
-                        networkBanner(label: "INTERNET CONNECTED", color: "ObServeGreen")
-                            .padding(.top, 8)
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-
-                    ScrollView {
-                        ScrollDetector(contentHasScrolled: $contentHasScrolled)
-                        VStack(spacing: 0) {
-                            if servers.isEmpty {
-                                VStack(spacing: 0) {
-                                    Rectangle().frame(height: 60).opacity(0)
-                                    Image("NoMachines")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .padding(.horizontal, 100)
-                                    Rectangle()
-                                        .fill(Color("ObServeGray"))
-                                        .frame(width: 2, height: 200)
-                                }
-                            } else {
-                                withAnimation {
-                                    ForEach(filteredServers) { server in
-                                        ServerModule(
-                                            server: server,
-                                            onDelete: {
-                                                Task { await viewModel?.deleteServer(server, allServers: servers) }
-                                            }
-                                        )
-                                        .contentShape(Rectangle())
-                                        .onTapGesture { selectedServer = server }
-                                    }
-                                }
-                            }
-
-                            AddMachineButton {
-                                withAnimation { showAddServer = true }
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 20)
-                    }
-                    .coordinateSpace(name: "scroll")
-                }
-                .background(Color.black.ignoresSafeArea())
-                .overlay(
-                    Color.black
-                        .opacity(showBurgermenu ? 0.6 : 0.0)
-                        .ignoresSafeArea()
-                        .allowsHitTesting(false)
-                )
-                .offset(x: showBurgermenu ? -240 : 0)
-                .animation(showBurgermenu ? .spring(response: 0.28, dampingFraction: 0.9) : .spring(response: 0.2, dampingFraction: 0.95), value: showBurgermenu)
-                .animation(.easeInOut(duration: 0.25), value: networkMonitor.isConnected)
-                .animation(.easeInOut(duration: 0.25), value: networkMonitor.showReconnectedBanner)
-
-                if showAddServer {
-                    MachineOnboardingModal(
-                        onDismiss: { withAnimation { showAddServer = false } },
-                        onComplete: { newServer, machineType in
-                            modelContext.insert(newServer)
-                            try? modelContext.save()
-                            viewModel?.syncServersToWidget(servers)
-                            withAnimation { showAddServer = false }
-                        }
-                    )
-                    .zIndex(3)
-                }
-
-                BurgerMenu(
-                    router: router,
-                    selectedSection: .dashboard,
-                    isOpen: $showBurgermenu,
-                    onDashboard: { showBurgermenu = false },
-                    onLogout: {
-                        showBurgermenu = false
-                        authManager.logout()
-                    }
-                )
-                .zIndex(4)
-            }
-            .fullScreenCover(item: $selectedServer) { server in
-                ServerDetailView(server: server)
-                    .toolbar(.hidden, for: .navigationBar)
-                    .background(Color.black.ignoresSafeArea())
-            }
-            .navigationDestination(item: $router.settingsRoute) { _ in
+        ZStack {
+            switch router.activePage {
+            case .dashboard:
+                dashboardPage
+                    .transition(.opacity)
+            case .settings:
                 SettingsOverview(router: router)
-                .toolbar(.hidden, for: .navigationBar)
-                .background(Color.black.ignoresSafeArea())
-            }
-            .navigationDestination(item: $router.accountRoute) { _ in
+                    .background(Color.black.ignoresSafeArea())
+                    .transition(.opacity)
+            case .account:
                 AccountView(router: router)
-                .toolbar(.hidden, for: .navigationBar)
-                .background(Color.black.ignoresSafeArea())
-            }
-            .navigationDestination(item: $router.serverRoute) { _ in
+                    .background(Color.black.ignoresSafeArea())
+                    .transition(.opacity)
+            case .server:
                 ServerView(router: router)
-                .toolbar(.hidden, for: .navigationBar)
-                .background(Color.black.ignoresSafeArea())
-            }
-            .navigationDestination(item: $router.alertsRoute) { _ in
+                    .background(Color.black.ignoresSafeArea())
+                    .transition(.opacity)
+            case .alerts:
                 AlertsView(router: router)
+                    .background(Color.black.ignoresSafeArea())
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: router.activePage)
+        .onAppear {
+            if viewModel == nil {
+                viewModel = OverViewModel(modelContext: modelContext)
+            }
+            Task { await viewModel?.syncMachinesFromBackend(existingServers: servers) }
+            viewModel?.syncServersToWidget(servers)
+        }
+        .onChange(of: servers.count) { oldValue, newValue in
+            viewModel?.syncServersToWidget(servers)
+        }
+    }
+
+    @ViewBuilder
+    private var dashboardPage: some View {
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                AppBar(
+                    machineCount: filteredServers.count,
+                    contentHasScrolled: $contentHasScrolled,
+                    showBurgerMenu: $showBurgermenu,
+                    selectedSortType: $sortType
+                )
+
+                if !networkMonitor.isConnected {
+                    networkBanner(label: "NO INTERNET CONNECTION", color: "ObServeRed")
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                } else if networkMonitor.showReconnectedBanner {
+                    networkBanner(label: "INTERNET CONNECTED", color: "ObServeGreen")
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
+                ScrollView {
+                    ScrollDetector(contentHasScrolled: $contentHasScrolled)
+                    VStack(spacing: 0) {
+                        if servers.isEmpty {
+                            VStack(spacing: 0) {
+                                Rectangle().frame(height: 60).opacity(0)
+                                Image("NoMachines")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(.horizontal, 100)
+                                Rectangle()
+                                    .fill(Color("ObServeGray"))
+                                    .frame(width: 2, height: 200)
+                            }
+                        } else {
+                            withAnimation {
+                                ForEach(filteredServers) { server in
+                                    ServerModule(
+                                        server: server,
+                                        onDelete: {
+                                            Task { await viewModel?.deleteServer(server, allServers: servers) }
+                                        }
+                                    )
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { selectedServer = server }
+                                }
+                            }
+                        }
+
+                        AddMachineButton {
+                            withAnimation { showAddServer = true }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 20)
+                }
+                .coordinateSpace(name: "scroll")
+            }
+            .background(Color.black.ignoresSafeArea())
+            .overlay(
+                Color.black
+                    .opacity(showBurgermenu ? 0.6 : 0.0)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            )
+            .offset(x: showBurgermenu ? -240 : 0)
+            .animation(showBurgermenu ? .spring(response: 0.28, dampingFraction: 0.9) : .spring(response: 0.2, dampingFraction: 0.95), value: showBurgermenu)
+            .animation(.easeInOut(duration: 0.25), value: networkMonitor.isConnected)
+            .animation(.easeInOut(duration: 0.25), value: networkMonitor.showReconnectedBanner)
+
+            if showAddServer {
+                MachineOnboardingModal(
+                    onDismiss: { withAnimation { showAddServer = false } },
+                    onComplete: { newServer, machineType in
+                        modelContext.insert(newServer)
+                        try? modelContext.save()
+                        viewModel?.syncServersToWidget(servers)
+                        withAnimation { showAddServer = false }
+                    }
+                )
+                .zIndex(3)
+            }
+
+            BurgerMenu(
+                router: router,
+                selectedSection: .dashboard,
+                isOpen: $showBurgermenu,
+                onDashboard: { showBurgermenu = false },
+                onLogout: {
+                    showBurgermenu = false
+                    authManager.logout()
+                }
+            )
+            .zIndex(4)
+        }
+        .fullScreenCover(item: $selectedServer) { server in
+            ServerDetailView(server: server)
                 .toolbar(.hidden, for: .navigationBar)
                 .background(Color.black.ignoresSafeArea())
-            }
-            .onAppear {
-                if viewModel == nil {
-                    viewModel = OverViewModel(modelContext: modelContext)
-                }
-                Task { await viewModel?.syncMachinesFromBackend(existingServers: servers) }
-                viewModel?.syncServersToWidget(servers)
-            }
-            .onChange(of: servers.count) { oldValue, newValue in
-                viewModel?.syncServersToWidget(servers)
-            }
         }
     }
 

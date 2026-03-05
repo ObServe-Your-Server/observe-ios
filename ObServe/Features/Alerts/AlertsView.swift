@@ -10,7 +10,6 @@ import SwiftUI
 struct AlertsView: View {
     @State private var contentHasScrolled = false
     @State private var showBurgerMenu = false
-    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authManager: AuthenticationManager
 
     var router: Router
@@ -84,7 +83,7 @@ struct AlertsView: View {
                 router: router,
                 selectedSection: .alerts,
                 isOpen: $showBurgerMenu,
-                onDashboard: { dismiss() },
+                onDashboard: { router.activePage = .dashboard },
                 onLogout: {
                     showBurgerMenu = false
                     authManager.logout()

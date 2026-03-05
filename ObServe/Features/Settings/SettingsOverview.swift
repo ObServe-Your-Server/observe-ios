@@ -13,7 +13,6 @@ struct SettingsOverview: View {
     @State private var showAboutModal = false
     @State private var showResetModal = false
     @State private var showPollingIntervalPicker = false
-    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authManager: AuthenticationManager
 
     // Use SettingsManager instead of local state
@@ -164,7 +163,7 @@ struct SettingsOverview: View {
                 router: router,
                 selectedSection: .settings,
                 isOpen: $showBurgerMenu,
-                onDashboard: { dismiss() },
+                onDashboard: { router.activePage = .dashboard },
                 onLogout: {
                     showBurgerMenu = false
                     authManager.logout()

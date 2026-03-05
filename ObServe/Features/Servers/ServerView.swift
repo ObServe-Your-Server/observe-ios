@@ -10,7 +10,6 @@ import SwiftUI
 struct ServerView: View {
     @State private var contentHasScrolled = false
     @State private var showBurgerMenu = false
-    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authManager: AuthenticationManager
 
     var router: Router
@@ -84,7 +83,7 @@ struct ServerView: View {
                 router: router,
                 selectedSection: .server,
                 isOpen: $showBurgerMenu,
-                onDashboard: { dismiss() },
+                onDashboard: { router.activePage = .dashboard },
                 onLogout: {
                     showBurgerMenu = false
                     authManager.logout()

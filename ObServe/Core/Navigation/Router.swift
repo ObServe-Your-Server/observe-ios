@@ -2,32 +2,28 @@
 //  Router.swift
 //  ObServe
 //
-//  Centralized navigation router that owns all route state.
-//  Replaces per-view @Binding route props and BurgerMenu closure soup.
+//  Centralized navigation router. Drives top-level page switching
+//  via a single activePage property — no NavigationStack push needed.
 //
 
 import SwiftUI
 
 @Observable
 final class Router {
-    var settingsRoute: SettingsRoute?
-    var accountRoute: AccountRoute?
-    var serverRoute: ServerRoute?
-    var alertsRoute: AlertsRoute?
+    var activePage: ActivePage = .dashboard
 
     func navigate(to section: MenuSection) {
         switch section {
         case .dashboard:
-            // Handled by dismiss in each view
-            break
+            activePage = .dashboard
         case .server:
-            serverRoute = .init()
+            activePage = .server
         case .alerts:
-            alertsRoute = .init()
+            activePage = .alerts
         case .account:
-            accountRoute = .init()
+            activePage = .account
         case .settings:
-            settingsRoute = .init()
+            activePage = .settings
         case .logout:
             // Handled separately via AuthenticationManager
             break

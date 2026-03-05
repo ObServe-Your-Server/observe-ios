@@ -10,9 +10,13 @@ import SwiftUI
 struct AccountView: View {
     @State private var contentHasScrolled = false
     @State private var showBurgerMenu = false
-    @Environment(\.dismiss) private var dismiss
 
     @EnvironmentObject private var authManager: AuthenticationManager
+    @StateObject private var oauthManager = OAuthManager()
+
+    @State private var userInfo: UserInfoResponse?
+    @State private var isLoading = true
+    @State private var loadError: String?
 
     var router: Router
 
@@ -31,9 +35,68 @@ struct AccountView: View {
                     ScrollDetector(contentHasScrolled: $contentHasScrolled)
 
                     VStack(spacing: 35) {
+
+                        // MARK: - Profile Section
                         VStack(alignment: .leading, spacing: 20) {
+                            sectionHeader("PROFILE")
+
+                            if isLoading {
+                                HStack {
+                                    Spacer()
+                                    ProgressView()
+                                        .tint(.white)
+                                    Spacer()
+                                }
+                                .padding(.vertical, 12)
+                            } else if let error = loadError {
+                                Text(error.uppercased())
+                                    .font(.system(size: 11))
+                                    .foregroundColor(Color("ObServeRed"))
+                            } else {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    infoRow(
+                                        label: "USERNAME",
+                                        value: userInfo?.preferredUsername ?? "—"
+                                    )
+                                    infoRow(
+                                        label: "EMAIL",
+                                        value: userInfo?.email ?? "—"
+                                    )
+                                }
+                            }
+                        }
+
+                        // MARK: - Manage Section
+                        VStack(alignment: .leading, spacing: 12) {
                             sectionHeader("MANAGE")
-                            RegularButtonAccount(Label: "LOGOUT", action: { authManager.logout() }, color: "ObServeBlue")
+
+                            HStack(spacing: 12) {
+                                RegularButtonAccount(
+                                    Label: "CHANGE INFO",
+                                    action: {
+                                        oauthManager.openAuthentikFlow(
+                                            urlString: OAuthConfiguration.userSettingsFlowURL
+                                        )
+                                    },
+                                    color: "ObServeGray"
+                                )
+
+                                RegularButtonAccount(
+                                    Label: "CHANGE PASSWORD",
+                                    action: {
+                                        oauthManager.openAuthentikFlow(
+                                            urlString: OAuthConfiguration.passwordChangeFlowURL
+                                        )
+                                    },
+                                    color: "ObServeGray"
+                                )
+                            }
+
+                            RegularButtonAccount(
+                                Label: "LOGOUT",
+                                action: { authManager.logout() },
+                                color: "ObServeBlue"
+                            )
                         }
                     }
                 }
@@ -65,16 +128,39 @@ struct AccountView: View {
                 router: router,
                 selectedSection: .account,
                 isOpen: $showBurgerMenu,
-                onDashboard: { dismiss() },
+                onDashboard: { router.activePage = .dashboard },
                 onLogout: {
                     showBurgerMenu = false
                     authManager.logout()
                 }
             )
         }
+        .onAppear {
+            oauthManager.authenticationManager = authManager
+            fetchUserInfo()
+        }
+    }
+
+    // MARK: - Data Fetching
+
+    private func fetchUserInfo() {
+        isLoading = true
+        loadError = nil
+        WatchTowerAPI.shared.fetchUserInfo { result in
+            DispatchQueue.main.async {
+                isLoading = false
+                switch result {
+                case .success(let info):
+                    userInfo = info
+                case .failure(let error):
+                    loadError = error.localizedDescription
+                }
+            }
+        }
     }
 
     // MARK: - Helper Views
+
     @ViewBuilder
     private func sectionHeader(_ text: String) -> some View {
         HStack {
@@ -85,5 +171,17 @@ struct AccountView: View {
                 .frame(height: 1)
         }
     }
-}
 
+    @ViewBuilder
+    private func infoRow(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.system(size: 11))
+                .foregroundColor(.gray)
+            Text(value.uppercased())
+                .font(.system(size: 16))
+                .foregroundColor(.white)
+        }
+    }
+
+}
