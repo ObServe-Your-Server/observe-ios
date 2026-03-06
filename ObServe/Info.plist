@@ -5,22 +5,25 @@
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>100.103.85.36</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-		</dict>
+		<false/>
 	</dict>
 	<key>UIAppFonts</key>
 	<array>
 		<string>IBMPlexSans-Italic-VariableFont_wdth,wght.ttf</string>
 		<string>IBMPlexSans-VariableFont_wdth,wght.ttf</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.dev.ObServe.oauth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>observe</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>
