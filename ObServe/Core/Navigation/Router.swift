@@ -16,10 +16,10 @@ final class Router {
         switch section {
         case .dashboard:
             activePage = .dashboard
-        case .server:
-            activePage = .server
-        case .alerts:
-            activePage = .alerts
+        //case .server:
+        //    activePage = .server
+        //case .alerts:
+        //    activePage = .alerts
         case .account:
             activePage = .account
         case .settings:

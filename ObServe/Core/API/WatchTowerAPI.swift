@@ -14,13 +14,14 @@ class WatchTowerAPI {
 
     // MARK: - Generic Request Helpers
 
-    private func createRequest(for url: URL, method: String = "GET") -> URLRequest? {
+    private func createRequest(for url: URL, method: String = "GET", timeoutInterval: TimeInterval? = nil) -> URLRequest? {
         guard let authManager = authManager else {
             print("WatchTowerAPI: AuthenticationManager not configured")
             return nil
         }
 
         var request = URLRequest(url: url)
+        if let timeout = timeoutInterval { request.timeoutInterval = timeout }
         request.httpMethod = method
         request.setValue(authManager.bearerToken, forHTTPHeaderField: "Authorization")
         if method != "DELETE" && method != "GET" {
@@ -39,13 +40,13 @@ class WatchTowerAPI {
 
     // MARK: - GET
 
-    func fetch<T: Decodable>(path: String, queryItems: [URLQueryItem] = [], completion: @escaping (Result<T, Error>) -> Void) {
+    func fetch<T: Decodable>(path: String, queryItems: [URLQueryItem] = [], timeoutInterval: TimeInterval? = nil, completion: @escaping (Result<T, Error>) -> Void) {
         guard let url = buildURL(path: path, queryItems: queryItems) else {
             completion(.failure(APIError.invalidURL))
             return
         }
 
-        guard let request = createRequest(for: url) else {
+        guard let request = createRequest(for: url, timeoutInterval: timeoutInterval) else {
             completion(.failure(APIError.notAuthenticated))
             return
         }
@@ -291,8 +292,8 @@ class WatchTowerAPI {
     }
 
     /// Fetch latest metric for a machine
-    func fetchLatestMetric(machineUUID: UUID, completion: @escaping (Result<MachineMetricResponse, Error>) -> Void) {
-        fetch(path: "/v1/machines/\(machineUUID.uuidString)/metrics/latest", completion: completion)
+    func fetchLatestMetric(machineUUID: UUID, timeoutInterval: TimeInterval? = nil, completion: @escaping (Result<MachineMetricResponse, Error>) -> Void) {
+        fetch(path: "/v1/machines/\(machineUUID.uuidString)/metrics/latest", timeoutInterval: timeoutInterval, completion: completion)
     }
 
     /// Fetch historical metrics for a machine

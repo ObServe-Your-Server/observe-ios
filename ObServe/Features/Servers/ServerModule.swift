@@ -52,7 +52,7 @@ struct ServerModule: View {
         }
 
         // Use the metrics/latest endpoint as a health check
-        WatchTowerAPI.shared.fetchLatestMetric(machineUUID: server.machineUUID) { result in
+        WatchTowerAPI.shared.fetchLatestMetric(machineUUID: server.machineUUID, timeoutInterval: 5) { result in
             DispatchQueue.main.async {
                 let healthy: Bool
                 switch result {

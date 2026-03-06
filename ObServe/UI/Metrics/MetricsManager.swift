@@ -201,7 +201,7 @@ class MetricsManager: ObservableObject {
         // Don't fire requests while offline
         guard NetworkMonitor.shared.isConnected else { return }
 
-        api.fetchLatestMetric(machineUUID: machineUUID) { [weak self] result in
+        api.fetchLatestMetric(machineUUID: machineUUID, timeoutInterval: 8) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 switch result {
@@ -316,7 +316,7 @@ class MetricsManager: ObservableObject {
         cpuTemperature = metric.cpuTemperature
 
         // CPU Hardware Info
-        if let name = metric.cpuName { cpuName = name }
+        if let name = metric.cpuName { cpuName = Self.cleanCPUName(name) }
         if let count = metric.cpuCount { cpuCount = count }
 
         // OS Info
@@ -579,5 +579,22 @@ class MetricsManager: ObservableObject {
     deinit {
         pollingTimer?.invalidate()
         uptimeTickTimer?.invalidate()
+    }
+
+    private static func cleanCPUName(_ name: String) -> String {
+        var result = name
+        // Remove legal symbols
+        result = result.replacingOccurrences(of: "(R)", with: "", options: .caseInsensitive)
+        result = result.replacingOccurrences(of: "(TM)", with: "", options: .caseInsensitive)
+        result = result.replacingOccurrences(of: "(C)", with: "", options: .caseInsensitive)
+        // Remove redundant "CPU" label
+        result = result.replacingOccurrences(of: " CPU", with: "", options: .caseInsensitive)
+        // Remove frequency suffix like "@ 3.10GHz"
+        if let range = result.range(of: #"\s*@\s*[\d.]+\s*[GMg][Hh][Zz]"#, options: .regularExpression) {
+            result.removeSubrange(range)
+        }
+        // Collapse multiple spaces
+        result = result.replacingOccurrences(of: #"\s{2,}"#, with: " ", options: .regularExpression)
+        return result.trimmingCharacters(in: .whitespaces)
     }
 }

@@ -81,7 +81,7 @@ struct AlertsView: View {
 
             BurgerMenu(
                 router: router,
-                selectedSection: .alerts,
+                selectedSection: .dashboard,
                 isOpen: $showBurgerMenu,
                 onDashboard: { router.activePage = .dashboard },
                 onLogout: {

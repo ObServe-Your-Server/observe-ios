@@ -9,8 +9,8 @@ import SwiftUI
 
 enum MenuSection: String, CaseIterable {
     case dashboard = "DASHBOARD"
-    case server = "SERVER"
-    case alerts = "ALERTS"
+    //case server = "SERVER"
+    //case alerts = "ALERTS"
     case account = "ACCOUNT"
     case settings = "SETTINGS"
     case logout = "LOGOUT"
@@ -18,8 +18,8 @@ enum MenuSection: String, CaseIterable {
     var iconOff: String {
         switch self {
         case .dashboard: return "dashboardIcon_off"
-        case .server: return "serverIcon_off"
-        case .alerts: return "alertsIcon_off"
+        //case .server: return "serverIcon_off"
+        //case .alerts: return "alertsIcon_off"
         case .account: return "accountIcon_off"
         case .settings: return "settingsIcon_off"
         case .logout: return "logoutIcon_off"
@@ -29,8 +29,8 @@ enum MenuSection: String, CaseIterable {
     var iconOn: String {
         switch self {
         case .dashboard: return "dashboardIcon_on"
-        case .server: return "serverIcon_on"
-        case .alerts: return "alertsIcon_on"
+        //case .server: return "serverIcon_on"
+        //case .alerts: return "alertsIcon_on"
         case .account: return "accountIcon_on"
         case .settings: return "settingsIcon_on"
         case .logout: return "logoutIcon_on"

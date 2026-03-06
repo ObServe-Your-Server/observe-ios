@@ -57,18 +57,15 @@ struct ExpandableMetricBox: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
                 }
-                HStack {
-                    Spacer()
-                    TimeSeriesGridChart(
-                        currentValue: currentValue,
-                        maximum: maximum,
-                        serverId: serverId,
-                        metricType: metricType
-                    )
-                    .frame(maxWidth: 800)
-                    Spacer()
-                }
-                .clipped()
+                TimeSeriesGridChart(
+                    currentValue: currentValue,
+                    maximum: maximum,
+                    serverId: serverId,
+                    metricType: metricType
+                )
+                .frame(maxWidth: .infinity)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
 
                 if let temp = cpuTemperature {
                     TemperatureGraph(temperature: temp)

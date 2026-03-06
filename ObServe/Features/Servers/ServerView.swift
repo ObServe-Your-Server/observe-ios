@@ -81,7 +81,7 @@ struct ServerView: View {
 
             BurgerMenu(
                 router: router,
-                selectedSection: .server,
+                selectedSection: .dashboard,
                 isOpen: $showBurgerMenu,
                 onDashboard: { router.activePage = .dashboard },
                 onLogout: {

@@ -297,7 +297,7 @@ struct ServerManagementModule: View {
                     metricType: "RAM",
                     headerRows: [
                         // TODO: Backend should send RAM chip name
-                        (label: "NAME", value: "MARCOOOOO"),
+                        (label: "NAME", value: "TODO"),
                         (label: "MAX", value: metricsManager.maxRAM > 0
                             ? String(format: "%.1f GB", metricsManager.maxRAM)
                             : "Unknown")

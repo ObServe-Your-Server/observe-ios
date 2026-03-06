@@ -11,7 +11,7 @@ struct TimeSeriesGridChart: View {
     // Grid configuration
     private let rows = 10
     private let columns = 30
-    private let cellSize: CGFloat = 7
+    private let cellSize: CGFloat = 8.7
     private let maxHistoryCount = 30
     
     private var cellSpacing: CGFloat { cellSize * 0.2 }
@@ -26,55 +26,29 @@ struct TimeSeriesGridChart: View {
     private let fillColor = Color.white
     private let axisColor = Color(red: 0x80/255, green: 0x80/255, blue: 0x80/255)
     
-    private func calculateActualCellSize(for width: CGFloat) -> CGFloat {
-        // Reserve space for axis labels, gaps, and padding (estimated)
-        let labelAndAxisSpace: CGFloat = 50
-        let horizontalPadding: CGFloat = 16 // 8pt on each side from padding
-        let gridAvailableWidth = max(width - labelAndAxisSpace - horizontalPadding, width * 0.5)
-
-        // Calculate total spacing width using spacing ratio
-        let spacingRatio: CGFloat = 0.2
-        let totalSpacingWidth = CGFloat(columns - 1) * (gridAvailableWidth / CGFloat(columns)) * spacingRatio / (1 + spacingRatio)
-
-        // Calculate cell size
-        let calculatedCellSize = (gridAvailableWidth - totalSpacingWidth) / CGFloat(columns)
-
-        // Allow wider range for scaling (minimum 4, maximum 20 for larger screens)
-        return min(max(4.0, calculatedCellSize), 20.0)
-    }
     private func calculateActualSpacing(for cellSize: CGFloat) -> CGFloat { cellSize * 0.2 }
     private func calculateGridHeight(cellSize: CGFloat, spacing: CGFloat) -> CGFloat {
         CGFloat(rows) * cellSize + CGFloat(rows - 1) * spacing
     }
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Color.black.ignoresSafeArea()
-                
-                VStack {
-                    let actualCellSize = calculateActualCellSize(for: geometry.size.width)
-                    let actualSpacing = calculateActualSpacing(for: actualCellSize)
-                    let gridHeight = calculateGridHeight(cellSize: actualCellSize, spacing: actualSpacing)
-                    
-                    GridContentView(
-                        timeSeriesData: percentageHistory,
-                        currentPercentage: currentPercentage,
-                        actualCellSize: actualCellSize,
-                        actualSpacing: actualSpacing,
-                        gridHeight: gridHeight,
-                        rows: rows,
-                        columns: columns,
-                        gridColor: gridColor,
-                        fillColor: fillColor,
-                        axisColor: axisColor,
-                        screenWidth: geometry.size.width
-                    )
-                    .frame(maxWidth: .infinity)
-                }
-            }
-        }
-        .aspectRatio(2.2, contentMode: .fit)
+        let actualCellSize = cellSize
+        let actualSpacing = cellSpacing
+        let gridHeight = calculateGridHeight(cellSize: actualCellSize, spacing: actualSpacing)
+
+        GridContentView(
+            timeSeriesData: percentageHistory,
+            currentPercentage: currentPercentage,
+            actualCellSize: actualCellSize,
+            actualSpacing: actualSpacing,
+            gridHeight: gridHeight,
+            rows: rows,
+            columns: columns,
+            gridColor: gridColor,
+            fillColor: fillColor,
+            axisColor: axisColor
+        )
+        .frame(maxWidth: .infinity)
         .onChange(of: currentValue) { _, _ in updatePercentageHistory() }
         .onChange(of: maximum) { _, _ in updatePercentageHistory() }
         .onAppear {
@@ -117,18 +91,13 @@ struct GridContentView: View {
     let gridColor: Color
     let fillColor: Color
     let axisColor: Color
-    let screenWidth: CGFloat
     
     var body: some View {
         // Geometrie/Vorgaben wie bisher
         let gridWidth = CGFloat(columns) * actualCellSize + CGFloat(columns - 1) * actualSpacing
         let axisThickness: CGFloat = 1
         let axisGap: CGFloat = actualCellSize * 0.5
-        let labelSpace: CGFloat = 30
-
-        // Calculate grid positioning for label alignment
-        let gridLeftOffset = labelSpace + axisGap * 2 + 8  // 8pt is the horizontal padding
-        let _ = gridLeftOffset + gridWidth
+        let labelSpace: CGFloat = 24
 
         // Daten auf Spaltenbreite bringen
         let displayData: [Double] = {
@@ -142,30 +111,35 @@ struct GridContentView: View {
         }()
         
         // Canvas with labels and grid
-        Canvas { context, _ in
-                    let gridX = axisGap + axisGap + labelSpace
+        Canvas { context, size in
+                    let sideMargin = labelSpace + axisGap * 2
+                    let totalDrawnWidth = sideMargin * 2 + gridWidth
+                    let originX = (size.width - totalDrawnWidth) / 2
+
+                    let gridX = originX + sideMargin
                     let gridY = axisGap + labelSpace
 
-                    let yAxisX = axisGap + labelSpace
+                    let yAxisX = originX + sideMargin - axisGap
                     let xAxisY = gridY + gridHeight + axisGap
+                    let rightAxisX = gridX + gridWidth + axisGap
 
                     // Render labels above the grid
                     // "LOAD %" label aligned with leftmost grid cell
                     let loadLabel = context.resolve(
-                        Text("LOAD %")
-                            .font(.system(size: 12, weight: .medium))
+                        Text("LOAD")
+                            .font(.system(size: 12, weight: .regular))
                             .foregroundColor(.white.opacity(0.6))
                     )
                     context.draw(loadLabel, at: CGPoint(x: gridX, y: gridY - 4), anchor: .bottomLeading)
 
                     // Percentage value aligned with rightmost grid cell
                     let percentageLabel = context.resolve(
-                        Text("\(currentPercentage, specifier: "%.1f")")
-                            .font(.system(size: 18, weight: .medium))
+                        Text(String(format: "%.1f", currentPercentage))
+                            .font(.system(size: 16, weight: .regular))
                             .foregroundColor(.white)
                     )
-                    let rightEdgeX = gridX + gridWidth
-                    context.draw(percentageLabel, at: CGPoint(x: rightEdgeX, y: gridY - 4), anchor: .bottomTrailing)
+                    context.draw(percentageLabel, at: CGPoint(x: rightAxisX, y: gridY - 4), anchor: .bottomTrailing)
+
 
                     // Y-Achse
                     context.fill(
@@ -178,12 +152,12 @@ struct GridContentView: View {
                         with: .color(axisColor)
                     )
                     
-                    // X-Achse
+                    // X-Achse (from left axis to right axis)
                     context.fill(
                         Rectangle().path(in: CGRect(
                             x: yAxisX,
                             y: xAxisY - axisThickness/2,
-                            width: gridWidth + axisGap * 1.3,
+                            width: rightAxisX - yAxisX,
                             height: axisThickness
                         )),
                         with: .color(axisColor)
@@ -204,49 +178,60 @@ struct GridContentView: View {
                         }
                     }
                     
-                    // Y-Ticks (25/50/75)
-                    let tickPercentages: [(Double, Bool)] = [(25, false), (50, true), (75, false), (100, false)]
-                    for (percentage, isSpecial) in tickPercentages {
-                        let tickY: CGFloat
-                        if (percentage == 50) {
-                            let row4Y = gridY + CGFloat(rows - 1 - 4) * (actualCellSize + actualSpacing)
-                            let row5Y = gridY + CGFloat(rows - 1 - 5) * (actualCellSize + actualSpacing)
-                            tickY = (row4Y + actualCellSize + row5Y) / 2
-                        } else if (percentage == 100) {
-                            let row9Y = gridY + CGFloat(rows - 1 - 9) * (actualCellSize + actualSpacing)
-                            let row10Y = gridY + CGFloat(rows - 1 - 10) * (actualCellSize + actualSpacing)
-                            tickY = (row9Y + actualCellSize + row10Y) / 2
-                        } else {
-                            let rowFromBottom = Int(percentage / 10.0 - 0.5)
-                            tickY = gridY + CGFloat(rows - 1 - rowFromBottom) * (actualCellSize + actualSpacing) + actualCellSize/2
-                        }
-                        let tickThickness = isSpecial ? axisThickness * 2 : axisThickness
-                        let tickLength: CGFloat = isSpecial ? 5 : 3
-                        context.fill(
-                            Rectangle().path(in: CGRect(
-                                x: yAxisX - tickLength,
-                                y: tickY - tickThickness/2,
-                                width: tickLength,
-                                height: tickThickness
-                            )),
-                            with: .color(axisColor)
-                        )
-                    }
-                    
-                    // X-Ticks (zwischen Spalten)
-                    let tickColumns = [4, 9, 14, 19, 24, 29]
+                    // Right Y-axis
+                    context.fill(
+                        Rectangle().path(in: CGRect(
+                            x: rightAxisX - axisThickness/2,
+                            y: 10/9*labelSpace,
+                            width: axisThickness,
+                            height: xAxisY + 1/10 * axisGap - 1.11*labelSpace
+                        )),
+                        with: .color(axisColor)
+                    )
+
+                    // Y-Tick: 50% only, pointing inward on both axes
+                    let tick50Y: CGFloat = {
+                        let row4Y = gridY + CGFloat(rows - 1 - 4) * (actualCellSize + actualSpacing)
+                        let row5Y = gridY + CGFloat(rows - 1 - 5) * (actualCellSize + actualSpacing)
+                        return (row4Y + actualCellSize + row5Y) / 2
+                    }()
+                    let tickThickness = axisThickness
+                    let tickLength: CGFloat = 5
+                    // Left tick: points right into graph
+                    context.fill(
+                        Rectangle().path(in: CGRect(
+                            x: yAxisX,
+                            y: tick50Y - tickThickness/2,
+                            width: tickLength,
+                            height: tickThickness
+                        )),
+                        with: .color(axisColor)
+                    )
+                    // Right tick: points left into graph
+                    context.fill(
+                        Rectangle().path(in: CGRect(
+                            x: rightAxisX - tickLength,
+                            y: tick50Y - tickThickness/2,
+                            width: tickLength,
+                            height: tickThickness
+                        )),
+                        with: .color(axisColor)
+                    )
+
+                    // X-Ticks: pointing inward (upward)
+                    let tickColumns = [4, 9, 14, 19, 24]
                     for colIndex in tickColumns {
                         let tickX = gridX + CGFloat(colIndex + 1) * (actualCellSize + actualSpacing) - actualSpacing/2
                         context.fill(
-                            Rectangle().path(in: CGRect(x: tickX - axisThickness/2, y: xAxisY, width: axisThickness, height: 3)),
+                            Rectangle().path(in: CGRect(x: tickX - axisThickness/2, y: xAxisY - 3, width: axisThickness, height: 3)),
                             with: .color(axisColor)
                         )
                     }
         }
         .frame(
             maxWidth: .infinity,
-            minHeight: gridHeight + axisGap * 4 + 60,
-            maxHeight: gridHeight + axisGap * 4 + 60
+            minHeight: axisGap + labelSpace + gridHeight + axisGap * 2,
+            maxHeight: axisGap + labelSpace + gridHeight + axisGap * 2
         )
     }
 }
