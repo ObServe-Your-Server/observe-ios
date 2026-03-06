@@ -1,0 +1,69 @@
+included:
+  - ObServe
+  - observeMetricsWidget
+
+excluded:
+  - ObServeTests
+  - ObServeUITests
+  - ObServe.xcodeproj
+  - ObserveIOS.xcodeproj
+
+disabled_rules:
+  - trailing_whitespace       # SwiftFormat handles this
+  - line_length               # SwiftFormat handles this
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - closure_spacing
+  - contains_over_first_not_nil
+  - fatal_error_message
+  - force_unwrapping
+  - identical_operands
+  - joined_default_parameter
+  - legacy_random
+  - modifier_order
+  - overridden_super_call
+  - prefer_self_type_over_type_of_self
+  - redundant_nil_coalescing
+  - sorted_first_last
+  - toggle_bool
+  - unavailable_function
+  - unowned_variable_capture
+  - yoda_condition
+
+analyzer_rules:
+  - unused_import
+
+force_cast: warning
+force_try: warning
+
+identifier_name:
+  min_length:
+    warning: 2
+  excluded:
+    - id
+    - db
+    - ip
+    - i
+    - x
+    - y
+    - t
+    - h
+    - Label           # SwiftUI generic type parameter
+    - access_token    # OAuth API response fields
+    - refresh_token
+    - token_type
+    - expires_in
+    - id_token
+    - error_description
+
+type_name:
+  min_length: 3
+  excluded:
+    - observeMetricsWidget
+    - observeMetricsWidgetBundle
+    - observeMetricsWidgetControl
+    - observeMetricsWidgetAttributes
+    - observeMetricsWidgetLiveActivity
+    - observeMetricsWidgetEntryView

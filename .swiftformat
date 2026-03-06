@@ -1,0 +1,14 @@
+--swiftversion 5.9
+--indent 4
+--tabwidth 4
+--maxwidth 120
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--wrapreturntype if-multiline
+--importgrouping testable-last
+--semicolons never
+--commas always
+--trimwhitespace always
+--header strip
+--exclude ObServe.xcodeproj,ObserveIOS.xcodeproj,.build

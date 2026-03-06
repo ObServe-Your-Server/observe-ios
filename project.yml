@@ -46,6 +46,13 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: vision.observe.observe-ios
         INFOPLIST_FILE: ObServe/Info.plist
         CODE_SIGN_ENTITLEMENTS: ObServe/ObServe.entitlements
+    preBuildScripts:
+      - name: SwiftLint
+        script: |
+          if command -v swiftlint >/dev/null; then
+            swiftlint
+          fi
+        basedOnDependencyAnalysis: false
 
   observeMetricsWidget:
     type: app-extension
