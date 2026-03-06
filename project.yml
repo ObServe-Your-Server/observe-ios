@@ -1,0 +1,111 @@
+name: ObServe
+options:
+  bundleIdPrefix: vision.observe
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+  groupSortPosition: top
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""  # Set your team ID here or via Xcode
+
+targets:
+  ObServe:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: ObServe
+        excludes:
+          - "**/.DS_Store"
+    resources:
+      - path: ObServe/Assets
+    info:
+      path: ObServe/Info.plist
+      properties:
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: false
+        UIAppFonts:
+          - IBMPlexSans-Italic-VariableFont_wdth,wght.ttf
+          - IBMPlexSans-VariableFont_wdth,wght.ttf
+        CFBundleURLTypes:
+          - CFBundleTypeRole: Editor
+            CFBundleURLName: com.dev.ObServe.oauth
+            CFBundleURLSchemes:
+              - observe
+    entitlements:
+      path: ObServe/ObServe.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.dev.ObServe
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: vision.observe.observe-ios
+        INFOPLIST_FILE: ObServe/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ObServe/ObServe.entitlements
+
+  observeMetricsWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: observeMetricsWidget
+        excludes:
+          - "**/.DS_Store"
+    resources:
+      - path: observeMetricsWidget/Assets
+    info:
+      path: observeMetricsWidget/Info.plist
+      properties:
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        UIAppFonts:
+          - IBMPlexSans-VariableFont_wdth,wght.ttf
+          - IBMPlexSans-Italic-VariableFont_wdth,wght.ttf
+    entitlements:
+      path: observeMetricsWidgetExtension.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.dev.ObServe
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: vision.observe.observe-ios.observeMetricsWidget
+        INFOPLIST_FILE: observeMetricsWidget/Info.plist
+        CODE_SIGN_ENTITLEMENTS: observeMetricsWidgetExtension.entitlements
+    dependencies:
+      - target: ObServe
+        embed: false
+
+  ObServeTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: ObServeTests
+        excludes:
+          - "**/.DS_Store"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: vision.observe.observe-ios.tests
+    dependencies:
+      - target: ObServe
+
+  ObServeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: ObServeUITests
+        excludes:
+          - "**/.DS_Store"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: vision.observe.observe-ios.uitests
+        TEST_TARGET_NAME: ObServe
+    dependencies:
+      - target: ObServe
