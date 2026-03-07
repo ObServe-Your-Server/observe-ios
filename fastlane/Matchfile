@@ -1,0 +1,9 @@
+git_url("https://github.com/ObServe-Your-Server/observe-certs")
+
+storage_mode("git")
+type("appstore") # Default — overridden per lane call
+
+app_identifier([
+  "vision.observe.observe-ios",
+  "vision.observe.observe-ios.observeMetricsWidget"
+])

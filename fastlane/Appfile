@@ -1,0 +1,2 @@
+app_identifier "vision.observe.observe-ios"
+# apple_id "your@apple.id"  # Set APPLE_ID env var in CI

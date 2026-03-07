@@ -1,15 +1,7 @@
-//
-//  RouterTests.swift
-//  ObServeTests
-//
-//  Tests for Router navigation logic.
-//
-
 import Testing
 @testable import ObServe
 
 struct RouterTests {
-
     // MARK: - Initial State
 
     @Test func initialStateIsDashboard() {
@@ -29,18 +21,6 @@ struct RouterTests {
         let router = Router()
         router.navigate(to: .account)
         #expect(router.activePage == .account)
-    }
-
-    @Test func navigateToServer() {
-        let router = Router()
-        router.navigate(to: .server)
-        #expect(router.activePage == .server)
-    }
-
-    @Test func navigateToAlerts() {
-        let router = Router()
-        router.navigate(to: .alerts)
-        #expect(router.activePage == .alerts)
     }
 
     @Test func navigateToDashboard() {
@@ -74,8 +54,8 @@ struct RouterTests {
 
     @Test func directPageAssignment() {
         let router = Router()
-        router.activePage = .alerts
-        #expect(router.activePage == .alerts)
+        router.activePage = .settings
+        #expect(router.activePage == .settings)
         router.activePage = .dashboard
         #expect(router.activePage == .dashboard)
     }
