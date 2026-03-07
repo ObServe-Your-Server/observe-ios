@@ -50,6 +50,7 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         UILaunchScreen: {}
+        ITSAppUsesNonExemptEncryption: false
     entitlements:
       path: ObServe/ObServe.entitlements
       properties:
