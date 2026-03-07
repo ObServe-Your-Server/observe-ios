@@ -14,8 +14,14 @@ class WatchTowerAPI {
 
     // MARK: - Generic Request Helpers
 
-    private func createRequest(for url: URL, method: String = "GET", timeoutInterval: TimeInterval? = nil) -> URLRequest? {
-        guard let authManager = authManager else {
+    private func createRequest(
+        for url: URL,
+        method: String = "GET",
+        timeoutInterval: TimeInterval? = nil
+    )
+        -> URLRequest?
+    {
+        guard let authManager else {
             print("WatchTowerAPI: AuthenticationManager not configured")
             return nil
         }
@@ -24,7 +30,7 @@ class WatchTowerAPI {
         if let timeout = timeoutInterval { request.timeoutInterval = timeout }
         request.httpMethod = method
         request.setValue(authManager.bearerToken, forHTTPHeaderField: "Authorization")
-        if method != "DELETE" && method != "GET" {
+        if method != "DELETE", method != "GET" {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
         return request
@@ -40,7 +46,12 @@ class WatchTowerAPI {
 
     // MARK: - GET
 
-    func fetch<T: Decodable>(path: String, queryItems: [URLQueryItem] = [], timeoutInterval: TimeInterval? = nil, completion: @escaping (Result<T, Error>) -> Void) {
+    func fetch<T: Decodable>(
+        path: String,
+        queryItems: [URLQueryItem] = [],
+        timeoutInterval: TimeInterval? = nil,
+        completion: @escaping (Result<T, Error>) -> Void
+    ) {
         guard let url = buildURL(path: path, queryItems: queryItems) else {
             completion(.failure(APIError.invalidURL))
             return
@@ -52,7 +63,7 @@ class WatchTowerAPI {
         }
 
         URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
+            if let error {
                 completion(.failure(error))
                 return
             }
@@ -72,7 +83,7 @@ class WatchTowerAPI {
                 }
             }
 
-            guard let data = data else {
+            guard let data else {
                 completion(.failure(APIError.noData))
                 return
             }
@@ -91,7 +102,11 @@ class WatchTowerAPI {
 
     // MARK: - POST
 
-    func post<Body: Encodable, Response: Decodable>(path: String, body: Body, completion: @escaping (Result<Response, Error>) -> Void) {
+    func post<Response: Decodable>(
+        path: String,
+        body: some Encodable,
+        completion: @escaping (Result<Response, Error>) -> Void
+    ) {
         guard let url = buildURL(path: path) else {
             completion(.failure(APIError.invalidURL))
             return
@@ -110,7 +125,7 @@ class WatchTowerAPI {
         }
 
         URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
+            if let error {
                 completion(.failure(error))
                 return
             }
@@ -126,7 +141,7 @@ class WatchTowerAPI {
                 }
             }
 
-            guard let data = data else {
+            guard let data else {
                 completion(.failure(APIError.noData))
                 return
             }
@@ -141,7 +156,7 @@ class WatchTowerAPI {
     }
 
     /// POST that returns raw Data (for endpoints with empty/untyped response bodies)
-    func post<Body: Encodable>(path: String, body: Body, completion: @escaping (Result<Data, Error>) -> Void) {
+    func post(path: String, body: some Encodable, completion: @escaping (Result<Data, Error>) -> Void) {
         guard let url = buildURL(path: path) else {
             completion(.failure(APIError.invalidURL))
             return
@@ -160,7 +175,7 @@ class WatchTowerAPI {
         }
 
         URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
+            if let error {
                 completion(.failure(error))
                 return
             }
@@ -182,7 +197,7 @@ class WatchTowerAPI {
 
     // MARK: - PUT
 
-    func put<Body: Encodable>(path: String, body: Body, completion: @escaping (Result<Data, Error>) -> Void) {
+    func put(path: String, body: some Encodable, completion: @escaping (Result<Data, Error>) -> Void) {
         guard let url = buildURL(path: path) else {
             completion(.failure(APIError.invalidURL))
             return
@@ -201,7 +216,7 @@ class WatchTowerAPI {
         }
 
         URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
+            if let error {
                 completion(.failure(error))
                 return
             }
@@ -235,7 +250,7 @@ class WatchTowerAPI {
         }
 
         URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
+            if let error {
                 completion(.failure(error))
                 return
             }
@@ -246,7 +261,7 @@ class WatchTowerAPI {
                     return
                 }
                 if httpResponse.statusCode >= 400 {
-                    if let data = data, let body = String(data: data, encoding: .utf8) {
+                    if let data, let body = String(data: data, encoding: .utf8) {
                         print("WatchTowerAPI DELETE \(path) failed [\(httpResponse.statusCode)]: \(body)")
                     }
                     completion(.failure(APIError.serverError(httpResponse.statusCode)))
@@ -266,7 +281,10 @@ class WatchTowerAPI {
     }
 
     /// Create a new machine
-    func createMachine(request: CreateMachineRequest, completion: @escaping (Result<MachineEntityResponse, Error>) -> Void) {
+    func createMachine(
+        request: CreateMachineRequest,
+        completion: @escaping (Result<MachineEntityResponse, Error>) -> Void
+    ) {
         post(path: "/v1/machines", body: request, completion: completion)
     }
 
@@ -292,18 +310,43 @@ class WatchTowerAPI {
     }
 
     /// Fetch latest metric for a machine
-    func fetchLatestMetric(machineUUID: UUID, timeoutInterval: TimeInterval? = nil, completion: @escaping (Result<MachineMetricResponse, Error>) -> Void) {
-        fetch(path: "/v1/machines/\(machineUUID.uuidString)/metrics/latest", timeoutInterval: timeoutInterval, completion: completion)
+    func fetchLatestMetric(
+        machineUUID: UUID,
+        timeoutInterval: TimeInterval? = nil,
+        completion: @escaping (Result<MachineMetricResponse, Error>) -> Void
+    ) {
+        fetch(
+            path: "/v1/machines/\(machineUUID.uuidString)/metrics/latest",
+            timeoutInterval: timeoutInterval,
+            completion: completion
+        )
     }
 
     /// Fetch historical metrics for a machine
-    func fetchMetrics(machineUUID: UUID, lastMinutes: Int? = nil, last: Int? = nil, completion: @escaping (Result<[MachineMetricResponse], Error>) -> Void) {
+    func fetchMetrics(
+        machineUUID: UUID,
+        lastMinutes: Int? = nil,
+        last: Int? = nil,
+        from: String? = nil,
+        since: String? = nil,
+        to: String? = nil,
+        completion: @escaping (Result<[MachineMetricResponse], Error>) -> Void
+    ) {
         var queryItems: [URLQueryItem] = []
-        if let lastMinutes = lastMinutes {
+        if let lastMinutes {
             queryItems.append(URLQueryItem(name: "lastMinutes", value: "\(lastMinutes)"))
         }
-        if let last = last {
+        if let last {
             queryItems.append(URLQueryItem(name: "last", value: "\(last)"))
+        }
+        if let from {
+            queryItems.append(URLQueryItem(name: "from", value: from))
+        }
+        if let since {
+            queryItems.append(URLQueryItem(name: "since", value: since))
+        }
+        if let to {
+            queryItems.append(URLQueryItem(name: "to", value: to))
         }
         fetch(path: "/v1/machines/\(machineUUID.uuidString)/metrics", queryItems: queryItems, completion: completion)
     }
@@ -318,7 +361,7 @@ class WatchTowerAPI {
         }
     }
 
-    func post<Body: Encodable, Response: Decodable>(path: String, body: Body) async throws -> Response {
+    func post<Response: Decodable>(path: String, body: some Encodable) async throws -> Response {
         try await withCheckedThrowingContinuation { continuation in
             post(path: path, body: body) { (result: Result<Response, Error>) in
                 continuation.resume(with: result)
@@ -326,7 +369,7 @@ class WatchTowerAPI {
         }
     }
 
-    func post<Body: Encodable>(path: String, body: Body) async throws -> Data {
+    func post(path: String, body: some Encodable) async throws -> Data {
         try await withCheckedThrowingContinuation { continuation in
             post(path: path, body: body) { (result: Result<Data, Error>) in
                 continuation.resume(with: result)
@@ -334,7 +377,7 @@ class WatchTowerAPI {
         }
     }
 
-    func put<Body: Encodable>(path: String, body: Body) async throws -> Data {
+    func put(path: String, body: some Encodable) async throws -> Data {
         try await withCheckedThrowingContinuation { continuation in
             put(path: path, body: body) { (result: Result<Data, Error>) in
                 continuation.resume(with: result)
@@ -384,13 +427,31 @@ class WatchTowerAPI {
         try await fetch(path: "/v1/machines/\(machineUUID.uuidString)/metrics/latest")
     }
 
-    func fetchMetrics(machineUUID: UUID, lastMinutes: Int? = nil, last: Int? = nil) async throws -> [MachineMetricResponse] {
+    func fetchMetrics(
+        machineUUID: UUID,
+        lastMinutes: Int? = nil,
+        last: Int? = nil,
+        from: String? = nil,
+        since: String? = nil,
+        to: String? = nil
+    ) async throws
+        -> [MachineMetricResponse]
+    {
         var queryItems: [URLQueryItem] = []
-        if let lastMinutes = lastMinutes {
+        if let lastMinutes {
             queryItems.append(URLQueryItem(name: "lastMinutes", value: "\(lastMinutes)"))
         }
-        if let last = last {
+        if let last {
             queryItems.append(URLQueryItem(name: "last", value: "\(last)"))
+        }
+        if let from {
+            queryItems.append(URLQueryItem(name: "from", value: from))
+        }
+        if let since {
+            queryItems.append(URLQueryItem(name: "since", value: since))
+        }
+        if let to {
+            queryItems.append(URLQueryItem(name: "to", value: to))
         }
         return try await fetch(path: "/v1/machines/\(machineUUID.uuidString)/metrics", queryItems: queryItems)
     }
@@ -408,12 +469,12 @@ enum APIError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidURL: return "Invalid URL"
-        case .notAuthenticated: return "Not authenticated"
-        case .unauthorized: return "Unauthorized - please log in again"
-        case .notFound: return "Resource not found"
-        case .noData: return "No data received"
-        case .serverError(let code): return "Server error (\(code))"
+        case .invalidURL: "Invalid URL"
+        case .notAuthenticated: "Not authenticated"
+        case .unauthorized: "Unauthorized - please log in again"
+        case .notFound: "Resource not found"
+        case .noData: "No data received"
+        case let .serverError(code): "Server error (\(code))"
         }
     }
 }

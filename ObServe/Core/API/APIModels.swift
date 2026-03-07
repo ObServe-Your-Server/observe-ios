@@ -7,19 +7,21 @@ struct MachineMetricResponse: Decodable {
     let capturedAt: String
     let cpuUsage: Double?
     let cpuTemperature: Double?
+    let cpuName: String?
+    let cpuCount: Int64?
     let memUsed: Int64?
     let memTotal: Int64?
     let disks: [DiskPayloadResponse]?
     let netBytesIn: Int64?
     let netBytesOut: Int64?
+    let netBytesInPerSecond: Int64?
+    let netBytesOutPerSecond: Int64?
     let localIp: String?
-    let uptime: Int64?
     let speedtest: SpeedtestPayloadResponse?
+    let uptime: Int64?
     let osName: String?
     let kernelVersion: String?
     let hostname: String?
-    let cpuName: String?
-    let cpuCount: Int64?
 }
 
 struct DiskPayloadResponse: Decodable {

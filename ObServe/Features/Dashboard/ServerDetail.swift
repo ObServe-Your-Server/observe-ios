@@ -1,15 +1,7 @@
-//
-//  ServerDetail.swift
-//  ObServe
-//
-//  Created by Carlo Derouaux on 19.08.25.
-//
-
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct ServerDetailView: View {
-
     var server: ServerModuleItem
 
     @Environment(\.dismiss) private var dismiss
@@ -23,7 +15,7 @@ struct ServerDetailView: View {
         self.server = server
         _metricsManager = StateObject(wrappedValue: MetricsManager(server: server))
     }
-    
+
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
@@ -33,12 +25,11 @@ struct ServerDetailView: View {
                     selectedInterval: $selectedInterval,
                     onClose: { dismiss() }
                 )
-                
+
                 ScrollView {
                     ScrollDetector(contentHasScrolled: $contentHasScrolled)
-                    
+
                     VStack(spacing: 0) {
-                        
                         Rectangle().frame(height: 8).opacity(0)
 
                         // Server Management Module
@@ -74,6 +65,7 @@ struct ServerDetailView: View {
             )
         }
         .onAppear {
+            metricsManager.startUptimeSyncTimer()
             if server.isConnected {
                 metricsManager.startFetching()
                 metricsManager.setOverrideInterval(Int(selectedInterval.seconds))
@@ -88,9 +80,9 @@ struct ServerDetailView: View {
         }
         .onDisappear {
             metricsManager.stopFetching()
+            metricsManager.stopUptimeSyncTimer()
         }
     }
-    
 }
 
 #Preview {
