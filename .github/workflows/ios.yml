@@ -43,16 +43,11 @@ jobs:
       - name: Generate Xcode project
         run: brew install xcodegen && xcodegen generate
 
-      - name: Decode API key
-        env:
-          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
-        run: echo "$ASC_PRIVATE_KEY" | base64 --decode > /tmp/AuthKey.p8
-
       - name: Upload to TestFlight
         env:
           APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_KEY_P8_PATH: /tmp/AuthKey.p8
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
         run: bundle exec fastlane beta
