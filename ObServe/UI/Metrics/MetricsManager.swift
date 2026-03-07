@@ -44,6 +44,7 @@ class MetricsManager: ObservableObject {
 
     private var pollingTimer: Timer?
     private var uptimeTickTimer: Timer?
+    private var uptimeSyncTimer: Timer?
     private var lastFetchedUptime: TimeInterval?
     private var lastUptimeFetchDate: Date?
     private var cancellables = Set<AnyCancellable>()
@@ -96,6 +97,7 @@ class MetricsManager: ObservableObject {
         fetchHistoricalData()
         scheduleNextFetch(delay: 0)
         startUptimeTickTimer()
+        startUptimeSyncTimer()
     }
 
     func fetchLatestOnce() {
@@ -110,6 +112,7 @@ class MetricsManager: ObservableObject {
         lastNetworkSampleTime = nil
         stopPolling()
         stopUptimeTickTimer()
+        stopUptimeSyncTimer()
     }
 
     func setOverrideInterval(_ seconds: Int) {
@@ -156,6 +159,7 @@ class MetricsManager: ObservableObject {
     }
 
     private func startUptimeTickTimer() {
+        uptimeTickTimer?.invalidate()
         uptimeTickTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in self?.updateUptimeDisplay() }
         }
@@ -164,6 +168,18 @@ class MetricsManager: ObservableObject {
     private func stopUptimeTickTimer() {
         uptimeTickTimer?.invalidate()
         uptimeTickTimer = nil
+    }
+
+    func startUptimeSyncTimer() {
+        uptimeSyncTimer?.invalidate()
+        uptimeSyncTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.syncUptimeToWidget() }
+        }
+    }
+
+    func stopUptimeSyncTimer() {
+        uptimeSyncTimer?.invalidate()
+        uptimeSyncTimer = nil
     }
 
     // MARK: - Observers
@@ -475,9 +491,8 @@ class MetricsManager: ObservableObject {
             }
         }
 
-        // Uptime
+        // Uptime: only update the anchor; the tick timer drives the displayed value smoothly
         if let uptimeSeconds = metric.uptime {
-            uptime = TimeInterval(uptimeSeconds)
             lastFetchedUptime = TimeInterval(uptimeSeconds)
             lastUptimeFetchDate = Date()
         }
@@ -488,8 +503,7 @@ class MetricsManager: ObservableObject {
         SharedStorageManager.shared.updateServerStatus(
             serverId: serverId,
             isConnected: true,
-            machineStatus: status,
-            uptime: metric.uptime.map { TimeInterval($0) }
+            machineStatus: status
         )
 
         if !isHistorical {
@@ -630,6 +644,18 @@ class MetricsManager: ObservableObject {
         uptime = lastFetched + elapsed
     }
 
+    private func syncUptimeToWidget() {
+        guard let lastFetchDate = lastUptimeFetchDate,
+              let lastFetched = lastFetchedUptime else { return }
+        let currentUptime = lastFetched + Date().timeIntervalSince(lastFetchDate)
+        SharedStorageManager.shared.updateServerStatus(
+            serverId: serverId,
+            isConnected: true,
+            machineStatus: previousMachineStatus ?? .unknown,
+            uptime: currentUptime
+        )
+    }
+
     // MARK: - Widget Sync
 
     private func syncMetricToWidget(metricType: String, value: Double) {
@@ -658,6 +684,7 @@ class MetricsManager: ObservableObject {
     deinit {
         pollingTimer?.invalidate()
         uptimeTickTimer?.invalidate()
+        uptimeSyncTimer?.invalidate()
     }
 
     private static func cleanCPUName(_ name: String) -> String {
