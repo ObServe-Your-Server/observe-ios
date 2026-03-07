@@ -1,16 +1,8 @@
-//
-//  APIModelsTests.swift
-//  ObServeTests
-//
-//  Tests for API model encoding/decoding (Codable conformance).
-//
-
-import Testing
 import Foundation
+import Testing
 @testable import ObServe
 
 struct APIModelsTests {
-
     // MARK: - MachineMetricResponse Decoding
 
     @Test func decodeMetricResponseFullPayload() throws {
@@ -20,6 +12,8 @@ struct APIModelsTests {
             "capturedAt": "2025-07-20T10:30:00Z",
             "cpuUsage": 45.5,
             "cpuTemperature": 62.3,
+            "cpuName": "Intel Core i7",
+            "cpuCount": 8,
             "memUsed": 8589934592,
             "memTotal": 17179869184,
             "disks": [
@@ -27,6 +21,8 @@ struct APIModelsTests {
             ],
             "netBytesIn": 1048576,
             "netBytesOut": 524288,
+            "netBytesInPerSecond": 2048,
+            "netBytesOutPerSecond": 1024,
             "uptime": 86400,
             "speedtest": {
                 "pingMs": 12.5,
@@ -35,19 +31,23 @@ struct APIModelsTests {
             }
         }
         """
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let metric = try JSONDecoder().decode(MachineMetricResponse.self, from: data)
 
         #expect(metric.uuid == "550e8400-e29b-41d4-a716-446655440000")
         #expect(metric.capturedAt == "2025-07-20T10:30:00Z")
         #expect(metric.cpuUsage == 45.5)
         #expect(metric.cpuTemperature == 62.3)
-        #expect(metric.memUsed == 8589934592)
-        #expect(metric.memTotal == 17179869184)
+        #expect(metric.cpuName == "Intel Core i7")
+        #expect(metric.cpuCount == 8)
+        #expect(metric.memUsed == 8_589_934_592)
+        #expect(metric.memTotal == 17_179_869_184)
         #expect(metric.disks?.count == 1)
         #expect(metric.disks?.first?.name == "sda1")
-        #expect(metric.netBytesIn == 1048576)
-        #expect(metric.netBytesOut == 524288)
+        #expect(metric.netBytesIn == 1_048_576)
+        #expect(metric.netBytesOut == 524_288)
+        #expect(metric.netBytesInPerSecond == 2048)
+        #expect(metric.netBytesOutPerSecond == 1024)
         #expect(metric.uptime == 86400)
         #expect(metric.speedtest?.pingMs == 12.5)
         #expect(metric.speedtest?.uploadMbps == 50.0)
@@ -61,17 +61,21 @@ struct APIModelsTests {
             "capturedAt": "2025-07-20T10:30:00Z"
         }
         """
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let metric = try JSONDecoder().decode(MachineMetricResponse.self, from: data)
 
         #expect(metric.uuid == "test-uuid")
         #expect(metric.cpuUsage == nil)
         #expect(metric.cpuTemperature == nil)
+        #expect(metric.cpuName == nil)
+        #expect(metric.cpuCount == nil)
         #expect(metric.memUsed == nil)
         #expect(metric.memTotal == nil)
         #expect(metric.disks == nil)
         #expect(metric.netBytesIn == nil)
         #expect(metric.netBytesOut == nil)
+        #expect(metric.netBytesInPerSecond == nil)
+        #expect(metric.netBytesOutPerSecond == nil)
         #expect(metric.uptime == nil)
         #expect(metric.speedtest == nil)
     }
@@ -92,7 +96,7 @@ struct APIModelsTests {
             "updatedAt": "2025-07-20T10:00:00Z"
         }
         """
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let machine = try JSONDecoder().decode(MachineEntityResponse.self, from: data)
 
         #expect(machine.uuid == "abc-123")
@@ -110,7 +114,7 @@ struct APIModelsTests {
         let json = """
         {"uuid": "minimal-id"}
         """
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let machine = try JSONDecoder().decode(MachineEntityResponse.self, from: data)
 
         #expect(machine.uuid == "minimal-id")
@@ -131,7 +135,7 @@ struct APIModelsTests {
         )
 
         let data = try JSONEncoder().encode(request)
-        let dict = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        let dict = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
         #expect(dict["type"] as? String == "SERVER")
         #expect(dict["name"] as? String == "Test Server")
@@ -148,7 +152,7 @@ struct APIModelsTests {
         )
 
         let data = try JSONEncoder().encode(request)
-        let dict = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        let dict = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
         #expect(dict["type"] as? String == "LAPTOP")
         #expect(dict["name"] as? String == "My Laptop")
@@ -167,7 +171,7 @@ struct APIModelsTests {
         )
 
         let data = try JSONEncoder().encode(request)
-        let dict = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        let dict = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
         #expect(dict["name"] as? String == "New Name")
     }
@@ -178,19 +182,19 @@ struct APIModelsTests {
         let json = """
         {"name": "sda1", "total": 1000000000000, "used": 500000000000}
         """
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let disk = try JSONDecoder().decode(DiskPayloadResponse.self, from: data)
 
         #expect(disk.name == "sda1")
-        #expect(disk.total == 1000000000000)
-        #expect(disk.used == 500000000000)
+        #expect(disk.total == 1_000_000_000_000)
+        #expect(disk.used == 500_000_000_000)
     }
 
     @Test func decodeDiskPayloadWithNulls() throws {
         let json = """
         {"name": null, "total": null, "used": null}
         """
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let disk = try JSONDecoder().decode(DiskPayloadResponse.self, from: data)
 
         #expect(disk.name == nil)
@@ -204,7 +208,7 @@ struct APIModelsTests {
         let json = """
         {"pingMs": 5.2, "uploadMbps": 100.5, "downloadMbps": 250.7}
         """
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let speedtest = try JSONDecoder().decode(SpeedtestPayloadResponse.self, from: data)
 
         #expect(speedtest.pingMs == 5.2)

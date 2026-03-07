@@ -393,11 +393,21 @@ class MetricsManager: ObservableObject {
             }
         }
 
-        // Network: API sends cumulative bytes totals, so compute bytes/sec from delta
+        // Network: prefer server-provided per-second rates; fall back to computing from cumulative deltas
         let now = Date()
         let elapsed = lastNetworkSampleTime.map { now.timeIntervalSince($0) } ?? 0
 
-        if let netIn = metric.netBytesIn {
+        if let serverRate = metric.netBytesInPerSecond {
+            let rate = Double(serverRate)
+            avgNetworkIn = rate
+            if appendToHistory {
+                networkInEntries.append(MetricEntry(timestamp: timestamp, value: rate))
+                if networkInEntries.count > windowSize {
+                    networkInEntries = Array(networkInEntries.suffix(windowSize))
+                }
+            }
+            syncMetricToWidget(metricType: "Network In", value: rate)
+        } else if let netIn = metric.netBytesIn {
             if let prev = lastNetBytesIn, elapsed > 0 {
                 let rate = Double(max(0, netIn - prev)) / elapsed
                 avgNetworkIn = rate
@@ -411,7 +421,18 @@ class MetricsManager: ObservableObject {
             }
             lastNetBytesIn = netIn
         }
-        if let netOut = metric.netBytesOut {
+
+        if let serverRate = metric.netBytesOutPerSecond {
+            let rate = Double(serverRate)
+            avgNetworkOut = rate
+            if appendToHistory {
+                networkOutEntries.append(MetricEntry(timestamp: timestamp, value: rate))
+                if networkOutEntries.count > windowSize {
+                    networkOutEntries = Array(networkOutEntries.suffix(windowSize))
+                }
+            }
+            syncMetricToWidget(metricType: "Network Out", value: rate)
+        } else if let netOut = metric.netBytesOut {
             if let prev = lastNetBytesOut, elapsed > 0 {
                 let rate = Double(max(0, netOut - prev)) / elapsed
                 avgNetworkOut = rate
