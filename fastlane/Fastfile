@@ -1,24 +1,5 @@
 default_platform(:ios)
 
-# Patch OpenSSL EC key parsing for macOS ARM runners
-require 'openssl'
-module OpenSSL
-  module PKey
-    class EC
-      class << self
-        alias_method :original_new, :new
-        def new(key_data = nil, *args)
-          if key_data.is_a?(String)
-            OpenSSL::PKey.read(key_data)
-          else
-            original_new(key_data, *args)
-          end
-        end
-      end
-    end
-  end
-end
-
 platform :ios do
   desc "Run unit and UI tests"
   lane :tests do
@@ -37,7 +18,7 @@ platform :ios do
     api_key = app_store_connect_api_key(
       key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
       issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
-      key_filepath: ENV["ASC_KEY_P8_PATH"] || "fastlane/AuthKey.p8"
+      key_content: ENV["APP_STORE_CONNECT_API_KEY_KEY"]
     )
 
     sync_code_signing(
