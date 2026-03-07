@@ -1,10 +1,11 @@
-import Foundation
 import Combine
+import Foundation
 import WidgetKit
 
 @MainActor
 class MetricsManager: ObservableObject {
     // MARK: - Published Properties
+
     @Published var error: String?
     @Published var avgCPU: Double = 0.0
     @Published var cpuTemperature: Double?
@@ -27,6 +28,7 @@ class MetricsManager: ObservableObject {
     @Published var hostname: String?
 
     // MARK: - History for charts
+
     @Published var cpuEntries: [MetricEntry] = []
     @Published var ramEntries: [MetricEntry] = []
     @Published var storageEntries: [MetricEntry] = []
@@ -51,6 +53,7 @@ class MetricsManager: ObservableObject {
     private var lastNetworkSampleTime: Date?
 
     // MARK: - Logging State
+
     private let logsManager = ServerLogsManager.shared
     private var previousMachineStatus: MachineStatus?
     private var wasOffline: Bool = false
@@ -64,21 +67,23 @@ class MetricsManager: ObservableObject {
     private let pingHistorySize = 10
 
     // MARK: - Status Callback
+
     var onStatusChanged: ((MachineStatus) -> Void)?
 
     // MARK: - Backoff & State
+
     /// Whether startFetching() has been called and stopFetching() has not yet been called.
     private var isFetchingActive: Bool = false
     /// When set, overrides the global SettingsManager polling interval for this instance only.
-    var overrideIntervalSeconds: Int? = nil
+    var overrideIntervalSeconds: Int?
     /// Number of consecutive fetch failures since the last success.
     private var consecutiveFailures: Int = 0
     /// Maximum backoff delay in seconds.
     private let maxBackoffInterval: TimeInterval = 60
 
     init(server: ServerModuleItem) {
-        self.serverId = server.id
-        self.machineUUID = server.machineUUID
+        serverId = server.id
+        machineUUID = server.machineUUID
         setupPollingIntervalObserver()
         setupNetworkObserver()
     }
@@ -168,9 +173,9 @@ class MetricsManager: ObservableObject {
             .dropFirst()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                guard let self = self, self.isFetchingActive else { return }
-                self.consecutiveFailures = 0
-                self.scheduleNextFetch(delay: 0)
+                guard let self, isFetchingActive else { return }
+                consecutiveFailures = 0
+                scheduleNextFetch(delay: 0)
             }
             .store(in: &cancellables)
     }
@@ -181,14 +186,14 @@ class MetricsManager: ObservableObject {
                 .dropFirst()
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] isConnected in
-                    guard let self = self, self.isFetchingActive else { return }
+                    guard let self, isFetchingActive else { return }
                     if isConnected {
                         // Connectivity restored — reset backoff and resume immediately
-                        self.consecutiveFailures = 0
-                        self.scheduleNextFetch(delay: 0)
+                        consecutiveFailures = 0
+                        scheduleNextFetch(delay: 0)
                     } else {
                         // No connectivity — pause polling to avoid log spam
-                        self.stopPolling()
+                        stopPolling()
                     }
                 }
                 .store(in: &self.cancellables)
@@ -203,12 +208,16 @@ class MetricsManager: ObservableObject {
 
         api.fetchLatestMetric(machineUUID: machineUUID, timeoutInterval: 8) { [weak self] result in
             DispatchQueue.main.async {
-                guard let self = self else { return }
+                guard let self else { return }
                 switch result {
-                case .success(let metric):
+                case let .success(metric):
                     self.consecutiveFailures = 0
                     if self.wasOffline {
-                        self.logsManager.addLog(serverId: self.serverId, severity: .info, title: "SERVER CAME BACK ONLINE")
+                        self.logsManager.addLog(
+                            serverId: self.serverId,
+                            severity: .info,
+                            title: "SERVER CAME BACK ONLINE"
+                        )
                         self.wasOffline = false
                     }
                     self.processMetric(metric, appendToHistory: true)
@@ -216,27 +225,40 @@ class MetricsManager: ObservableObject {
                     // Switch back to a clean repeating timer at the base interval
                     if self.isFetchingActive {
                         self.stopPolling()
-                        let baseInterval = TimeInterval(self.overrideIntervalSeconds ?? SettingsManager.shared.pollingIntervalSeconds)
-                        self.pollingTimer = Timer.scheduledTimer(withTimeInterval: baseInterval, repeats: true) { [weak self] _ in
-                            Task { @MainActor [weak self] in self?.fetchLatest() }
-                        }
+                        let baseInterval = TimeInterval(self.overrideIntervalSeconds ?? SettingsManager.shared
+                            .pollingIntervalSeconds)
+                        self.pollingTimer = Timer
+                            .scheduledTimer(withTimeInterval: baseInterval, repeats: true) { [weak self] _ in
+                                Task { @MainActor [weak self] in self?.fetchLatest() }
+                            }
                     }
-                case .failure(let error):
+                case let .failure(error):
                     self.error = error.localizedDescription
                     self.consecutiveFailures += 1
-                    if self.consecutiveFailures == 1 {
-                        self.logsManager.addLog(
+                    // Only declare offline after 3 consecutive failures to tolerate
+                    // transient timeouts (e.g. server under heavy CPU load).
+                    let offlineThreshold = 3
+                    if self.consecutiveFailures >= offlineThreshold {
+                        if !self.wasOffline {
+                            self.logsManager.addLog(
+                                serverId: self.serverId,
+                                severity: .critical,
+                                title: "SERVER WENT OFFLINE",
+                                detail: error.localizedDescription
+                            )
+                            self.wasOffline = true
+                        }
+                        self.onStatusChanged?(.offline)
+                        SharedStorageManager.shared.updateServerStatus(
                             serverId: self.serverId,
-                            severity: .critical,
-                            title: "SERVER WENT OFFLINE",
-                            detail: error.localizedDescription
+                            isConnected: false,
+                            machineStatus: .offline,
+                            uptime: nil
                         )
-                        self.wasOffline = true
                     }
-                    self.onStatusChanged?(.offline)
-                    SharedStorageManager.shared.updateServerStatus(serverId: self.serverId, isConnected: false, machineStatus: .offline, uptime: nil)
                     // Exponential backoff: base * 2^(failures-1), capped at maxBackoffInterval
-                    let base = TimeInterval(self.overrideIntervalSeconds ?? SettingsManager.shared.pollingIntervalSeconds)
+                    let base = TimeInterval(self.overrideIntervalSeconds ?? SettingsManager.shared
+                        .pollingIntervalSeconds)
                     let backoff = min(base * pow(2.0, Double(self.consecutiveFailures - 1)), self.maxBackoffInterval)
                     self.scheduleNextFetch(delay: backoff)
                 }
@@ -250,7 +272,7 @@ class MetricsManager: ObservableObject {
         api.fetchMetrics(machineUUID: machineUUID, last: 30) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {
-                case .success(let metrics):
+                case let .success(metrics):
                     self?.cpuEntries = []
                     self?.ramEntries = []
                     self?.storageEntries = []
@@ -262,8 +284,8 @@ class MetricsManager: ObservableObject {
                     }
 
                     // Sync historical CPU data to widget
-                    if let self = self {
-                        let cpuValues = self.cpuEntries.map { $0.value }
+                    if let self {
+                        let cpuValues = self.cpuEntries.map(\.value)
                         if !cpuValues.isEmpty {
                             let metricData = SharedMetricData(
                                 serverId: self.serverId,
@@ -275,7 +297,7 @@ class MetricsManager: ObservableObject {
                             SharedStorageManager.shared.saveMetricData(metricData)
                         }
 
-                        let ramValues = self.ramEntries.map { $0.value }
+                        let ramValues = self.ramEntries.map(\.value)
                         if !ramValues.isEmpty, self.maxRAM > 0 {
                             let percentageValues = ramValues.map { ($0 / self.maxRAM) * 100 }
                             let metricData = SharedMetricData(
@@ -288,7 +310,7 @@ class MetricsManager: ObservableObject {
                             SharedStorageManager.shared.saveMetricData(metricData)
                         }
                     }
-                case .failure(let error):
+                case let .failure(error):
                     print("Failed to fetch historical metrics: \(error.localizedDescription)")
                 }
             }
@@ -470,32 +492,56 @@ class MetricsManager: ObservableObject {
     private func logMetricAlerts(from metric: MachineMetricResponse) {
         if let cpu = metric.cpuUsage {
             if cpu >= 95, shouldLog(key: "cpu_critical") {
-                logsManager.addLog(serverId: serverId, severity: .critical,
-                    title: "CPU CRITICAL", detail: String(format: "CPU usage at %.1f%%", cpu))
+                logsManager.addLog(
+                    serverId: serverId,
+                    severity: .critical,
+                    title: "CPU CRITICAL",
+                    detail: String(format: "CPU usage at %.1f%%", cpu)
+                )
             } else if cpu >= 80, shouldLog(key: "cpu_warning") {
-                logsManager.addLog(serverId: serverId, severity: .warning,
-                    title: "CPU HIGH", detail: String(format: "CPU usage at %.1f%%", cpu))
+                logsManager.addLog(
+                    serverId: serverId,
+                    severity: .warning,
+                    title: "CPU HIGH",
+                    detail: String(format: "CPU usage at %.1f%%", cpu)
+                )
             }
         }
 
         if let temp = metric.cpuTemperature {
             if temp >= 85, shouldLog(key: "temp_critical") {
-                logsManager.addLog(serverId: serverId, severity: .critical,
-                    title: "CPU TEMPERATURE CRITICAL", detail: String(format: "%.1f°C", temp))
+                logsManager.addLog(
+                    serverId: serverId,
+                    severity: .critical,
+                    title: "CPU TEMPERATURE CRITICAL",
+                    detail: String(format: "%.1f°C", temp)
+                )
             } else if temp >= 75, shouldLog(key: "temp_warning") {
-                logsManager.addLog(serverId: serverId, severity: .warning,
-                    title: "CPU TEMPERATURE HIGH", detail: String(format: "%.1f°C", temp))
+                logsManager.addLog(
+                    serverId: serverId,
+                    severity: .warning,
+                    title: "CPU TEMPERATURE HIGH",
+                    detail: String(format: "%.1f°C", temp)
+                )
             }
         }
 
         if let used = metric.memUsed, let total = metric.memTotal, total > 0 {
             let pct = Double(used) / Double(total) * 100
             if pct >= 95, shouldLog(key: "mem_critical") {
-                logsManager.addLog(serverId: serverId, severity: .critical,
-                    title: "MEMORY CRITICAL", detail: String(format: "Memory at %.1f%%", pct))
+                logsManager.addLog(
+                    serverId: serverId,
+                    severity: .critical,
+                    title: "MEMORY CRITICAL",
+                    detail: String(format: "Memory at %.1f%%", pct)
+                )
             } else if pct >= 85, shouldLog(key: "mem_warning") {
-                logsManager.addLog(serverId: serverId, severity: .warning,
-                    title: "MEMORY HIGH", detail: String(format: "Memory at %.1f%%", pct))
+                logsManager.addLog(
+                    serverId: serverId,
+                    severity: .warning,
+                    title: "MEMORY HIGH",
+                    detail: String(format: "Memory at %.1f%%", pct)
+                )
             }
         }
 
@@ -505,18 +551,26 @@ class MetricsManager: ObservableObject {
                 let name = (disk.name ?? "Disk").replacingOccurrences(of: "/dev/", with: "")
                 let keyBase = "disk_\(name)"
                 if pct >= 95, shouldLog(key: "\(keyBase)_critical") {
-                    logsManager.addLog(serverId: serverId, severity: .critical,
-                        title: "DISK CRITICAL", detail: String(format: "%@ at %.1f%%", name, pct))
+                    logsManager.addLog(
+                        serverId: serverId,
+                        severity: .critical,
+                        title: "DISK CRITICAL",
+                        detail: String(format: "%@ at %.1f%%", name, pct)
+                    )
                 } else if pct >= 85, shouldLog(key: "\(keyBase)_warning") {
-                    logsManager.addLog(serverId: serverId, severity: .warning,
-                        title: "DISK HIGH", detail: String(format: "%@ at %.1f%%", name, pct))
+                    logsManager.addLog(
+                        serverId: serverId,
+                        severity: .warning,
+                        title: "DISK HIGH",
+                        detail: String(format: "%@ at %.1f%%", name, pct)
+                    )
                 }
             }
         }
     }
 
     private func logStatusTransition(from previous: MachineStatus?, to current: MachineStatus) {
-        guard let previous = previous, previous != current, previous != .unknown else { return }
+        guard let previous, previous != current, previous != .unknown else { return }
         // Offline transitions are handled in the fetch failure path
         guard current != .offline else { return }
 
@@ -538,8 +592,12 @@ class MetricsManager: ObservableObject {
             title = "STATUS CHANGED TO \(current.rawValue.uppercased())"
         }
 
-        logsManager.addLog(serverId: serverId, severity: severity, title: title,
-            detail: "Previous: \(previous.rawValue)")
+        logsManager.addLog(
+            serverId: serverId,
+            severity: severity,
+            title: title,
+            detail: "Previous: \(previous.rawValue)"
+        )
     }
 
     // MARK: - Uptime Tick
