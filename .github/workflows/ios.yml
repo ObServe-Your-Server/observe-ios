@@ -43,6 +43,11 @@ jobs:
       - name: Generate Xcode project
         run: brew install xcodegen && xcodegen generate
 
+      - name: Patch fastlane OpenSSL compatibility
+        run: |
+          TOKEN_FILE=$(find vendor/bundle -path "*/spaceship/connect_api/token.rb" | head -1)
+          sed -i '' 's/OpenSSL::PKey::EC\.new(key)/OpenSSL::PKey.read(key)/' "$TOKEN_FILE"
+
       - name: Upload to TestFlight
         env:
           APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.ASC_KEY_ID }}
