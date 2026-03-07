@@ -1,21 +1,24 @@
 import Foundation
 
 enum MachineStatus: String, Codable, CaseIterable {
-    case healthy  = "HEALTHY"
-    case warning  = "WARNING"
+    case healthy = "HEALTHY"
+    case warning = "WARNING"
     case critical = "CRITICAL"
-    case offline  = "OFFLINE"
-    case unknown  = "UNKNOWN"
+    case offline = "OFFLINE"
+    case unknown = "UNKNOWN"
 
-    var isHealthy: Bool { self == .healthy }
+    /// Whether the server is reachable (healthy, warning, or critical — anything except offline/unknown).
+    var isHealthy: Bool {
+        self != .offline && self != .unknown
+    }
 
     private var severity: Int {
         switch self {
-        case .unknown:  return 0
-        case .healthy:  return 1
-        case .warning:  return 2
-        case .critical: return 3
-        case .offline:  return 4
+        case .unknown: 0
+        case .healthy: 1
+        case .warning: 2
+        case .critical: 3
+        case .offline: 4
         }
     }
 
@@ -48,7 +51,7 @@ enum MachineStatus: String, Codable, CaseIterable {
 
     private static func level(_ v: Double, warning: Double, critical: Double) -> MachineStatus {
         if v >= critical { return .critical }
-        if v >= warning  { return .warning }
+        if v >= warning { return .warning }
         return .healthy
     }
 }
