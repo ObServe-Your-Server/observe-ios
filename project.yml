@@ -17,6 +17,14 @@ targets:
     type: application
     platform: iOS
     deploymentTarget: "18.0"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: vision.observe.observe-ios
+        INFOPLIST_FILE: ObServe/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ObServe/ObServe.entitlements
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 1.0.0
+        VERSIONING_SYSTEM: apple-generic
     sources:
       - path: ObServe
         excludes:
@@ -41,11 +49,6 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.com.dev.ObServe
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: vision.observe.observe-ios
-        INFOPLIST_FILE: ObServe/Info.plist
-        CODE_SIGN_ENTITLEMENTS: ObServe/ObServe.entitlements
     preBuildScripts:
       - name: SwiftLint
         script: |
