@@ -1,16 +1,7 @@
-//
-//  MachineTypeTests.swift
-//  ObServeTests
-//
-//  Tests for MachineType enum: rawValues, icons, imageName generation,
-//  uiCases, and init?(fromString:) factory.
-//
-
 import Testing
 @testable import ObServe
 
 struct MachineTypeTests {
-
     // MARK: - Raw Values
 
     @Test func allCasesHaveExpectedRawValues() {
@@ -20,16 +11,10 @@ struct MachineTypeTests {
         #expect(MachineType.desktop.rawValue == "DESKTOP")
         #expect(MachineType.vm.rawValue == "VM")
         #expect(MachineType.container.rawValue == "CONTAINER")
-        #expect(MachineType.laptop.rawValue == "LAPTOP")
     }
 
     @Test func allCasesCount() {
-        #expect(MachineType.allCases.count == 7)
-    }
-
-    @Test func uiCasesExcludesLaptop() {
-        #expect(MachineType.uiCases.count == 6)
-        #expect(!MachineType.uiCases.contains(.laptop))
+        #expect(MachineType.allCases.count == 6)
     }
 
     // MARK: - Icon Names
@@ -41,7 +26,6 @@ struct MachineTypeTests {
         #expect(MachineType.desktop.icon == "desktopcomputer")
         #expect(MachineType.vm.icon == "square.3.layers.3d")
         #expect(MachineType.container.icon == "shippingbox")
-        #expect(MachineType.laptop.icon == "laptopcomputer")
     }
 
     // MARK: - Image Name Generation
@@ -81,7 +65,6 @@ struct MachineTypeTests {
         #expect(MachineType(fromString: "DESKTOP") == .desktop)
         #expect(MachineType(fromString: "VM") == .vm)
         #expect(MachineType(fromString: "CONTAINER") == .container)
-        #expect(MachineType(fromString: "LAPTOP") == .laptop)
     }
 
     @Test func initFromStringCaseInsensitive() {

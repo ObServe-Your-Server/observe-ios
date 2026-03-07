@@ -1,17 +1,8 @@
-//
-//  SettingsManagerTests.swift
-//  ObServeTests
-//
-//  Tests for SettingsManager: pollingIntervalLabel and resetAllSettings.
-//  Uses the shared singleton (reads live UserDefaults), so tests save/restore state.
-//
-
 import Testing
 @testable import ObServe
 
 @Suite(.serialized)
 struct SettingsManagerTests {
-
     // MARK: - pollingIntervalLabel
 
     @Test func pollingIntervalLabelForKnownValues() {
@@ -19,8 +10,8 @@ struct SettingsManagerTests {
 
         let original = mgr.pollingIntervalSeconds
 
-        mgr.pollingIntervalSeconds = 1
-        #expect(mgr.pollingIntervalLabel() == "1 second")
+        mgr.pollingIntervalSeconds = 2
+        #expect(mgr.pollingIntervalLabel() == "2 seconds")
 
         mgr.pollingIntervalSeconds = 5
         #expect(mgr.pollingIntervalLabel() == "5 seconds")
@@ -55,7 +46,7 @@ struct SettingsManagerTests {
 
     @Test func pollingIntervalOptionsAreValid() {
         let options = SettingsManager.pollingIntervalOptions
-        #expect(options == [5, 10, 30, 60])
+        #expect(options == [2, 5, 10, 30, 60])
     }
 
     // MARK: - resetAllSettings
@@ -85,7 +76,7 @@ struct SettingsManagerTests {
         #expect(mgr.safeModeEnabled == true)
         #expect(mgr.hapticsEnabled == true)
         #expect(mgr.autoConnectOnLaunch == false)
-        #expect(mgr.pollingIntervalSeconds == 5)
+        #expect(mgr.pollingIntervalSeconds == 2)
 
         // Restore originals to not affect other tests
         mgr.preciseDataEnabled = origPrecise

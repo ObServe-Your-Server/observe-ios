@@ -1,11 +1,3 @@
-//
-//  ViewModelNavigationTests.swift
-//  ObServeTests
-//
-//  Tests for ViewModel pure navigation logic (no network calls).
-//  Tests OnboardingViewModel and ManageServerViewModel state machines.
-//
-
 import Foundation
 import Testing
 @testable import ObServe
@@ -14,7 +6,6 @@ import Testing
 
 @MainActor
 struct OnboardingViewModelTests {
-
     // MARK: - Initial State
 
     @Test func initialState() {
@@ -95,9 +86,9 @@ struct OnboardingViewModelTests {
 
     @Test func resolvedNameFallsBackToMachineType() {
         let vm = OnboardingViewModel()
-        vm.selectedMachineType = .laptop
+        vm.selectedMachineType = .desktop
         vm.name = ""
-        #expect(vm.resolvedName == "My LAPTOP")
+        #expect(vm.resolvedName == "My DESKTOP")
     }
 
     @Test func resolvedNameFallsBackToMachineWhenNoType() {
@@ -188,7 +179,6 @@ struct OnboardingViewModelTests {
 
 @MainActor
 struct ManageServerViewModelTests {
-
     private func makeServer(name: String = "Test Server", type: String = "SERVER") -> ServerModuleItem {
         ServerModuleItem(machineUUID: UUID(), name: name, type: type)
     }
@@ -196,12 +186,12 @@ struct ManageServerViewModelTests {
     // MARK: - Initial State
 
     @Test func initialStateMatchesServer() {
-        let server = makeServer(name: "My Box", type: "LAPTOP")
+        let server = makeServer(name: "My Box", type: "DESKTOP")
         let vm = ManageServerViewModel(server: server)
 
         #expect(vm.currentStep == .overview)
         #expect(vm.name == "My Box")
-        #expect(vm.selectedMachineType == .laptop)
+        #expect(vm.selectedMachineType == .desktop)
         #expect(vm.refreshedApiKey == nil)
         #expect(vm.showDeleteConfirmation == false)
         #expect(vm.showRefreshApiKeyConfirmation == false)
@@ -255,8 +245,8 @@ struct ManageServerViewModelTests {
         let server = makeServer()
         let vm = ManageServerViewModel(server: server)
         vm.name = ""
-        vm.selectedMachineType = .tower
-        #expect(vm.resolvedName == "My TOWER")
+        vm.selectedMachineType = .desktop
+        #expect(vm.resolvedName == "My DESKTOP")
     }
 
     // MARK: - canProceed
