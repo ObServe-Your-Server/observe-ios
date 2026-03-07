@@ -29,6 +29,7 @@ jobs:
   beta:
     name: TestFlight
     runs-on: macos-14
+    environment: fastlane
     if: github.event.pull_request.merged == true
     steps:
       - name: Checkout
