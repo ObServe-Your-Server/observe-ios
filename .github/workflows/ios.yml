@@ -46,7 +46,10 @@ jobs:
       - name: Install API key
         env:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
-        run: echo "$ASC_PRIVATE_KEY" | base64 --decode > /tmp/AuthKey.p8
+        run: |
+          printf '%s' "$ASC_PRIVATE_KEY" | base64 --decode > /tmp/AuthKey.p8
+          echo "File size: $(wc -c < /tmp/AuthKey.p8) bytes"
+          head -1 /tmp/AuthKey.p8
 
       - name: Verify API key
         run: openssl ec -in /tmp/AuthKey.p8 -noout 2>&1 && echo "Key OK" || echo "Key INVALID"
