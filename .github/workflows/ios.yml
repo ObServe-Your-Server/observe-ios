@@ -8,16 +8,11 @@ on:
 jobs:
   test:
     name: Test
-    runs-on: macos-15
+    runs-on: macos-14
     if: github.event.pull_request.merged == false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up OpenSSL
-        run: |
-          brew install openssl@3
-          echo "RUBY_CONFIGURE_OPTS=--with-openssl-dir=$(brew --prefix openssl@3)" >> $GITHUB_ENV
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -32,16 +27,11 @@ jobs:
 
   beta:
     name: TestFlight
-    runs-on: macos-15
+    runs-on: macos-14
     if: github.event.pull_request.merged == true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up OpenSSL
-        run: |
-          brew install openssl@3
-          echo "RUBY_CONFIGURE_OPTS=--with-openssl-dir=$(brew --prefix openssl@3)" >> $GITHUB_ENV
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
