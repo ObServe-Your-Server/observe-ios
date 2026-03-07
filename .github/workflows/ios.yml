@@ -8,7 +8,7 @@ on:
 jobs:
   test:
     name: Test
-    runs-on: macos-14
+    runs-on: macos-15
     if: github.event.pull_request.merged == false
     steps:
       - name: Checkout
@@ -28,7 +28,7 @@ jobs:
 
   beta:
     name: TestFlight
-    runs-on: macos-14
+    runs-on: macos-15
     environment: fastlane
     if: github.event.pull_request.merged == true
     steps:
