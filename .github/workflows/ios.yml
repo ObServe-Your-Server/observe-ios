@@ -48,6 +48,11 @@ jobs:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
         run: printf '%s\n' "$ASC_PRIVATE_KEY" > /tmp/AuthKey.p8
 
+      - name: Patch fastlane OpenSSL bug
+        run: |
+          TOKEN_FILE=$(find vendor/bundle -path "*/spaceship/connect_api/token.rb" | head -1)
+          sed -i '' 's/OpenSSL::PKey::EC\.new(key)/OpenSSL::PKey.read(key)/' "$TOKEN_FILE"
+
       - name: Upload to TestFlight
         env:
           APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.ASC_KEY_ID }}
