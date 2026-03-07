@@ -43,21 +43,11 @@ jobs:
       - name: Generate Xcode project
         run: brew install xcodegen && xcodegen generate
 
-      - name: Install API key
-        env:
-          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
-        run: printf '%s\n' "$ASC_PRIVATE_KEY" > /tmp/AuthKey.p8
-
-      - name: Patch fastlane OpenSSL bug
-        run: |
-          TOKEN_FILE=$(find vendor/bundle -path "*/spaceship/connect_api/token.rb" | head -1)
-          sed -i '' 's/OpenSSL::PKey::EC\.new(key)/OpenSSL::PKey.read(key)/' "$TOKEN_FILE"
-
       - name: Upload to TestFlight
         env:
           APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_KEY_PEM_PATH: /tmp/AuthKey.p8
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
         run: bundle exec fastlane beta
