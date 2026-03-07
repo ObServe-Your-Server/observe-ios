@@ -44,6 +44,12 @@ targets:
             CFBundleURLName: com.dev.ObServe.oauth
             CFBundleURLSchemes:
               - observe
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UILaunchScreen: {}
     entitlements:
       path: ObServe/ObServe.entitlements
       properties:
