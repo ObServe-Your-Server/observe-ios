@@ -32,7 +32,8 @@ platform :ios do
     build_app(
       project: "ObServe.xcodeproj",
       scheme: "ObServe",
-      export_method: "app-store"
+      export_method: "app-store",
+      xcargs: "CODE_SIGN_STYLE=Manual"
     )
 
     upload_to_testflight(
