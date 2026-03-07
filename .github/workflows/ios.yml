@@ -14,6 +14,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up OpenSSL
+        run: |
+          brew install openssl@3
+          echo "RUBY_CONFIGURE_OPTS=--with-openssl-dir=$(brew --prefix openssl@3)" >> $GITHUB_ENV
+
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -32,6 +37,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up OpenSSL
+        run: |
+          brew install openssl@3
+          echo "RUBY_CONFIGURE_OPTS=--with-openssl-dir=$(brew --prefix openssl@3)" >> $GITHUB_ENV
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
