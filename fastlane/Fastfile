@@ -29,11 +29,28 @@ platform :ios do
 
     increment_build_number(xcodeproj: "ObServe.xcodeproj")
 
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "ObServe.xcodeproj",
+      team_id: "KNZ6246X7R",
+      targets: ["ObServe"],
+      profile_name: "match AppStore vision.observe.observe-ios",
+      code_sign_identity: "Apple Distribution"
+    )
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "ObServe.xcodeproj",
+      team_id: "KNZ6246X7R",
+      targets: ["observeMetricsWidget"],
+      profile_name: "match AppStore vision.observe.observe-ios.observeMetricsWidget",
+      code_sign_identity: "Apple Distribution"
+    )
+
     build_app(
       project: "ObServe.xcodeproj",
       scheme: "ObServe",
-      export_method: "app-store",
-      xcargs: "CODE_SIGN_STYLE=Manual"
+      export_method: "app-store"
     )
 
     upload_to_testflight(
