@@ -10,7 +10,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    DEVELOPMENT_TEAM: ""  # Set your team ID here or via Xcode
+    DEVELOPMENT_TEAM: "KNZ6246X7R"  
 
 targets:
   ObServe:
@@ -99,6 +99,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: vision.observe.observe-ios.tests
+        GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: ObServe
 
@@ -114,5 +115,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: vision.observe.observe-ios.uitests
         TEST_TARGET_NAME: ObServe
+        GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: ObServe

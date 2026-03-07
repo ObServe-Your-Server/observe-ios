@@ -38,6 +38,18 @@ analyzer_rules:
 force_cast: warning
 force_try: warning
 
+cyclomatic_complexity:
+  warning: 20
+  error: 40
+
+function_body_length:
+  warning: 150
+  error: 200
+
+type_body_length:
+  warning: 500
+  error: 700
+
 identifier_name:
   min_length:
     warning: 2
