@@ -2,7 +2,7 @@ name: ObServe
 options:
   bundleIdPrefix: vision.observe
   deploymentTarget:
-    iOS: "17.0"
+    iOS: "18.0"
   xcodeVersion: "16.0"
   groupSortPosition: top
   generateEmptyDirectories: true
@@ -16,7 +16,7 @@ targets:
   ObServe:
     type: application
     platform: iOS
-    deploymentTarget: "17.0"
+    deploymentTarget: "18.0"
     sources:
       - path: ObServe
         excludes:
@@ -57,7 +57,7 @@ targets:
   observeMetricsWidget:
     type: app-extension
     platform: iOS
-    deploymentTarget: "17.0"
+    deploymentTarget: "18.0"
     sources:
       - path: observeMetricsWidget
         excludes:
@@ -91,7 +91,7 @@ targets:
   ObServeTests:
     type: bundle.unit-test
     platform: iOS
-    deploymentTarget: "17.0"
+    deploymentTarget: "18.0"
     sources:
       - path: ObServeTests
         excludes:
@@ -106,7 +106,7 @@ targets:
   ObServeUITests:
     type: bundle.ui-testing
     platform: iOS
-    deploymentTarget: "17.0"
+    deploymentTarget: "18.0"
     sources:
       - path: ObServeUITests
         excludes:
