@@ -1,10 +1,3 @@
-//
-//  ServerManagementModule.swift
-//  ObServe
-//
-//  Created by GitHub Copilot on 22.09.25.
-//
-
 import SwiftUI
 
 struct ServerManagementModule: View {
@@ -22,8 +15,13 @@ struct ServerManagementModule: View {
 
     @ObservedObject var metricsManager: MetricsManager
 
-    init(server: ServerModuleItem, metricsManager: MetricsManager, onLogs: @escaping () -> Void, onManage: @escaping () -> Void) {
-        self._server = Bindable(wrappedValue: server)
+    init(
+        server: ServerModuleItem,
+        metricsManager: MetricsManager,
+        onLogs: @escaping () -> Void,
+        onManage: @escaping () -> Void
+    ) {
+        _server = Bindable(wrappedValue: server)
         self.metricsManager = metricsManager
         self.onLogs = onLogs
         self.onManage = onManage
@@ -66,7 +64,7 @@ struct ServerManagementModule: View {
 
     /// Start blinking animation on icon tap
     private func startBlinking() {
-        guard !isBlinking else { return }  // Prevent multiple simultaneous animations
+        guard !isBlinking else { return } // Prevent multiple simultaneous animations
 
         isBlinking = true
         lightOpacity = 1.0
@@ -87,13 +85,13 @@ struct ServerManagementModule: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 20) {
                 Spacer().frame(height: 5)
-                
+
                 // Server info and icon section
-                HStack(spacing: 18) {
+                HStack(spacing: 24) {
                     VStack(alignment: .leading, spacing: 16) {
                         // Top row: UPTIME aligned with OS-VERSION
                         UpdateLabel(label: "UPTIME", value: metricsManager.uptime, showDaysInUptime: true)
-                        
+
                         VStack(alignment: .leading, spacing: 4) {
                             Text("STATUS")
                                 .foregroundColor(Color.gray)
@@ -103,7 +101,7 @@ struct ServerManagementModule: View {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    
+
                     // Server icon
                     VStack {
                         ZStack {
@@ -123,7 +121,7 @@ struct ServerManagementModule: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                     .overlay(RoundedRectangle(cornerRadius: 0)
-                        .stroke(Color(red: 0x47/255, green: 0x47/255, blue: 0x4A/255)))
+                        .stroke(Color(red: 0x47 / 255, green: 0x47 / 255, blue: 0x4A / 255)))
                     .overlay(
                         FocusCorners(color: Color.white, size: 8, thickness: 1)
                     )
@@ -133,7 +131,7 @@ struct ServerManagementModule: View {
                     }
                 }
                 .padding(.bottom, 4)
-                
+
                 if isExpanded {
                     VStack(spacing: 10) {
                         VStack(spacing: 2) {
@@ -148,7 +146,11 @@ struct ServerManagementModule: View {
                             }
                             .padding(.horizontal, 6)
                             .padding(.vertical, 6)
-                            .background(RoundedRectangle(cornerRadius: 0).fill(Color(red: 0.102, green: 0.102, blue: 0.102)))
+                            .background(RoundedRectangle(cornerRadius: 0).fill(Color(
+                                red: 0.102,
+                                green: 0.102,
+                                blue: 0.102
+                            )))
                             HStack {
                                 Text("OS VERSION")
                                     .foregroundColor(Color.gray)
@@ -160,7 +162,11 @@ struct ServerManagementModule: View {
                             }
                             .padding(.horizontal, 6)
                             .padding(.vertical, 6)
-                            .background(RoundedRectangle(cornerRadius: 0).fill(Color(red: 0.102, green: 0.102, blue: 0.102)))
+                            .background(RoundedRectangle(cornerRadius: 0).fill(Color(
+                                red: 0.102,
+                                green: 0.102,
+                                blue: 0.102
+                            )))
                         }
                         .padding(.bottom, 12)
 
@@ -200,7 +206,8 @@ struct ServerManagementModule: View {
                                     .foregroundColor(Color.gray)
                                     .font(.system(size: 12, weight: .medium))
                                 HStack {
-                                    Text(server.machineDescription.isEmpty ? "Write a note..." : server.machineDescription)
+                                    Text(server.machineDescription.isEmpty ? "Write a note..." : server
+                                        .machineDescription)
                                         .foregroundColor(server.machineDescription.isEmpty ? Color.gray : .white)
                                         .lineLimit(1)
                                         .truncationMode(.tail)
@@ -212,7 +219,10 @@ struct ServerManagementModule: View {
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 10)
                                 .contentShape(Rectangle())
-                                .overlay(RoundedRectangle(cornerRadius: 0).stroke(Color.white.opacity(0.3), lineWidth: 1))
+                                .overlay(RoundedRectangle(cornerRadius: 0).stroke(
+                                    Color.white.opacity(0.3),
+                                    lineWidth: 1
+                                ))
                                 .onTapGesture {
                                     showNoteEditor = true
                                     Haptics.click()
@@ -223,17 +233,17 @@ struct ServerManagementModule: View {
                     }
                 }
                 // Action buttons - matching ServerModule styling
-                HStack(spacing: 18) {
+                HStack(spacing: 24) {
+                    RegularButtonWhite(Label: "MANAGE", action: {
+                        onManage()
+                    }, color: "ObServeGray")
+                        .frame(maxWidth: .infinity)
+
                     RegularButtonWhite(Label: "LOGS", action: {
                         onLogs()
                         Haptics.click()
                     }, color: "ObServeGray")
-                    .frame(maxWidth: .infinity)
-
-                    RegularButtonWhite(Label: "MANAGE", action: {
-                        onManage()
-                    }, color: "ObServeGray")
-                    .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity)
                 }
             }
             .padding(.horizontal, 20)
@@ -267,7 +277,7 @@ struct ServerManagementModule: View {
                 Haptics.click()
             }
             Spacer().frame(height: 20)
-            
+
             // CPU and RAM expandable metric boxes
             VStack(spacing: 20) {
                 ExpandableMetricBox(
@@ -281,7 +291,7 @@ struct ServerManagementModule: View {
                     metricType: "CPU",
                     headerRows: [
                         (label: "NAME", value: metricsManager.cpuName ?? "Unknown"),
-                        (label: "CORES", value: metricsManager.cpuCount.map { "\($0)" } ?? "Unknown")
+                        (label: "CORES", value: metricsManager.cpuCount.map { "\($0)" } ?? "Unknown"),
                     ],
                     cpuTemperature: metricsManager.cpuTemperature
                 )
@@ -298,15 +308,17 @@ struct ServerManagementModule: View {
                     headerRows: [
                         // TODO: Backend should send RAM chip name
                         (label: "NAME", value: "TODO"),
-                        (label: "MAX", value: metricsManager.maxRAM > 0
-                            ? String(format: "%.1f GB", metricsManager.maxRAM)
-                            : "Unknown")
+                        (
+                            label: "MAX",
+                            value: metricsManager.maxRAM > 0
+                                ? String(format: "%.1f GB", metricsManager.maxRAM)
+                                : "Unknown"
+                        ),
                     ]
                 )
             }
             // Network metrics view below the server management module
             NetworkMetricsView(metricsManager: metricsManager)
-            
         }
     }
 }
@@ -334,7 +346,7 @@ private struct DiskFillMeter: View {
         let fraction = total > 0 ? Double(used) / Double(total) : 0
         let filledCount = Int((fraction * 10).rounded())
         HStack(spacing: 2) {
-            ForEach(0..<10, id: \.self) { i in
+            ForEach(0 ..< 10, id: \.self) { i in
                 Rectangle()
                     .fill(i < filledCount ? Color.white : Color(red: 0.102, green: 0.102, blue: 0.102))
                     .frame(width: 8, height: 28)
@@ -380,17 +392,17 @@ private struct NoteEditorView: View {
 
                 Spacer()
 
-                HStack(spacing: 12) {
+                HStack(spacing: 24) {
                     RegularButton(Label: "DISCARD", action: {
                         onDismiss()
                     }, color: "ObServeGray")
-                    .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity)
 
                     RegularButton(Label: "SAVE", action: {
                         note = draftNote
                         onDismiss()
                     }, color: "ObServeBlue")
-                    .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 32)

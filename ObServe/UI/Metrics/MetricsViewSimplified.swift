@@ -23,8 +23,29 @@ struct MetricsViewSimplified: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 18) {
+            HStack(spacing: 24) {
                 UpdateLabel(label: "UPTIME", value: metricsManager.uptime)
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("STATUS")
+                            .foregroundColor(Color.gray)
+                            .font(.system(size: 12, weight: .medium))
+                        Text(metricsManager.machineStatus.rawValue)
+                            .foregroundColor(.white)
+                            .animation(.easeInOut, value: metricsManager.machineStatus.rawValue)
+                    }
+                    Spacer()
+                }
+            }
+
+            HStack(spacing: 24) {
+                UpdateLabel(
+                    label: "CPU",
+                    value: metricsManager.avgCPU * 100,
+                    unit: "%",
+                    decimalPlaces: 2,
+                    showPercent: true
+                )
                 UpdateLabel(
                     label: "MEMORY",
                     value: metricsManager.avgRAM,
@@ -34,29 +55,18 @@ struct MetricsViewSimplified: View {
                     showPercent: true
                 )
             }
-            
-            HStack(spacing: 18) {
+
+            HStack(spacing: 24) {
                 UpdateLabel(
-                    label: "CPU USAGE",
-                    value: metricsManager.avgCPU * 100,
-                    unit: "%",
-                    decimalPlaces: 2,
-                    showPercent: false
+                    label: "IN",
+                    value: metricsManager.avgNetworkIn,
+                    formattedText: formatBytes(metricsManager.avgNetworkIn)
                 )
                 UpdateLabel(
-                    label: "STORAGE",
-                    value: storageValue,
-                    max: storageMax,
-                    unit: storageUnit,
-                    decimalPlaces: 2,
-                    showPercent: true,
-                    forceDecimals: storageUnit == "TB"
+                    label: "OUT",
+                    value: metricsManager.avgNetworkOut,
+                    formattedText: formatBytes(metricsManager.avgNetworkOut)
                 )
-            }
-            
-            HStack(spacing: 18) {
-                UpdateLabel(label: "IN", value: metricsManager.avgNetworkIn, formattedText: formatBytes(metricsManager.avgNetworkIn))
-                UpdateLabel(label: "OUT", value: metricsManager.avgNetworkOut, formattedText: formatBytes(metricsManager.avgNetworkOut))
             }
         }
         .alert("Metrics Error", isPresented: .constant(metricsManager.error != nil)) {

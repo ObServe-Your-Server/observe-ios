@@ -17,6 +17,7 @@ class MetricsManager: ObservableObject {
     @Published var avgNetworkIn: Double = 0.0
     @Published var avgNetworkOut: Double = 0.0
     @Published var uptime: TimeInterval = 0.0
+    @Published var machineStatus: MachineStatus = .unknown
     @Published var ping: Double?
     @Published var uploadSpeed: Double?
     @Published var downloadSpeed: Double?
@@ -264,6 +265,7 @@ class MetricsManager: ObservableObject {
                             )
                             self.wasOffline = true
                         }
+                        self.machineStatus = .offline
                         self.onStatusChanged?(.offline)
                         SharedStorageManager.shared.updateServerStatus(
                             serverId: self.serverId,
@@ -499,6 +501,7 @@ class MetricsManager: ObservableObject {
 
         // Compute and emit overall machine status
         let status = MachineStatus.compute(from: metric, isConnected: true)
+        machineStatus = status
         onStatusChanged?(status)
         SharedStorageManager.shared.updateServerStatus(
             serverId: serverId,
