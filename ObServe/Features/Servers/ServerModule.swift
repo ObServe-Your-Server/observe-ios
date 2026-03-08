@@ -1,27 +1,21 @@
-//
-//  ServerModule.swift
-//  ObServe
-//
-//  Created by Carlo Derouaux on 19.07.25.
-//
-
 import SwiftUI
 
 struct ServerModule: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var server: ServerModuleItem
-    var onDelete: (() -> Void)? = nil
+    var onDelete: (() -> Void)?
     @State private var isConnected = false
     @State private var isHealthy = false
     @State private var isCheckingHealth = true
     @State private var showCheckingIndicator = false
     @State private var showManageView = false
+    @State private var showDashboardView = false
 
     @StateObject private var metricsManager: MetricsManager
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
 
     init(server: ServerModuleItem, onDelete: (() -> Void)? = nil) {
-        self._server = Bindable(wrappedValue: server)
+        _server = Bindable(wrappedValue: server)
         self.onDelete = onDelete
         _metricsManager = StateObject(wrappedValue: MetricsManager(server: server))
     }
@@ -46,29 +40,28 @@ struct ServerModule: View {
         isCheckingHealth = true
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            if self.isCheckingHealth {
-                self.showCheckingIndicator = true
+            if isCheckingHealth {
+                showCheckingIndicator = true
             }
         }
 
         // Use the metrics/latest endpoint as a health check
         WatchTowerAPI.shared.fetchLatestMetric(machineUUID: server.machineUUID, timeoutInterval: 5) { result in
             DispatchQueue.main.async {
-                let healthy: Bool
-                switch result {
+                let healthy = switch result {
                 case .success:
-                    healthy = true
+                    true
                 case .failure:
-                    healthy = false
+                    false
                 }
 
-                self.isHealthy = healthy
-                self.server.isHealthy = healthy
-                if healthy && self.isConnected {
-                    self.server.lastConnected = Date()
+                isHealthy = healthy
+                server.isHealthy = healthy
+                if healthy, isConnected {
+                    server.lastConnected = Date()
                 }
-                self.isCheckingHealth = false
-                self.showCheckingIndicator = false
+                isCheckingHealth = false
+                showCheckingIndicator = false
                 onComplete?()
             }
         }
@@ -79,7 +72,7 @@ struct ServerModule: View {
             VStack(alignment: .leading, spacing: 16) {
                 Spacer().frame(height: 12)
 
-                if isConnected && isHealthy {
+                if isConnected, isHealthy {
                     MetricsViewSimplified(metricsManager: metricsManager)
                 } else {
                     HStack(spacing: 18) {
@@ -88,15 +81,13 @@ struct ServerModule: View {
                     }
                 }
 
-                HStack(spacing: 18) {
-                    PowerButton(isConnected: $isConnected)
+                HStack(spacing: 24) {
+                    RegularButtonWhite(Label: "CONTROL", action: {}, color: "ObServeGray")
                         .frame(maxWidth: .infinity)
                         .disabled(isCheckingHealth)
-                    RegularButton(Label: "MANAGE", action: {
-                        showManageView = true
-                    }, color: "ObServeGray")
-                    .frame(maxWidth: .infinity)
-                    .disabled(isCheckingHealth)
+                    CornerButton(label: "DASHBOARD", action: {
+                        showDashboardView = true
+                    })
                 }
             }
             .padding(.horizontal, 20)
@@ -110,9 +101,14 @@ struct ServerModule: View {
                     Text(server.name)
                         .foregroundColor(.white)
                     Circle()
-                        .fill(Color(showCheckingIndicator ? "ObServeOrange" : (isHealthy ? "ObServeGreen" : "ObServeRed")))
+                        .fill(Color(showCheckingIndicator ? "ObServeOrange" :
+                                (isHealthy ? "ObServeGreen" : "ObServeRed")))
                         .frame(width: 10, height: 10)
-                        .shadow(color: Color(showCheckingIndicator ? "ObServeOrange" : (isHealthy ? "ObServeGreen" : "ObServeRed")).opacity(3), radius: 10)
+                        .shadow(
+                            color: Color(showCheckingIndicator ? "ObServeOrange" :
+                                (isHealthy ? "ObServeGreen" : "ObServeRed")).opacity(3),
+                            radius: 10
+                        )
                 }
                 .padding(10)
                 .background(Color.black)
@@ -122,6 +118,11 @@ struct ServerModule: View {
         }
         .padding(.bottom, 20)
         .padding(.top, 10)
+        .fullScreenCover(isPresented: $showDashboardView) {
+            ServerDetailView(server: server)
+                .toolbar(.hidden, for: .navigationBar)
+                .background(Color.black.ignoresSafeArea())
+        }
         .fullScreenCover(isPresented: $showManageView) {
             ManageServerView(
                 server: server,
@@ -143,28 +144,25 @@ struct ServerModule: View {
                 server.machineStatus = newStatus
                 isHealthy = newStatus.isHealthy
             }
-            performHealthCheck()
 
-            if SettingsManager.shared.autoConnectOnLaunch && !isConnected {
+            if !isConnected {
                 isConnected = true
-            }
-
-            if isConnected {
+            } else {
                 metricsManager.startFetching()
             }
         }
         .onDisappear {
             metricsManager.stopFetching()
         }
-        .onChange(of: isConnected) { oldValue, newValue in
+        .onChange(of: isConnected) { _, newValue in
             server.isConnected = newValue
             if newValue {
                 performHealthCheck {
-                    if self.isHealthy {
-                        self.metricsManager.startFetching()
+                    if isHealthy {
+                        metricsManager.startFetching()
                     } else {
-                        self.isConnected = false
-                        self.server.isConnected = false
+                        isConnected = false
+                        server.isConnected = false
                     }
                 }
             } else {
@@ -172,9 +170,9 @@ struct ServerModule: View {
             }
         }
         .onChange(of: networkMonitor.isConnected) { _, isConnected in
-            if !isConnected && self.isConnected {
+            if !isConnected, self.isConnected {
                 self.isConnected = false
-            } else if isConnected && server.isConnected {
+            } else if isConnected, server.isConnected {
                 self.isConnected = true
             }
         }

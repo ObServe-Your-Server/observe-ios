@@ -60,6 +60,7 @@ platform :ios do
       api_key: api_key,
       groups: ["ObServe-Testing-Internal"],
       distribute_external: false,
+      skip_submission: true,
       skip_waiting_for_build_processing: false
     )
   end

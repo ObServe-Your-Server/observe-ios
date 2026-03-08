@@ -2,16 +2,9 @@
 //  OverView.swift
 //  ObServe
 //
-//  Created by Daniel Schatz on 16.07.25.
-//
 
-//
-//  OverView.swift
-//  ObServe
-//
-
-import SwiftUI
 import SwiftData
+import SwiftUI
 import WidgetKit
 
 struct OverView: View {
@@ -23,7 +16,6 @@ struct OverView: View {
     @State private var contentHasScrolled = false
     @State private var sortType: AppBar.SortType = .all
 
-    @State private var selectedServer: ServerModuleItem?
     @State private var router = Router()
 
     @EnvironmentObject var authManager: AuthenticationManager
@@ -31,7 +23,6 @@ struct OverView: View {
 
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
 
-    @ViewBuilder
     private func networkBanner(label: String, color: String) -> some View {
         ZStack {
             Text(label)
@@ -64,9 +55,9 @@ struct OverView: View {
 
     var filteredServers: [ServerModuleItem] {
         switch sortType {
-        case .all:     return servers
-        case .online:  return servers.filter { $0.isHealthy }
-        case .offline: return servers.filter { !$0.isHealthy }
+        case .all: servers
+        case .online: servers.filter(\.isHealthy)
+        case .offline: servers.filter { !$0.isHealthy }
         }
     }
 
@@ -102,12 +93,11 @@ struct OverView: View {
             Task { await viewModel?.syncMachinesFromBackend(existingServers: servers) }
             viewModel?.syncServersToWidget(servers)
         }
-        .onChange(of: servers.count) { oldValue, newValue in
+        .onChange(of: servers.count) { _, _ in
             viewModel?.syncServersToWidget(servers)
         }
     }
 
-    @ViewBuilder
     private var dashboardPage: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
@@ -151,8 +141,6 @@ struct OverView: View {
                                             Task { await viewModel?.deleteServer(server, allServers: servers) }
                                         }
                                     )
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { selectedServer = server }
                                 }
                             }
                         }
@@ -174,14 +162,20 @@ struct OverView: View {
                     .allowsHitTesting(false)
             )
             .offset(x: showBurgermenu ? -240 : 0)
-            .animation(showBurgermenu ? .spring(response: 0.28, dampingFraction: 0.9) : .spring(response: 0.2, dampingFraction: 0.95), value: showBurgermenu)
+            .animation(
+                showBurgermenu ? .spring(response: 0.28, dampingFraction: 0.9) : .spring(
+                    response: 0.2,
+                    dampingFraction: 0.95
+                ),
+                value: showBurgermenu
+            )
             .animation(.easeInOut(duration: 0.25), value: networkMonitor.isConnected)
             .animation(.easeInOut(duration: 0.25), value: networkMonitor.showReconnectedBanner)
 
             if showAddServer {
                 MachineOnboardingModal(
                     onDismiss: { withAnimation { showAddServer = false } },
-                    onComplete: { newServer, machineType in
+                    onComplete: { newServer, _ in
                         modelContext.insert(newServer)
                         try? modelContext.save()
                         viewModel?.syncServersToWidget(servers)
@@ -203,15 +197,8 @@ struct OverView: View {
             )
             .zIndex(4)
         }
-        .fullScreenCover(item: $selectedServer) { server in
-            ServerDetailView(server: server)
-                .toolbar(.hidden, for: .navigationBar)
-                .background(Color.black.ignoresSafeArea())
-        }
     }
-
 }
-
 
 #Preview {
     OverView()
