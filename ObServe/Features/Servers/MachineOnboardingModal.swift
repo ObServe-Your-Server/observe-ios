@@ -1,10 +1,3 @@
- //
-//  MachineOnboardingModal.swift
-//  ObServe
-//
-//  Created by Daniel Schatz on 19.07.25.
-//
-
 import SwiftUI
 
 enum OnboardingStep: Int, CaseIterable {
@@ -15,10 +8,10 @@ enum OnboardingStep: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .machineType: return "MACHINE TYPE"
-        case .naming: return "MACHINE NAME"
-        case .creating: return "CREATING MACHINE"
-        case .confirmation: return "YOUR SETUP"
+        case .machineType: "MACHINE TYPE"
+        case .naming: "MACHINE NAME"
+        case .creating: "CREATING MACHINE"
+        case .confirmation: "YOUR SETUP"
         }
     }
 }
@@ -49,7 +42,7 @@ struct MachineOnboardingModal: View {
                     contentHasScrolled: $contentHasScrolled,
                     currentStep: viewModel.currentStep.rawValue,
                     totalSteps: OnboardingStep.allCases.count,
-                    onClose: onDismiss
+                    onClose: { viewModel.cancelAndCleanup(onDismiss: onDismiss) }
                 )
 
                 // Content
@@ -63,6 +56,7 @@ struct MachineOnboardingModal: View {
     }
 
     // MARK: - Content Views
+
     private var contentView: some View {
         Group {
             switch viewModel.currentStep {
@@ -80,7 +74,7 @@ struct MachineOnboardingModal: View {
         .padding(.horizontal, 20)
     }
 
-    // Step 1: Machine Type Selection
+    /// Step 1: Machine Type Selection
     private var machineTypeView: some View {
         VStack(spacing: 16) {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
@@ -122,7 +116,7 @@ struct MachineOnboardingModal: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .aspectRatio(1, contentMode: .fit)
             .background(
-                Color(red: 15/255, green: 15/255, blue: 15/255)
+                Color(red: 15 / 255, green: 15 / 255, blue: 15 / 255)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 0)
@@ -132,7 +126,7 @@ struct MachineOnboardingModal: View {
         .buttonStyle(PlainButtonStyle())
     }
 
-    // Step 2: Naming
+    /// Step 2: Naming
     private var namingView: some View {
         VStack(spacing: 32) {
             Spacer()
@@ -156,7 +150,7 @@ struct MachineOnboardingModal: View {
                     TextField("My \(viewModel.selectedMachineType?.rawValue ?? "Machine")", text: $viewModel.name)
                         .textFieldStyle(PlainTextFieldStyle())
                         .padding(12)
-                        .background(Color(red: 15/255, green: 15/255, blue: 15/255))
+                        .background(Color(red: 15 / 255, green: 15 / 255, blue: 15 / 255))
                         .foregroundColor(.white)
                         .overlay(RoundedRectangle(cornerRadius: 0)
                             .stroke(Color.gray.opacity(0.3), lineWidth: 1))
@@ -167,7 +161,7 @@ struct MachineOnboardingModal: View {
         }
     }
 
-    // Step 3: Creating machine on backend
+    /// Step 3: Creating machine on backend
     private var creatingView: some View {
         VStack(spacing: 24) {
             Spacer()
@@ -188,7 +182,7 @@ struct MachineOnboardingModal: View {
                             .foregroundColor(.white)
                             .font(.system(size: 12, design: .monospaced))
                             .padding(12)
-                            .background(Color(red: 15/255, green: 15/255, blue: 15/255))
+                            .background(Color(red: 15 / 255, green: 15 / 255, blue: 15 / 255))
                             .overlay(RoundedRectangle(cornerRadius: 0)
                                 .stroke(Color.gray.opacity(0.3), lineWidth: 1))
                             .textSelection(.enabled)
@@ -226,7 +220,7 @@ struct MachineOnboardingModal: View {
         }
     }
 
-    // Step 4: Confirmation
+    /// Step 4: Confirmation
     private var confirmationView: some View {
         VStack(spacing: 24) {
             Spacer().frame(height: 5)
@@ -260,7 +254,7 @@ struct MachineOnboardingModal: View {
                 RegularButton(Label: "CHANGE", action: {
                     viewModel.resetToStart()
                 }, color: "ObServeGray")
-                .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
@@ -292,7 +286,7 @@ struct MachineOnboardingModal: View {
                         .foregroundColor(.white)
                         .font(.system(size: 11, design: .monospaced))
                         .padding(12)
-                        .background(Color(red: 15/255, green: 15/255, blue: 15/255))
+                        .background(Color(red: 15 / 255, green: 15 / 255, blue: 15 / 255))
                         .overlay(RoundedRectangle(cornerRadius: 0)
                             .stroke(Color.gray.opacity(0.3), lineWidth: 1))
                         .textSelection(.enabled)
@@ -340,10 +334,16 @@ struct MachineOnboardingModal: View {
     }
 
     // MARK: - Navigation
+
     private var navigationView: some View {
         HStack(spacing: 18) {
             RegularButton(Label: "BACK", action: { viewModel.previousStep() }, color: "ObServeGray")
-            RegularButton(Label: viewModel.nextButtonLabel, action: { viewModel.nextStep(onComplete: onComplete) }, color: "ObServeBlue", disabled: !viewModel.canProceed)
+            RegularButton(
+                Label: viewModel.nextButtonLabel,
+                action: { viewModel.nextStep(onComplete: onComplete) },
+                color: "ObServeBlue",
+                disabled: !viewModel.canProceed
+            )
         }
         .padding(20)
     }
