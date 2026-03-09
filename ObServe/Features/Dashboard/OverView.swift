@@ -1,8 +1,3 @@
-//
-//  OverView.swift
-//  ObServe
-//
-
 import SwiftData
 import SwiftUI
 import WidgetKit
@@ -15,6 +10,7 @@ struct OverView: View {
 
     @State private var contentHasScrolled = false
     @State private var sortType: AppBar.SortType = .all
+    @State private var refreshTrigger: Int = 0
 
     @State private var router = Router()
 
@@ -137,6 +133,7 @@ struct OverView: View {
                                 ForEach(filteredServers) { server in
                                     ServerModule(
                                         server: server,
+                                        refreshTrigger: refreshTrigger,
                                         onDelete: {
                                             Task { await viewModel?.deleteServer(server, allServers: servers) }
                                         }
@@ -153,6 +150,10 @@ struct OverView: View {
                     .padding(.horizontal, 20)
                 }
                 .coordinateSpace(name: "scroll")
+                .refreshable {
+                    await viewModel?.syncMachinesFromBackend(existingServers: servers)
+                    refreshTrigger += 1
+                }
             }
             .background(Color.black.ignoresSafeArea())
             .overlay(
