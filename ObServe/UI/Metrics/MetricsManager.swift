@@ -337,6 +337,7 @@ class MetricsManager: ObservableObject {
 
     // MARK: - Process a Single Metric Response
 
+    // swiftlint:disable:next cyclomatic_complexity
     private func processMetric(_ metric: MachineMetricResponse, appendToHistory: Bool, isHistorical: Bool = false) {
         let timestamp = Date().timeIntervalSince1970
 
