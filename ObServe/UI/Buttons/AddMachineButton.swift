@@ -10,7 +10,7 @@ struct AddMachineButton: View {
                     .foregroundColor(Color.gray.opacity(0.7))
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 7)
-                    .padding(.vertical, 14)
+                    .padding(.vertical, 12)
                     .background(
                         LinearGradient(
                             gradient: Gradient(colors: [Color.black.opacity(0.7), Color.black]),

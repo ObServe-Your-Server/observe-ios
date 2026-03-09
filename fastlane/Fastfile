@@ -65,6 +65,59 @@ platform :ios do
     )
   end
 
+  desc "Build and upload to TestFlight (local, plist-based versioning)"
+  lane :beta_local do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+      key_filepath: ENV["ASC_KEY_PEM_PATH"]
+    )
+
+    sync_code_signing(
+      type: "appstore",
+      api_key: api_key,
+      readonly: true
+    )
+
+    increment_build_number_in_plist(
+      xcodeproj: "ObServe.xcodeproj",
+      target: "ObServe",
+      build_number: (latest_testflight_build_number(api_key: api_key) + 1).to_s
+    )
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "ObServe.xcodeproj",
+      team_id: "KNZ6246X7R",
+      targets: ["ObServe"],
+      profile_name: "match AppStore vision.observe.observe-ios",
+      code_sign_identity: "Apple Distribution"
+    )
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "ObServe.xcodeproj",
+      team_id: "KNZ6246X7R",
+      targets: ["observeMetricsWidget"],
+      profile_name: "match AppStore vision.observe.observe-ios.observeMetricsWidget",
+      code_sign_identity: "Apple Distribution"
+    )
+
+    build_app(
+      project: "ObServe.xcodeproj",
+      scheme: "ObServe",
+      export_method: "app-store"
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      groups: ["ObServe-Testing-Internal"],
+      distribute_external: false,
+      skip_submission: true,
+      skip_waiting_for_build_processing: false
+    )
+  end
+
   desc "Build and submit to App Store"
   lane :release do
     increment_build_number(xcodeproj: "ObServe.xcodeproj")

@@ -36,6 +36,27 @@ class WatchTowerAPI {
         return request
     }
 
+    /// Attempts a token refresh when a 401/403 is received.
+    /// On success, calls `retryBlock` to re-run the original request.
+    /// On failure, logs the user out and completes with `.unauthorized`.
+    private func handleUnauthorized<T>(
+        retryBlock: @escaping () -> Void,
+        completion: @escaping (Result<T, Error>) -> Void
+    ) {
+        guard let authManager else {
+            completion(.failure(APIError.unauthorized))
+            return
+        }
+        authManager.refreshWithCompletion { success in
+            if success {
+                retryBlock()
+            } else {
+                DispatchQueue.main.async { authManager.logout() }
+                completion(.failure(APIError.unauthorized))
+            }
+        }
+    }
+
     private func buildURL(path: String, queryItems: [URLQueryItem] = []) -> URL? {
         var components = URLComponents(string: baseURL + path)
         if !queryItems.isEmpty {
@@ -70,7 +91,15 @@ class WatchTowerAPI {
 
             if let httpResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-                    completion(.failure(APIError.unauthorized))
+                    self.handleUnauthorized(
+                        retryBlock: { self.fetch(
+                            path: path,
+                            queryItems: queryItems,
+                            timeoutInterval: timeoutInterval,
+                            completion: completion
+                        ) },
+                        completion: completion
+                    )
                     return
                 }
                 if httpResponse.statusCode == 404 {
@@ -107,6 +136,18 @@ class WatchTowerAPI {
         body: some Encodable,
         completion: @escaping (Result<Response, Error>) -> Void
     ) {
+        guard let encodedBody = try? JSONEncoder().encode(body) else {
+            completion(.failure(APIError.noData))
+            return
+        }
+        postDecoded(path: path, encodedBody: encodedBody, completion: completion)
+    }
+
+    private func postDecoded<Response: Decodable>(
+        path: String,
+        encodedBody: Data,
+        completion: @escaping (Result<Response, Error>) -> Void
+    ) {
         guard let url = buildURL(path: path) else {
             completion(.failure(APIError.invalidURL))
             return
@@ -117,12 +158,7 @@ class WatchTowerAPI {
             return
         }
 
-        do {
-            request.httpBody = try JSONEncoder().encode(body)
-        } catch {
-            completion(.failure(error))
-            return
-        }
+        request.httpBody = encodedBody
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error {
@@ -132,7 +168,10 @@ class WatchTowerAPI {
 
             if let httpResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-                    completion(.failure(APIError.unauthorized))
+                    self.handleUnauthorized(
+                        retryBlock: { self.postDecoded(path: path, encodedBody: encodedBody, completion: completion) },
+                        completion: completion
+                    )
                     return
                 }
                 if httpResponse.statusCode >= 400 {
@@ -157,6 +196,14 @@ class WatchTowerAPI {
 
     /// POST that returns raw Data (for endpoints with empty/untyped response bodies)
     func post(path: String, body: some Encodable, completion: @escaping (Result<Data, Error>) -> Void) {
+        guard let encodedBody = try? JSONEncoder().encode(body) else {
+            completion(.failure(APIError.noData))
+            return
+        }
+        postData(path: path, encodedBody: encodedBody, completion: completion)
+    }
+
+    private func postData(path: String, encodedBody: Data, completion: @escaping (Result<Data, Error>) -> Void) {
         guard let url = buildURL(path: path) else {
             completion(.failure(APIError.invalidURL))
             return
@@ -167,12 +214,7 @@ class WatchTowerAPI {
             return
         }
 
-        do {
-            request.httpBody = try JSONEncoder().encode(body)
-        } catch {
-            completion(.failure(error))
-            return
-        }
+        request.httpBody = encodedBody
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error {
@@ -182,7 +224,10 @@ class WatchTowerAPI {
 
             if let httpResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-                    completion(.failure(APIError.unauthorized))
+                    self.handleUnauthorized(
+                        retryBlock: { self.postData(path: path, encodedBody: encodedBody, completion: completion) },
+                        completion: completion
+                    )
                     return
                 }
                 if httpResponse.statusCode >= 400 {
@@ -198,6 +243,14 @@ class WatchTowerAPI {
     // MARK: - PUT
 
     func put(path: String, body: some Encodable, completion: @escaping (Result<Data, Error>) -> Void) {
+        guard let encodedBody = try? JSONEncoder().encode(body) else {
+            completion(.failure(APIError.noData))
+            return
+        }
+        putData(path: path, encodedBody: encodedBody, completion: completion)
+    }
+
+    private func putData(path: String, encodedBody: Data, completion: @escaping (Result<Data, Error>) -> Void) {
         guard let url = buildURL(path: path) else {
             completion(.failure(APIError.invalidURL))
             return
@@ -208,12 +261,7 @@ class WatchTowerAPI {
             return
         }
 
-        do {
-            request.httpBody = try JSONEncoder().encode(body)
-        } catch {
-            completion(.failure(error))
-            return
-        }
+        request.httpBody = encodedBody
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error {
@@ -223,7 +271,10 @@ class WatchTowerAPI {
 
             if let httpResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-                    completion(.failure(APIError.unauthorized))
+                    self.handleUnauthorized(
+                        retryBlock: { self.putData(path: path, encodedBody: encodedBody, completion: completion) },
+                        completion: completion
+                    )
                     return
                 }
                 if httpResponse.statusCode >= 400 {
@@ -257,7 +308,10 @@ class WatchTowerAPI {
 
             if let httpResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-                    completion(.failure(APIError.unauthorized))
+                    self.handleUnauthorized(
+                        retryBlock: { self.delete(path: path, completion: completion) },
+                        completion: completion
+                    )
                     return
                 }
                 if httpResponse.statusCode >= 400 {

@@ -31,6 +31,14 @@ Run unit and UI tests
 
 Build and upload to TestFlight
 
+### ios beta_local
+
+```sh
+[bundle exec] fastlane ios beta_local
+```
+
+Build and upload to TestFlight (local, plist-based versioning)
+
 ### ios release
 
 ```sh
