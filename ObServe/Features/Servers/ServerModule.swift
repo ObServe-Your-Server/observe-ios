@@ -3,6 +3,7 @@ import SwiftUI
 struct ServerModule: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var server: ServerModuleItem
+    var refreshTrigger: Int = 0
     var onDelete: (() -> Void)?
     @State private var isConnected = false
     @State private var isHealthy = false
@@ -14,8 +15,9 @@ struct ServerModule: View {
     @StateObject private var metricsManager: MetricsManager
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
 
-    init(server: ServerModuleItem, onDelete: (() -> Void)? = nil) {
+    init(server: ServerModuleItem, refreshTrigger: Int = 0, onDelete: (() -> Void)? = nil) {
         _server = Bindable(wrappedValue: server)
+        self.refreshTrigger = refreshTrigger
         self.onDelete = onDelete
         _metricsManager = StateObject(wrappedValue: MetricsManager(server: server))
     }
@@ -174,6 +176,15 @@ struct ServerModule: View {
                 self.isConnected = false
             } else if isConnected, server.isConnected {
                 self.isConnected = true
+            }
+        }
+        .onChange(of: refreshTrigger) { _, _ in
+            guard networkMonitor.isConnected else { return }
+            metricsManager.stopFetching()
+            performHealthCheck {
+                if isHealthy {
+                    metricsManager.startFetching()
+                }
             }
         }
     }
