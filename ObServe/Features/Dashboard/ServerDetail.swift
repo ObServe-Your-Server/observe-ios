@@ -4,7 +4,9 @@ import SwiftUI
 struct ServerDetailView: View {
     var server: ServerModuleItem
 
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Query private var allServers: [ServerModuleItem]
     @State private var contentHasScrolled = false
     @State private var selectedInterval: AppBar.Interval = .s2
     @State private var showManageView = false
@@ -61,6 +63,13 @@ struct ServerDetailView: View {
                 onSave: { updatedServer in
                     server.name = updatedServer.name
                     server.type = updatedServer.type
+                },
+                onDelete: {
+                    Task {
+                        let viewModel = OverViewModel(modelContext: modelContext)
+                        await viewModel.deleteServer(server, allServers: allServers)
+                        dismiss()
+                    }
                 }
             )
         }

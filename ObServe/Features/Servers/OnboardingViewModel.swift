@@ -1,13 +1,7 @@
-//
-//  OnboardingViewModel.swift
-//  ObServe
-//
-
 import SwiftUI
 
 @MainActor
 class OnboardingViewModel: ObservableObject {
-
     @Published var currentStep: OnboardingStep = .machineType
     @Published var selectedMachineType: MachineType?
     @Published var name = ""
@@ -19,23 +13,23 @@ class OnboardingViewModel: ObservableObject {
 
     var nextButtonLabel: String {
         switch currentStep {
-        case .machineType: return "NEXT"
-        case .naming: return "CREATE"
-        case .creating: return "NEXT"
-        case .confirmation: return "FINISH"
+        case .machineType: "NEXT"
+        case .naming: "CREATE"
+        case .creating: "NEXT"
+        case .confirmation: "FINISH"
         }
     }
 
     var canProceed: Bool {
         switch currentStep {
         case .machineType:
-            return selectedMachineType != nil
+            selectedMachineType != nil
         case .naming:
-            return true
+            true
         case .creating:
-            return creationStatus == .success
+            creationStatus == .success
         case .confirmation:
-            return true
+            true
         }
     }
 
@@ -71,9 +65,25 @@ class OnboardingViewModel: ObservableObject {
     }
 
     func resetToStart() {
+        deleteCreatedMachineIfNeeded()
         currentStep = .machineType
         creationStatus = .idle
         createdMachine = nil
+    }
+
+    func cancelAndCleanup(onDismiss: () -> Void) {
+        deleteCreatedMachineIfNeeded()
+        onDismiss()
+    }
+
+    // MARK: - Private
+
+    private func deleteCreatedMachineIfNeeded() {
+        guard let created = createdMachine,
+              let uuid = UUID(uuidString: created.uuid) else { return }
+        Task {
+            try? await WatchTowerAPI.shared.deleteMachine(uuid: uuid)
+        }
     }
 
     // MARK: - Backend
