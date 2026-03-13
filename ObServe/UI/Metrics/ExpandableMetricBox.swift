@@ -136,6 +136,7 @@ struct ExpandableMetricBox: View {
         .overlay(alignment: .bottomTrailing) {
             ExpandCornerIndicator()
         }
+        .accessibilityIdentifier("expandableMetricBox_\(title.lowercased())")
         .onTapGesture {
             withAnimation(.easeInOut(duration: 0.3)) {
                 isExpanded.toggle()

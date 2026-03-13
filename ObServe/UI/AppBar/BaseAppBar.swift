@@ -75,6 +75,7 @@ struct BaseAppBar<SecondaryContent: View>: View {
                     .stroke(Color.gray.opacity(0.5), lineWidth: 1)
             )
             .contentShape(Rectangle())
+            .accessibilityIdentifier("burgerMenuButton")
             .onTapGesture { rightButtonAction() }
 
         case .close:

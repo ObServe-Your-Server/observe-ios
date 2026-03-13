@@ -101,6 +101,7 @@ Dependencies/
 
 # Bundler
 vendor/bundle
+Gemfile.lock
 
 # SwiftUI Previews
 **/PreviewContent/

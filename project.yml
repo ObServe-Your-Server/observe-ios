@@ -128,3 +128,25 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: ObServe
+
+schemes:
+  ObServe:
+    build:
+      targets:
+        ObServe: all
+        ObServeUITests: [test]
+        ObServeTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - ObServeUITests
+        - ObServeTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+    shared: true

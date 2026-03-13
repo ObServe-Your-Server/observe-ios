@@ -86,6 +86,13 @@ class MetricsManager: ObservableObject {
     init(server: ServerModuleItem) {
         serverId = server.id
         machineUUID = server.machineUUID
+        // Seed uptime from last known value so the display doesn't jump from 0 on first fetch
+        if let cached = SharedStorageManager.shared.getServer(byId: server.id),
+           let cachedUptime = cached.uptime, cachedUptime > 0 {
+            lastFetchedUptime = cachedUptime
+            lastUptimeFetchDate = Date()
+            uptime = cachedUptime
+        }
         setupPollingIntervalObserver()
         setupNetworkObserver()
     }
@@ -494,10 +501,15 @@ class MetricsManager: ObservableObject {
             }
         }
 
-        // Uptime: only update the anchor; the tick timer drives the displayed value smoothly
-        if let uptimeSeconds = metric.uptime {
-            lastFetchedUptime = TimeInterval(uptimeSeconds)
-            lastUptimeFetchDate = Date()
+        // Uptime: only update the anchor from live fetches; skip historical data to avoid a stale anchor.
+        // Only accept a new server value if it's >= the current displayed uptime — this prevents the
+        // label from jumping backwards when the backend delivers a stale/out-of-sync snapshot.
+        if !isHistorical, let uptimeSeconds = metric.uptime {
+            let newUptime = TimeInterval(uptimeSeconds)
+            if newUptime >= uptime {
+                lastFetchedUptime = newUptime
+                lastUptimeFetchDate = Date()
+            }
         }
 
         // Compute and emit overall machine status

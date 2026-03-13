@@ -11,6 +11,20 @@ platform :ios do
     )
   end
 
+  desc "Capture App Store screenshots using fastlane snapshot"
+  lane :screenshots do
+    capture_ios_screenshots(
+      project: "ObServe.xcodeproj",
+      scheme: "ObServe",
+      output_directory: "fastlane/screenshots",
+      clear_previous_screenshots: false,
+      override_status_bar: true,
+      erase_simulator: true,
+      number_of_retries: 3,
+      stop_after_first_error: false
+    )
+  end
+
   desc "Build and upload to TestFlight"
   lane :beta do
     setup_ci if is_ci
