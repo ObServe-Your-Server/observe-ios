@@ -6,9 +6,12 @@ class WatchTowerAPI {
     private let baseURLs = [
         "https://watch-tower.observe.vision",
         "https://watch-tower-backup.observe.vision",
-        "https://watch-tower.marco-brandt.com"
+        "https://watch-tower.marco-brandt.com",
     ]
-    private var baseURL: String { baseURLs[0] }
+    private var baseURL: String {
+        baseURLs[0]
+    }
+
     private weak var authManager: AuthenticationManager?
 
     private init() {}
@@ -90,8 +93,10 @@ class WatchTowerAPI {
             switch result {
             case .success:
                 completion(result)
-            case .failure(let error) where self.isNetworkFailure(error) && urlIndex + 1 < self.baseURLs.count:
-                print("WatchTowerAPI: \(self.baseURLs[urlIndex]) unreachable, trying fallback \(self.baseURLs[urlIndex + 1])")
+            case let .failure(error) where self.isNetworkFailure(error) && urlIndex + 1 < self.baseURLs.count:
+                print(
+                    "WatchTowerAPI: \(self.baseURLs[urlIndex]) unreachable, trying fallback \(self.baseURLs[urlIndex + 1])"
+                )
                 self.performWithFallback(urlIndex: urlIndex + 1, block: block, completion: completion)
             case .failure:
                 completion(result)
@@ -109,11 +114,11 @@ class WatchTowerAPI {
     ) {
         performWithFallback(block: { [weak self] base, done in
             guard let self else { return }
-            guard let url = self.buildURL(path: path, queryItems: queryItems, base: base) else {
+            guard let url = buildURL(path: path, queryItems: queryItems, base: base) else {
                 done(.failure(APIError.invalidURL))
                 return
             }
-            guard let request = self.createRequest(for: url, timeoutInterval: timeoutInterval) else {
+            guard let request = createRequest(for: url, timeoutInterval: timeoutInterval) else {
                 done(.failure(APIError.notAuthenticated))
                 return
             }
@@ -125,7 +130,12 @@ class WatchTowerAPI {
                 if let httpResponse = response as? HTTPURLResponse {
                     if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
                         self.handleUnauthorized(
-                            retryBlock: { self.fetch(path: path, queryItems: queryItems, timeoutInterval: timeoutInterval, completion: completion) },
+                            retryBlock: { self.fetch(
+                                path: path,
+                                queryItems: queryItems,
+                                timeoutInterval: timeoutInterval,
+                                completion: completion
+                            ) },
                             completion: completion
                         )
                         return
@@ -177,11 +187,11 @@ class WatchTowerAPI {
     ) {
         performWithFallback(block: { [weak self] base, done in
             guard let self else { return }
-            guard let url = self.buildURL(path: path, base: base) else {
+            guard let url = buildURL(path: path, base: base) else {
                 done(.failure(APIError.invalidURL))
                 return
             }
-            guard var request = self.createRequest(for: url, method: "POST") else {
+            guard var request = createRequest(for: url, method: "POST") else {
                 done(.failure(APIError.notAuthenticated))
                 return
             }
@@ -194,7 +204,9 @@ class WatchTowerAPI {
                 if let httpResponse = response as? HTTPURLResponse {
                     if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
                         self.handleUnauthorized(
-                            retryBlock: { self.postDecoded(path: path, encodedBody: encodedBody, completion: completion) },
+                            retryBlock: {
+                                self.postDecoded(path: path, encodedBody: encodedBody, completion: completion)
+                            },
                             completion: completion
                         )
                         return
@@ -230,11 +242,11 @@ class WatchTowerAPI {
     private func postData(path: String, encodedBody: Data, completion: @escaping (Result<Data, Error>) -> Void) {
         performWithFallback(block: { [weak self] base, done in
             guard let self else { return }
-            guard let url = self.buildURL(path: path, base: base) else {
+            guard let url = buildURL(path: path, base: base) else {
                 done(.failure(APIError.invalidURL))
                 return
             }
-            guard var request = self.createRequest(for: url, method: "POST") else {
+            guard var request = createRequest(for: url, method: "POST") else {
                 done(.failure(APIError.notAuthenticated))
                 return
             }
@@ -275,11 +287,11 @@ class WatchTowerAPI {
     private func putData(path: String, encodedBody: Data, completion: @escaping (Result<Data, Error>) -> Void) {
         performWithFallback(block: { [weak self] base, done in
             guard let self else { return }
-            guard let url = self.buildURL(path: path, base: base) else {
+            guard let url = buildURL(path: path, base: base) else {
                 done(.failure(APIError.invalidURL))
                 return
             }
-            guard var request = self.createRequest(for: url, method: "PUT") else {
+            guard var request = createRequest(for: url, method: "PUT") else {
                 done(.failure(APIError.notAuthenticated))
                 return
             }
@@ -312,11 +324,11 @@ class WatchTowerAPI {
     func delete(path: String, completion: @escaping (Result<Void, Error>) -> Void) {
         performWithFallback(block: { [weak self] base, done in
             guard let self else { return }
-            guard let url = self.buildURL(path: path, base: base) else {
+            guard let url = buildURL(path: path, base: base) else {
                 done(.failure(APIError.invalidURL))
                 return
             }
-            guard let request = self.createRequest(for: url, method: "DELETE") else {
+            guard let request = createRequest(for: url, method: "DELETE") else {
                 done(.failure(APIError.notAuthenticated))
                 return
             }

@@ -88,7 +88,8 @@ class MetricsManager: ObservableObject {
         machineUUID = server.machineUUID
         // Seed uptime from last known value so the display doesn't jump from 0 on first fetch
         if let cached = SharedStorageManager.shared.getServer(byId: server.id),
-           let cachedUptime = cached.uptime, cachedUptime > 0 {
+           let cachedUptime = cached.uptime, cachedUptime > 0
+        {
             lastFetchedUptime = cachedUptime
             lastUptimeFetchDate = Date()
             uptime = cachedUptime

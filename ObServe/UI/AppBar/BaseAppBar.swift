@@ -1,10 +1,3 @@
-//
-//  BaseAppBar.swift
-//  ObServe
-//
-//  Created by Claude Code
-//
-
 import SwiftUI
 
 /// The type of right-side button displayed in the app bar.
@@ -96,7 +89,7 @@ struct BaseAppBar<SecondaryContent: View>: View {
     }
 }
 
-// Extension to support app bars without secondary content
+/// Extension to support app bars without secondary content
 extension BaseAppBar where SecondaryContent == EmptyView {
     init(
         title: String,
@@ -105,10 +98,10 @@ extension BaseAppBar where SecondaryContent == EmptyView {
         rightButtonAction: @escaping () -> Void
     ) {
         self.title = title
-        self._contentHasScrolled = contentHasScrolled
+        _contentHasScrolled = contentHasScrolled
         self.rightButtonType = rightButtonType
         self.rightButtonAction = rightButtonAction
-        self.secondaryContent = { EmptyView() }
+        secondaryContent = { EmptyView() }
     }
 }
 

@@ -1,10 +1,3 @@
-//
-//  ExpandableMetricBox.swift
-//  ObServe
-//
-//  Created by GitHub Copilot on 22.09.25.
-//
-
 import SwiftUI
 
 struct ExpandableMetricBox: View {
@@ -20,7 +13,18 @@ struct ExpandableMetricBox: View {
     let cpuTemperature: Double?
     @State private var isExpanded: Bool = false
 
-    init(title: String, currentValue: Double, maximum: Double, unit: String? = nil, decimalPlaces: Int = 1, showPercent: Bool = false, serverId: UUID? = nil, metricType: String? = nil, headerRows: [(label: String, value: String)] = [], cpuTemperature: Double? = nil) {
+    init(
+        title: String,
+        currentValue: Double,
+        maximum: Double,
+        unit: String? = nil,
+        decimalPlaces: Int = 1,
+        showPercent: Bool = false,
+        serverId: UUID? = nil,
+        metricType: String? = nil,
+        headerRows: [(label: String, value: String)] = [],
+        cpuTemperature: Double? = nil
+    ) {
         self.title = title
         self.currentValue = currentValue
         self.maximum = maximum
@@ -32,7 +36,7 @@ struct ExpandableMetricBox: View {
         self.headerRows = headerRows
         self.cpuTemperature = cpuTemperature
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Always create the chart to keep collecting data
@@ -51,7 +55,11 @@ struct ExpandableMetricBox: View {
                             }
                             .padding(.horizontal, 6)
                             .padding(.vertical, 6)
-                            .background(RoundedRectangle(cornerRadius: 0).fill(Color(red: 0.102, green: 0.102, blue: 0.102)))
+                            .background(RoundedRectangle(cornerRadius: 0).fill(Color(
+                                red: 0.102,
+                                green: 0.102,
+                                blue: 0.102
+                            )))
                         }
                     }
                     .padding(.horizontal, 20)
@@ -88,11 +96,13 @@ struct ExpandableMetricBox: View {
                             .frame(width: 20)
 
                         HStack(spacing: 4) {
-                            if showPercent && maximum > 0 {
-                                Text("\(String(format: "%.\(decimalPlaces)f", currentValue))/\(String(format: "%.\(decimalPlaces)f", maximum))")
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 16, weight: .medium))
-                                if let unit = unit {
+                            if showPercent, maximum > 0 {
+                                Text(
+                                    "\(String(format: "%.\(decimalPlaces)f", currentValue))/\(String(format: "%.\(decimalPlaces)f", maximum))"
+                                )
+                                .foregroundColor(.white)
+                                .font(.system(size: 16, weight: .medium))
+                                if let unit {
                                     Text(unit)
                                         .foregroundColor(.white)
                                         .font(.system(size: 16, weight: .medium))
@@ -104,7 +114,7 @@ struct ExpandableMetricBox: View {
                                 Text(String(format: "%.\(decimalPlaces)f", currentValue))
                                     .foregroundColor(.white)
                                     .font(.system(size: 16, weight: .medium))
-                                if let unit = unit {
+                                if let unit {
                                     Text(unit)
                                         .foregroundColor(.white)
                                         .font(.system(size: 16, weight: .medium))
@@ -126,7 +136,6 @@ struct ExpandableMetricBox: View {
                 Text(title.uppercased())
                     .foregroundColor(.white)
                     .font(.system(size: 14, weight: .medium))
-
             }
             .padding(10)
             .background(Color.black)
@@ -152,7 +161,7 @@ struct ExpandableMetricBox: View {
             currentValue: 45.3,
             maximum: 100.0
         )
-        
+
         ExpandableMetricBox(
             title: "RAM",
             currentValue: 25.4,

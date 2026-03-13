@@ -1,18 +1,12 @@
-//
-//  ObServeUITests.swift
-//  ObServeUITests
-//
-
 import XCTest
 
 final class ObServeScreenshotTests: XCTestCase {
-
     override func setUpWithError() throws {
         continueAfterFailure = false
     }
 
     @MainActor
-    func testTakeScreenshots() throws {
+    func testTakeScreenshots() {
         let app = XCUIApplication()
         setupSnapshot(app)
         app.launchArguments += ["SNAPSHOT_DEMO_MODE"]
@@ -23,21 +17,25 @@ final class ObServeScreenshotTests: XCTestCase {
         sleep(2)
 
         // MARK: - 01 Dashboard
+
         snapshot("01_Dashboard")
 
         // MARK: - 02 Settings
+
         openBurgerMenu(app)
         app.buttons["SETTINGS"].tap()
         sleep(1)
         snapshot("02_Settings")
 
         // MARK: - 03 Account
+
         openBurgerMenu(app)
         app.buttons["ACCOUNT"].tap()
         sleep(1)
         snapshot("03_Account")
 
         // MARK: - 04 Server detail
+
         // Navigate back to dashboard via burger menu
         openBurgerMenu(app)
         app.buttons["DASHBOARD"].tap()
@@ -49,6 +47,7 @@ final class ObServeScreenshotTests: XCTestCase {
         snapshot("04_ServerDetail")
 
         // MARK: - 05 CPU metric expanded
+
         app.otherElements["expandableMetricBox_cpu"].tap()
         sleep(1)
         snapshot("05_CPUExpanded")

@@ -1,12 +1,5 @@
-//
-//  ObServeApp.swift
-//  ObServe
-//
-//  Created by Daniel Schatz on 16.07.25.
-//
-
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @main
 struct ObServeApp: App {
@@ -16,11 +9,12 @@ struct ObServeApp: App {
     private var isDemoMode: Bool {
         ProcessInfo.processInfo.arguments.contains("SNAPSHOT_DEMO_MODE")
     }
+
     @Environment(\.scenePhase) private var scenePhase
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            ServerModuleItem.self
+            ServerModuleItem.self,
         ])
         let isDemoMode = ProcessInfo.processInfo.arguments.contains("SNAPSHOT_DEMO_MODE")
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: isDemoMode)
@@ -70,7 +64,7 @@ struct ObServeApp: App {
                     isCheckingAuth = false
                 } else {
                     // Validate tokens on app startup
-                    authManager.validateAndRefreshIfNeeded { success in
+                    authManager.validateAndRefreshIfNeeded { _ in
                         isCheckingAuth = false
                     }
                 }
