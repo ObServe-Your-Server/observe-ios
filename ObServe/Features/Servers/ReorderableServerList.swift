@@ -44,7 +44,7 @@ struct ReorderableServerList: View {
     // MARK: - Card Slot
 
     @ViewBuilder
-    private func cardSlot(server: ServerModuleItem, liveIndex: Int) -> some View {
+    private func cardSlot(server: ServerModuleItem, liveIndex _: Int) -> some View {
         let id = server.id
         let isDragging = draggingID == id
         let anyDragging = draggingID != nil
@@ -80,7 +80,6 @@ struct ReorderableServerList: View {
                 }
             )
             .opacity(isDragging ? 0 : (anyDragging ? 0.55 : 1.0))
-            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: liveIndex)
             .animation(.easeInOut(duration: 0.15), value: anyDragging)
         }
         // Long press — simultaneous so scroll is not blocked

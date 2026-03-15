@@ -1,3 +1,4 @@
+// swiftlint:disable cyclomatic_complexity
 import Foundation
 
 /// Maps backend NotificationEntity fields (component + severity + message) to

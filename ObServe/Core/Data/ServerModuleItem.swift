@@ -10,6 +10,7 @@ class ServerModuleItem {
     var machineDescription: String = ""
     var location: String = ""
     var apiKey: String = ""
+    var createdAt: Date?
     var lastConnected: Date?
     var isConnected: Bool = false
     var isHealthy: Bool = false

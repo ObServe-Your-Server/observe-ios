@@ -52,6 +52,24 @@ class ManageServerViewModel: ObservableObject {
         return lines.joined(separator: "\n")
     }
 
+    var creationDateText: String {
+        guard let date = server.createdAt else { return "—" }
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .none
+        return f.string(from: date)
+    }
+
+    var observedForText: String {
+        guard let date = server.createdAt else { return "—" }
+        let diff = max(0, Int(Date().timeIntervalSince(date)))
+        let days = diff / 86400
+        let hours = (diff % 86400) / 3600
+        let minutes = (diff % 3600) / 60
+        let seconds = diff % 60
+        return String(format: "%02d:%02d:%02d:%02d", days, hours, minutes, seconds)
+    }
+
     var canProceed: Bool {
         switch currentStep {
         case .editMachineType:

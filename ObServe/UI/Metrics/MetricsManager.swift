@@ -254,6 +254,14 @@ class MetricsManager: ObservableObject {
                             }
                     }
                 case let .failure(error):
+                    // 404 = machine exists but has no metrics yet; don't count as a failure.
+                    if case APIError.notFound = error {
+                        self.consecutiveFailures = 0
+                        self
+                            .scheduleNextFetch(delay: TimeInterval(self.overrideIntervalSeconds ?? SettingsManager
+                                    .shared.pollingIntervalSeconds))
+                        return
+                    }
                     self.error = error.localizedDescription
                     self.consecutiveFailures += 1
                     // Only declare offline after 3 consecutive failures to tolerate

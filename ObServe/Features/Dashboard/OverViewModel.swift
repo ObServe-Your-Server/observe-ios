@@ -1,15 +1,9 @@
-//
-//  OverViewModel.swift
-//  ObServe
-//
-
-import SwiftUI
 import SwiftData
+import SwiftUI
 import WidgetKit
 
 @MainActor
 class OverViewModel: ObservableObject {
-
     private let modelContext: ModelContext
 
     init(modelContext: ModelContext) {
@@ -21,12 +15,16 @@ class OverViewModel: ObservableObject {
     func syncMachinesFromBackend(existingServers: [ServerModuleItem]) async {
         do {
             let remoteMachines = try await WatchTowerAPI.shared.fetchMachines()
-            let existingUUIDs = Set(existingServers.compactMap { $0.machineUUID })
+            let existingUUIDs = Set(existingServers.compactMap(\.machineUUID))
 
             for remote in remoteMachines {
                 guard let uuid = UUID(uuidString: remote.uuid) else { continue }
 
-                if !existingUUIDs.contains(uuid) {
+                if let existing = existingServers.first(where: { $0.machineUUID == uuid }) {
+                    if existing.createdAt == nil, let createdAtStr = remote.createdAt {
+                        existing.createdAt = Self.parseISO8601(createdAtStr)
+                    }
+                } else {
                     let newServer = ServerModuleItem(
                         machineUUID: uuid,
                         name: remote.name ?? "Unknown",
@@ -35,6 +33,9 @@ class OverViewModel: ObservableObject {
                     )
                     newServer.isConnected = true
                     newServer.isHealthy = true
+                    if let createdAtStr = remote.createdAt {
+                        newServer.createdAt = Self.parseISO8601(createdAtStr)
+                    }
                     modelContext.insert(newServer)
                 }
             }
@@ -61,6 +62,18 @@ class OverViewModel: ObservableObject {
             try? modelContext.save()
             syncServersToWidget(allServers)
         }
+    }
+
+    // MARK: - Helpers
+
+    private static func parseISO8601(_ string: String) -> Date? {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        for format in ["yyyy-MM-dd'T'HH:mm:ss.SSSSSS", "yyyy-MM-dd'T'HH:mm:ss.SSS", "yyyy-MM-dd'T'HH:mm:ss"] {
+            f.dateFormat = format
+            if let date = f.date(from: string) { return date }
+        }
+        return ISO8601DateFormatter().date(from: string)
     }
 
     // MARK: - Widget Sync

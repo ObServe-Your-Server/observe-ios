@@ -164,7 +164,7 @@ struct ManageServerView: View {
                             .foregroundColor(Color.gray)
                             .font(.plexSans(size: 12, weight: .medium))
                         Spacer()
-                        Text("TODO")
+                        Text(viewModel.creationDateText)
                             .foregroundColor(.white)
                             .font(.plexSans(size: 14, weight: .medium))
                     }
@@ -177,7 +177,7 @@ struct ManageServerView: View {
                             .foregroundColor(Color.gray)
                             .font(.plexSans(size: 12, weight: .medium))
                         Spacer()
-                        Text("TODO")
+                        Text(viewModel.observedForText)
                             .foregroundColor(.white)
                             .font(.plexSans(size: 14, weight: .medium))
                     }
