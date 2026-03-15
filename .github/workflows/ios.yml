@@ -2,7 +2,7 @@ name: iOS CI
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [ "fortnite" ]
     types: [ opened, synchronize, reopened, closed ]
 
 jobs:
