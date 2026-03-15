@@ -1,10 +1,3 @@
-//
-//  SettingsOverview.swift
-//  ObServe
-//
-//  Created by Carlo Derouaux on 19.08.25.
-//
-
 import SwiftUI
 
 struct SettingsOverview: View {
@@ -15,7 +8,7 @@ struct SettingsOverview: View {
     @State private var showPollingIntervalPicker = false
     @EnvironmentObject var authManager: AuthenticationManager
 
-    // Use SettingsManager instead of local state
+    /// Use SettingsManager instead of local state
     @ObservedObject private var settings = SettingsManager.shared
 
     var router: Router
@@ -38,17 +31,17 @@ struct SettingsOverview: View {
                         VStack(spacing: 10) {
                             // DATA DISPLAY SECTION
                             sectionHeader("PRECISE DATA")
-                            
+
                             SettingRow(
                                 title: "Display metrics with full precision (not rounded)",
                                 binding: $settings.preciseDataEnabled
                             )
                         }
-                        
+
                         VStack(spacing: 10) {
                             // INTERACTIONS SECTION
                             sectionHeader("SAFE MODE")
-                            
+
                             SettingRow(
                                 title: "Require confirmation for critical actions",
                                 binding: $settings.safeModeEnabled
@@ -57,13 +50,13 @@ struct SettingsOverview: View {
 
                         VStack(spacing: 10) {
                             sectionHeader("HAPTIC")
-                            
+
                             SettingRow(
                                 title: "Vibration feedback for button taps",
                                 binding: $settings.hapticsEnabled
                             )
                         }
-                        
+
                         VStack(spacing: 10) {
                             sectionHeader("AUTO-CONNECT")
                             SettingRow(
@@ -71,28 +64,28 @@ struct SettingsOverview: View {
                                 binding: $settings.autoConnectOnLaunch
                             )
                         }
-                        
+
                         VStack(spacing: 10) {
                             // PERFORMANCE SECTION
                             sectionHeader("POLLING INTERVAL")
-                            
+
                             // Polling Interval Picker
                             Button(action: {
                                 showPollingIntervalPicker = true
                             }) {
                                 HStack(alignment: .center, spacing: 16) {
                                     Text("How often to fetch new metric data")
-                                        .font(.system(size: 11))
+                                        .font(.plexSans(size: 11))
                                         .foregroundColor(.gray)
                                         .lineLimit(2)
                                     Spacer()
-                                    
+
                                     Text(settings.pollingIntervalLabel())
-                                        .font(.system(size: 13))
+                                        .font(.plexSans(size: 13))
                                         .foregroundColor(.gray)
-                                    
+
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 12))
+                                        .font(.plexSans(size: 12))
                                         .foregroundColor(.gray)
                                 }
                             }
@@ -101,43 +94,42 @@ struct SettingsOverview: View {
                         VStack(spacing: 10) {
                             // DATA MANAGEMENT SECTION
                             sectionHeader("RESET DATA")
-                            
-                            Button(action: {showResetModal = true}) {
+
+                            Button(action: { showResetModal = true }) {
                                 HStack(alignment: .center, spacing: 16) {
                                     Text("Clear data and reset settings")
-                                        .font(.system(size: 11))
+                                        .font(.plexSans(size: 11))
                                         .foregroundColor(.gray)
                                         .lineLimit(2)
                                     Spacer()
-                                    
+
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 12))
+                                        .font(.plexSans(size: 12))
                                         .foregroundColor(.gray)
                                 }
                             }
                         }
-                        
+
                         VStack(spacing: 10) {
                             // ABOUT SECTION
                             sectionHeader("ABOUT")
-                            
+
                             Button(action: { showAboutModal = true }) {
                                 HStack(spacing: 12) {
                                     Image("AppIcon")
                                         .resizable()
                                         .scaledToFit()
                                         .frame(width: 40, height: 40)
-                                    
                                 }
-                                
+
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("ABOUT ObServe")
                                         .foregroundColor(.white)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                 }
-                                
+
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 12))
+                                    .font(.plexSans(size: 12))
                                     .foregroundColor(.gray)
                             }
                         }
@@ -157,7 +149,13 @@ struct SettingsOverview: View {
                     .allowsHitTesting(false)
             )
             .offset(x: showBurgerMenu ? -240 : 0)
-            .animation(showBurgerMenu ? .spring(response: 0.28, dampingFraction: 0.9) : .spring(response: 0.2, dampingFraction: 0.95), value: showBurgerMenu)
+            .animation(
+                showBurgerMenu ? .spring(response: 0.28, dampingFraction: 0.9) : .spring(
+                    response: 0.2,
+                    dampingFraction: 0.95
+                ),
+                value: showBurgerMenu
+            )
 
             BurgerMenu(
                 router: router,
@@ -190,7 +188,7 @@ struct SettingsOverview: View {
     }
 
     // MARK: - Helper Views
-    @ViewBuilder
+
     private func sectionHeader(_ text: String) -> some View {
         HStack {
             Text(text)
@@ -201,14 +199,15 @@ struct SettingsOverview: View {
         }
     }
 
-    @ViewBuilder
     private func navigationButton(
         icon: String = "",
         title: String,
         description: String,
         action: @escaping () -> Void,
         useImageAsset: Bool = false
-    ) -> some View {
+    )
+        -> some View
+    {
         Button(action: action) {
             HStack(spacing: 12) {
                 if !icon.isEmpty {
@@ -219,7 +218,7 @@ struct SettingsOverview: View {
                             .frame(width: 40, height: 40)
                     } else {
                         Image(systemName: icon)
-                            .font(.system(size: 20))
+                            .font(.plexSans(size: 20))
                             .foregroundColor(.white)
                             .frame(width: 40)
                     }
@@ -227,18 +226,18 @@ struct SettingsOverview: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.plexSans(size: 14, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     Text(description)
-                        .font(.system(size: 11))
+                        .font(.plexSans(size: 11))
                         .foregroundColor(.gray)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
+                    .font(.plexSans(size: 12))
                     .foregroundColor(.gray)
             }
         }
@@ -246,11 +245,11 @@ struct SettingsOverview: View {
 
     private func intervalLabel(for seconds: Int) -> String {
         switch seconds {
-        case 5: return "5 seconds"
-        case 10: return "10 seconds"
-        case 30: return "30 seconds"
-        case 60: return "1 minute"
-        default: return "\(seconds) seconds"
+        case 5: "5 seconds"
+        case 10: "10 seconds"
+        case 30: "30 seconds"
+        case 60: "1 minute"
+        default: "\(seconds) seconds"
         }
     }
 }
@@ -264,7 +263,7 @@ public struct SettingRow: View {
         HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title.uppercased())
-                    .font(.system(size: 11))
+                    .font(.plexSans(size: 11))
                     .foregroundColor(.gray)
                     .lineLimit(2)
             }
@@ -274,4 +273,3 @@ public struct SettingRow: View {
         }
     }
 }
-

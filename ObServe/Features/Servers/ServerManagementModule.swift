@@ -14,6 +14,9 @@ struct ServerManagementModule: View {
     @State private var isExpanded = false
 
     @ObservedObject var metricsManager: MetricsManager
+    @StateObject private var dockerManager: DockerMetricsManager
+    @StateObject private var cpuHistory = MetricHistoryModel()
+    @StateObject private var ramHistory = MetricHistoryModel()
 
     init(
         server: ServerModuleItem,
@@ -25,6 +28,7 @@ struct ServerManagementModule: View {
         self.metricsManager = metricsManager
         self.onLogs = onLogs
         self.onManage = onManage
+        _dockerManager = StateObject(wrappedValue: DockerMetricsManager(machineUUID: server.machineUUID))
     }
 
     private var storageHeaderText: String {
@@ -95,7 +99,7 @@ struct ServerManagementModule: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("STATUS")
                                 .foregroundColor(Color.gray)
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.plexSans(size: 12, weight: .medium))
                             Text(server.machineStatus.rawValue)
                                 .foregroundColor(.white)
                         }
@@ -138,11 +142,11 @@ struct ServerManagementModule: View {
                             HStack {
                                 Text("MACHINE TYPE")
                                     .foregroundColor(Color.gray)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.plexSans(size: 12, weight: .medium))
                                 Spacer()
                                 Text(server.type.uppercased())
                                     .foregroundColor(.white)
-                                    .font(.system(size: 14, weight: .medium))
+                                    .font(.plexSans(size: 14, weight: .medium))
                             }
                             .padding(.horizontal, 6)
                             .padding(.vertical, 6)
@@ -154,11 +158,11 @@ struct ServerManagementModule: View {
                             HStack {
                                 Text("OS VERSION")
                                     .foregroundColor(Color.gray)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.plexSans(size: 12, weight: .medium))
                                 Spacer()
                                 Text(metricsManager.osName ?? osVersion)
                                     .foregroundColor(.white)
-                                    .font(.system(size: 14, weight: .medium))
+                                    .font(.plexSans(size: 14, weight: .medium))
                             }
                             .padding(.horizontal, 6)
                             .padding(.vertical, 6)
@@ -174,7 +178,7 @@ struct ServerManagementModule: View {
                             HStack {
                                 Text("STORAGE")
                                     .foregroundColor(Color.gray)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.plexSans(size: 12, weight: .medium))
                                 Spacer()
                                 Text(storageHeaderText)
                                     .foregroundColor(.white)
@@ -204,7 +208,7 @@ struct ServerManagementModule: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("NOTE")
                                     .foregroundColor(Color.gray)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.plexSans(size: 12, weight: .medium))
                                 HStack {
                                     Text(server.machineDescription.isEmpty ? "Write a note..." : server
                                         .machineDescription)
@@ -214,7 +218,7 @@ struct ServerManagementModule: View {
                                     Spacer()
                                     Image(systemName: "chevron.right")
                                         .foregroundColor(Color.gray)
-                                        .font(.system(size: 12))
+                                        .font(.plexSans(size: 12))
                                 }
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 10)
@@ -259,7 +263,7 @@ struct ServerManagementModule: View {
                 HStack {
                     Text("MACHINE")
                         .foregroundColor(.white)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.plexSans(size: 14, weight: .medium))
                 }
                 .padding(10)
                 .background(Color.black)
@@ -293,7 +297,8 @@ struct ServerManagementModule: View {
                         (label: "NAME", value: metricsManager.cpuName ?? "Unknown"),
                         (label: "CORES", value: metricsManager.cpuCount.map { "\($0)" } ?? "Unknown"),
                     ],
-                    cpuTemperature: metricsManager.cpuTemperature
+                    cpuTemperature: metricsManager.cpuTemperature,
+                    externalHistoryModel: cpuHistory
                 )
 
                 ExpandableMetricBox(
@@ -314,12 +319,23 @@ struct ServerManagementModule: View {
                                 ? String(format: "%.1f GB", metricsManager.maxRAM)
                                 : "Unknown"
                         ),
-                    ]
+                    ],
+                    externalHistoryModel: ramHistory
                 )
             }
             // Network metrics view below the server management module
             NetworkMetricsView(metricsManager: metricsManager)
+
+            if !dockerManager.containers.isEmpty {
+                DockerMetricsView(dockerManager: dockerManager)
+            }
         }
+        .onAppear {
+            dockerManager.startFetching()
+            cpuHistory.load(serverId: server.machineUUID, metricType: "CPU")
+            ramHistory.load(serverId: server.machineUUID, metricType: "RAM")
+        }
+        .onDisappear { dockerManager.stopFetching() }
     }
 }
 
@@ -367,14 +383,14 @@ private struct NoteEditorView: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text("NOTE")
                     .foregroundColor(.white)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.plexSans(size: 14, weight: .medium))
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 20)
                     .padding(.bottom, 16)
 
                 TextEditor(text: $draftNote)
                     .foregroundColor(.white)
-                    .font(.system(size: 14))
+                    .font(.plexSans(size: 14))
                     .scrollContentBackground(.hidden)
                     .background(Color.black)
                     .padding(.horizontal, 16)
@@ -383,7 +399,7 @@ private struct NoteEditorView: View {
                         if draftNote.isEmpty {
                             Text("Write a note...")
                                 .foregroundColor(Color.gray)
-                                .font(.system(size: 14))
+                                .font(.plexSans(size: 14))
                                 .padding(.horizontal, 20)
                                 .padding(.top, 8)
                                 .allowsHitTesting(false)

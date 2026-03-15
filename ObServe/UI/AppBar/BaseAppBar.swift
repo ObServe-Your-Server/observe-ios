@@ -75,7 +75,7 @@ struct BaseAppBar<SecondaryContent: View>: View {
             Button(action: rightButtonAction) {
                 ZStack {
                     Image(systemName: "xmark")
-                        .font(.system(size: 30, weight: .light))
+                        .font(.plexSans(size: 30, weight: .light))
                         .foregroundColor(.white)
                 }
                 .frame(width: 40, height: 40)
@@ -114,7 +114,7 @@ extension BaseAppBar where SecondaryContent == EmptyView {
             rightButtonAction: {}
         ) {
             Text("Secondary content here")
-                .font(.system(size: 11))
+                .font(.plexSans(size: 11))
                 .foregroundColor(.white)
         }
 

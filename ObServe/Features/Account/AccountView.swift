@@ -1,10 +1,3 @@
-//
-//  AccountView.swift
-//  ObServe
-//
-//  Created by Daniel Schatz on 21.11.25.
-//
-
 import SwiftUI
 
 struct AccountView: View {
@@ -35,8 +28,8 @@ struct AccountView: View {
                     ScrollDetector(contentHasScrolled: $contentHasScrolled)
 
                     VStack(spacing: 35) {
-
                         // MARK: - Profile Section
+
                         VStack(alignment: .leading, spacing: 20) {
                             sectionHeader("PROFILE")
 
@@ -50,7 +43,7 @@ struct AccountView: View {
                                 .padding(.vertical, 12)
                             } else if let error = loadError {
                                 Text(error.uppercased())
-                                    .font(.system(size: 11))
+                                    .font(.plexSans(size: 11))
                                     .foregroundColor(Color("ObServeRed"))
                             } else {
                                 VStack(alignment: .leading, spacing: 16) {
@@ -67,6 +60,7 @@ struct AccountView: View {
                         }
 
                         // MARK: - Manage Section
+
                         VStack(alignment: .leading, spacing: 12) {
                             sectionHeader("MANAGE")
 
@@ -122,7 +116,13 @@ struct AccountView: View {
                     .allowsHitTesting(false)
             )
             .offset(x: showBurgerMenu ? -240 : 0)
-            .animation(showBurgerMenu ? .spring(response: 0.28, dampingFraction: 0.9) : .spring(response: 0.2, dampingFraction: 0.95), value: showBurgerMenu)
+            .animation(
+                showBurgerMenu ? .spring(response: 0.28, dampingFraction: 0.9) : .spring(
+                    response: 0.2,
+                    dampingFraction: 0.95
+                ),
+                value: showBurgerMenu
+            )
 
             BurgerMenu(
                 router: router,
@@ -150,9 +150,9 @@ struct AccountView: View {
             DispatchQueue.main.async {
                 isLoading = false
                 switch result {
-                case .success(let info):
+                case let .success(info):
                     userInfo = info
-                case .failure(let error):
+                case let .failure(error):
                     loadError = error.localizedDescription
                 }
             }
@@ -161,7 +161,6 @@ struct AccountView: View {
 
     // MARK: - Helper Views
 
-    @ViewBuilder
     private func sectionHeader(_ text: String) -> some View {
         HStack {
             Text(text)
@@ -172,16 +171,14 @@ struct AccountView: View {
         }
     }
 
-    @ViewBuilder
     private func infoRow(label: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
-                .font(.system(size: 11))
+                .font(.plexSans(size: 11))
                 .foregroundColor(.gray)
             Text(value.uppercased())
-                .font(.system(size: 16))
+                .font(.plexSans(size: 16))
                 .foregroundColor(.white)
         }
     }
-
 }

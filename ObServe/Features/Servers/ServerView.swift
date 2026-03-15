@@ -1,10 +1,3 @@
-//
-//  ServerView.swift
-//  ObServe
-//
-//  Created by Daniel Schatz on 23.11.25.
-//
-
 import SwiftUI
 
 struct ServerView: View {
@@ -20,7 +13,7 @@ struct ServerView: View {
                 // App bar später später
                 HStack {
                     Text("SERVER")
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.plexSans(size: 20, weight: .bold))
                         .foregroundColor(.white)
 
                     Spacer()
@@ -57,12 +50,12 @@ struct ServerView: View {
                     // später später
                     VStack(spacing: 20) {
                         Text("Server Management")
-                            .font(.system(size: 16))
+                            .font(.plexSans(size: 16))
                             .foregroundColor(Color("ObServeGray"))
                             .padding(.top, 40)
 
                         Text("This view will contain server management features")
-                            .font(.system(size: 14))
+                            .font(.plexSans(size: 14))
                             .foregroundColor(Color("ObServeGray").opacity(0.7))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 40)
@@ -77,7 +70,13 @@ struct ServerView: View {
                     .allowsHitTesting(false)
             )
             .offset(x: showBurgerMenu ? -240 : 0)
-            .animation(showBurgerMenu ? .spring(response: 0.28, dampingFraction: 0.9) : .spring(response: 0.2, dampingFraction: 0.95), value: showBurgerMenu)
+            .animation(
+                showBurgerMenu ? .spring(response: 0.28, dampingFraction: 0.9) : .spring(
+                    response: 0.2,
+                    dampingFraction: 0.95
+                ),
+                value: showBurgerMenu
+            )
 
             BurgerMenu(
                 router: router,

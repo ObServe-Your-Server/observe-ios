@@ -1,10 +1,3 @@
-//
-//  DateLabel.swift
-//  ObServe
-//
-//  Created by Carlo Derouaux on 19.07.25.
-//
-
 import SwiftUI
 
 struct DateLabel: View {
@@ -16,8 +9,8 @@ struct DateLabel: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(label)
                     .foregroundColor(Color.gray)
-                    .font(.system(size: 12, weight: .medium))
-                
+                    .font(.plexSans(size: 12, weight: .medium))
+
                 Text(date)
                     .foregroundColor(.white)
                     .contentTransition(.numericText())

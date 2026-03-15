@@ -49,7 +49,7 @@ struct RegularButtonAccount: View {
             ZStack {
                 Text(Label)
                     .foregroundColor(disabled ? .gray : Color(color))
-                    .font(.system(size: 16))
+                    .font(.plexSans(size: 16))
                     .padding(.horizontal, 7)
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
@@ -84,7 +84,7 @@ struct BoldButtonWhite: View {
             ZStack {
                 Text(Label)
                     .foregroundColor(Color.white)
-                    .font(.system(size: 16).bold())
+                    .font(.plexSans(size: 16, weight: .bold))
                     .padding(.horizontal, 7)
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
@@ -119,7 +119,7 @@ struct ButtonWhiteAccount: View {
             ZStack {
                 Text(Label)
                     .foregroundColor(Color.white)
-                    .font(.system(size: 16))
+                    .font(.plexSans(size: 16))
                     .padding(.horizontal, 7)
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)

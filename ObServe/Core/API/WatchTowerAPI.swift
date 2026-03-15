@@ -14,6 +14,8 @@ class WatchTowerAPI {
 
     private weak var authManager: AuthenticationManager?
 
+    private let session = URLSession.shared
+
     private init() {}
 
     func configure(authManager: AuthenticationManager) {
@@ -104,6 +106,36 @@ class WatchTowerAPI {
         }
     }
 
+    // MARK: - GET (raw Data)
+
+    func fetchRaw(
+        path: String,
+        timeoutInterval: TimeInterval? = nil,
+        completion: @escaping (Result<Data, Error>) -> Void
+    ) {
+        performWithFallback(block: { [weak self] base, done in
+            guard let self else { return }
+            guard let url = buildURL(path: path, base: base) else {
+                done(.failure(APIError.invalidURL))
+                return
+            }
+            guard let request = createRequest(for: url, timeoutInterval: timeoutInterval) else {
+                done(.failure(APIError.notAuthenticated))
+                return
+            }
+            session.dataTask(with: request) { data, response, error in
+                if let error { done(.failure(error))
+                    return
+                }
+                if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
+                    done(.failure(APIError.serverError(http.statusCode)))
+                    return
+                }
+                done(.success(data ?? Data()))
+            }.resume()
+        }, completion: completion)
+    }
+
     // MARK: - GET
 
     func fetch<T: Decodable>(
@@ -122,7 +154,7 @@ class WatchTowerAPI {
                 done(.failure(APIError.notAuthenticated))
                 return
             }
-            URLSession.shared.dataTask(with: request) { data, response, error in
+            session.dataTask(with: request) { data, response, error in
                 if let error {
                     done(.failure(error))
                     return
@@ -196,7 +228,7 @@ class WatchTowerAPI {
                 return
             }
             request.httpBody = encodedBody
-            URLSession.shared.dataTask(with: request) { data, response, error in
+            session.dataTask(with: request) { data, response, error in
                 if let error {
                     done(.failure(error))
                     return
@@ -251,7 +283,7 @@ class WatchTowerAPI {
                 return
             }
             request.httpBody = encodedBody
-            URLSession.shared.dataTask(with: request) { data, response, error in
+            session.dataTask(with: request) { data, response, error in
                 if let error {
                     done(.failure(error))
                     return
@@ -296,7 +328,7 @@ class WatchTowerAPI {
                 return
             }
             request.httpBody = encodedBody
-            URLSession.shared.dataTask(with: request) { data, response, error in
+            session.dataTask(with: request) { data, response, error in
                 if let error {
                     done(.failure(error))
                     return
@@ -332,7 +364,7 @@ class WatchTowerAPI {
                 done(.failure(APIError.notAuthenticated))
                 return
             }
-            URLSession.shared.dataTask(with: request) { data, response, error in
+            session.dataTask(with: request) { data, response, error in
                 if let error {
                     done(.failure(error))
                     return
@@ -434,6 +466,63 @@ class WatchTowerAPI {
             queryItems.append(URLQueryItem(name: "to", value: to))
         }
         fetch(path: "/v1/machines/\(machineUUID.uuidString)/metrics", queryItems: queryItems, completion: completion)
+    }
+
+    /// Fetch latest docker metrics for a machine
+    func fetchLatestDockerMetrics(
+        machineUUID: UUID,
+        timeoutInterval: TimeInterval? = nil,
+        completion: @escaping (Result<DockerMetricsResponse, Error>) -> Void
+    ) {
+        fetch(
+            path: "/v1/machines/\(machineUUID.uuidString)/docker-metrics/latest",
+            timeoutInterval: timeoutInterval,
+            completion: completion
+        )
+    }
+
+    /// Fetch historical docker metrics for a machine
+    func fetchDockerMetrics(
+        machineUUID: UUID,
+        lastMinutes: Int? = nil,
+        last: Int? = nil,
+        from: String? = nil,
+        since: String? = nil,
+        to: String? = nil,
+        completion: @escaping (Result<[DockerMetricsResponse], Error>) -> Void
+    ) {
+        var queryItems: [URLQueryItem] = []
+        if let lastMinutes { queryItems.append(URLQueryItem(name: "lastMinutes", value: "\(lastMinutes)")) }
+        if let last { queryItems.append(URLQueryItem(name: "last", value: "\(last)")) }
+        if let from { queryItems.append(URLQueryItem(name: "from", value: from)) }
+        if let since { queryItems.append(URLQueryItem(name: "since", value: since)) }
+        if let to { queryItems.append(URLQueryItem(name: "to", value: to)) }
+        fetch(
+            path: "/v1/machines/\(machineUUID.uuidString)/docker-metrics",
+            queryItems: queryItems,
+            completion: completion
+        )
+    }
+
+    /// Fetch notifications for a machine
+    func fetchNotifications(
+        machineUUID: UUID,
+        lastMinutes: Int? = nil,
+        last: Int? = nil,
+        severity: String? = nil,
+        since: String? = nil,
+        completion: @escaping (Result<[NotificationEntityResponse], Error>) -> Void
+    ) {
+        var queryItems: [URLQueryItem] = []
+        if let lastMinutes { queryItems.append(URLQueryItem(name: "lastMinutes", value: "\(lastMinutes)")) }
+        if let last { queryItems.append(URLQueryItem(name: "last", value: "\(last)")) }
+        if let severity { queryItems.append(URLQueryItem(name: "severity", value: severity)) }
+        if let since { queryItems.append(URLQueryItem(name: "since", value: since)) }
+        fetch(
+            path: "/v1/machines/\(machineUUID.uuidString)/notifications",
+            queryItems: queryItems,
+            completion: completion
+        )
     }
 
     // MARK: - Async/Await Core Methods
@@ -539,6 +628,46 @@ class WatchTowerAPI {
             queryItems.append(URLQueryItem(name: "to", value: to))
         }
         return try await fetch(path: "/v1/machines/\(machineUUID.uuidString)/metrics", queryItems: queryItems)
+    }
+
+    func fetchLatestDockerMetrics(machineUUID: UUID) async throws -> DockerMetricsResponse {
+        try await fetch(path: "/v1/machines/\(machineUUID.uuidString)/docker-metrics/latest")
+    }
+
+    func fetchDockerMetrics(
+        machineUUID: UUID,
+        lastMinutes: Int? = nil,
+        last: Int? = nil,
+        from: String? = nil,
+        since: String? = nil,
+        to: String? = nil
+    ) async throws
+        -> [DockerMetricsResponse]
+    {
+        var queryItems: [URLQueryItem] = []
+        if let lastMinutes { queryItems.append(URLQueryItem(name: "lastMinutes", value: "\(lastMinutes)")) }
+        if let last { queryItems.append(URLQueryItem(name: "last", value: "\(last)")) }
+        if let from { queryItems.append(URLQueryItem(name: "from", value: from)) }
+        if let since { queryItems.append(URLQueryItem(name: "since", value: since)) }
+        if let to { queryItems.append(URLQueryItem(name: "to", value: to)) }
+        return try await fetch(path: "/v1/machines/\(machineUUID.uuidString)/docker-metrics", queryItems: queryItems)
+    }
+
+    func fetchNotifications(
+        machineUUID: UUID,
+        lastMinutes: Int? = nil,
+        last: Int? = nil,
+        severity: String? = nil,
+        since: String? = nil
+    ) async throws
+        -> [NotificationEntityResponse]
+    {
+        var queryItems: [URLQueryItem] = []
+        if let lastMinutes { queryItems.append(URLQueryItem(name: "lastMinutes", value: "\(lastMinutes)")) }
+        if let last { queryItems.append(URLQueryItem(name: "last", value: "\(last)")) }
+        if let severity { queryItems.append(URLQueryItem(name: "severity", value: severity)) }
+        if let since { queryItems.append(URLQueryItem(name: "since", value: since)) }
+        return try await fetch(path: "/v1/machines/\(machineUUID.uuidString)/notifications", queryItems: queryItems)
     }
 }
 

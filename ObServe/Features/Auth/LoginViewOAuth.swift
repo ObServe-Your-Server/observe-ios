@@ -1,10 +1,3 @@
-//
-//  LoginViewOAuth.swift
-//  ObServe
-//
-//  Created by Claude Code on 25.02.26.
-//
-
 import SwiftUI
 
 struct LoginViewOAuth: View {
@@ -21,10 +14,10 @@ struct LoginViewOAuth: View {
                     .frame(width: 100, height: 100)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("ObServe")
-                        .font(.system(size: 32, weight: .medium))
+                        .font(.plexSans(size: 32, weight: .medium))
                         .foregroundColor(.white)
                     Text("MONITOR YOUR MACHINES")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.plexSans(size: 16, weight: .medium))
                         .foregroundColor(.white)
                 }
             }
@@ -58,7 +51,7 @@ struct LoginViewOAuth: View {
 
                     if let error = oauthManager.authError {
                         Text(error.localizedDescription)
-                            .font(.system(size: 11))
+                            .font(.plexSans(size: 11))
                             .foregroundColor(.red)
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)

@@ -84,9 +84,10 @@ struct ServerModule: View {
                 }
 
                 HStack(spacing: 24) {
-                    RegularButtonWhite(Label: "CONTROL", action: {}, color: "ObServeGray")
+                    RegularButtonWhite(Label: "MANAGE", action: {
+                        showManageView = true
+                    }, color: "ObServeGray")
                         .frame(maxWidth: .infinity)
-                        .disabled(isCheckingHealth)
                     CornerButton(label: "DASHBOARD", action: {
                         showDashboardView = true
                     })

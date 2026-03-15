@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct ServerLogsView: View {
-
     let server: ServerModuleItem
 
     @Environment(\.dismiss) private var dismiss
@@ -10,6 +9,7 @@ struct ServerLogsView: View {
     @State private var contentHasScrolled = false
     @State private var searchText = ""
     @State private var showExportSheet = false
+    @State private var isLoading = false
 
     // MARK: - Computed
 
@@ -22,8 +22,8 @@ struct ServerLogsView: View {
         let query = searchText.lowercased()
         return allLogs.filter {
             $0.title.lowercased().contains(query) ||
-            ($0.detail?.lowercased().contains(query) ?? false) ||
-            $0.severity.rawValue.lowercased().contains(query)
+                ($0.detail?.lowercased().contains(query) ?? false) ||
+                $0.severity.rawValue.lowercased().contains(query)
         }
     }
 
@@ -47,38 +47,61 @@ struct ServerLogsView: View {
 
             VStack(spacing: 0) {
                 AppBar(
-                    title: "SERVER LOGS",
+                    title: "MACHINE LOGS",
                     contentHasScrolled: $contentHasScrolled,
                     onClose: { dismiss() },
-                    secondaryIcon: "square.and.arrow.up",
+                    secondaryImageName: "export",
                     secondaryLabel: "EXPORT",
                     secondaryAction: { showExportSheet = true }
                 )
 
-                searchBar
-
-                if filteredLogs.isEmpty {
-                    emptyState
+                if isLoading, allLogs.isEmpty {
+                    Spacer()
+                    ProgressView().tint(.white)
+                    Spacer()
+                } else if filteredLogs.isEmpty, searchText.isEmpty {
+                    ScrollView {
+                        ScrollDetector(contentHasScrolled: $contentHasScrolled)
+                        searchBar
+                        emptyState
+                    }
+                    .coordinateSpace(name: "scroll")
+                    .refreshable { await refresh() }
                 } else {
                     ScrollView {
                         ScrollDetector(contentHasScrolled: $contentHasScrolled)
-                        LazyVStack(spacing: 0) {
-                            ForEach(filteredLogs) { entry in
-                                LogEntryRow(entry: entry)
-                                    .padding(.horizontal, 20)
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.08))
-                                    .frame(height: 1)
-                                    .padding(.leading, 20)
+                        searchBar
+                        if filteredLogs.isEmpty {
+                            emptyState
+                        } else {
+                            LazyVStack(spacing: 0) {
+                                ForEach(filteredLogs) { entry in
+                                    LogEntryRow(entry: entry)
+                                        .padding(.horizontal, 20)
+                                    Rectangle()
+                                        .fill(Color.white.opacity(0.08))
+                                        .frame(height: 1)
+                                        .padding(.leading, 20)
+                                }
                             }
+                            .padding(.bottom, 32)
                         }
-                        .padding(.bottom, 32)
                     }
                     .coordinateSpace(name: "scroll")
+                    .refreshable { await refresh() }
                 }
             }
         }
         .shareSheet(isPresented: $showExportSheet, text: exportText)
+        .task { await refresh() }
+    }
+
+    // MARK: - Refresh
+
+    private func refresh() async {
+        isLoading = true
+        await logsManager.fetchAndPersist(machineUUID: server.machineUUID, serverId: server.id)
+        isLoading = false
     }
 
     // MARK: - Subviews
@@ -86,20 +109,13 @@ struct ServerLogsView: View {
     private var searchBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(.gray)
-                .font(.system(size: 13))
+                .foregroundStyle(Color.white.opacity(0.4))
+                .font(.plexSans(size: 16, weight: .medium))
 
-            TextField("", text: $searchText)
-                .foregroundColor(.white)
-                .font(.system(size: 12))
-                .overlay(alignment: .leading) {
-                    if searchText.isEmpty {
-                        Text("SEARCH LOGS")
-                            .foregroundColor(Color.gray.opacity(0.6))
-                            .font(.system(size: 12))
-                            .allowsHitTesting(false)
-                    }
-                }
+            TextField("", text: $searchText, prompt: Text("SEARCH LOGS").foregroundColor(.white.opacity(0.4)))
+                .foregroundStyle(Color.white)
+                .font(.plexSans(size: 14))
+                .tint(.white)
 
             if !searchText.isEmpty {
                 Button {
@@ -107,7 +123,7 @@ struct ServerLogsView: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(.gray)
-                        .font(.system(size: 13))
+                        .font(.plexSans(size: 14))
                 }
             }
         }
@@ -126,7 +142,7 @@ struct ServerLogsView: View {
         VStack(spacing: 12) {
             Spacer()
             Text("NO LOGS")
-                .font(.system(size: 12, weight: .medium))
+                .font(.plexSans(size: 12, weight: .medium))
                 .foregroundColor(Color.gray.opacity(0.5))
             Spacer()
         }
@@ -145,32 +161,32 @@ private struct LogEntryRow: View {
     }()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(Self.timestampFormatter.string(from: entry.timestamp))
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.plexSans(size: 11))
                     .foregroundColor(.gray)
 
-                Spacer()
-
-                Text(entry.severity.rawValue)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(Color(entry.severity.colorName))
-            }
-
-            Text(entry.title)
-                .font(.system(size: 14))
-                .foregroundColor(.white)
-                .fixedSize(horizontal: false, vertical: true)
-
-            if let detail = entry.detail {
-                Text(detail)
-                    .font(.system(size: 12))
-                    .foregroundColor(.gray)
+                Text(entry.title)
+                    .font(.plexSans(size: 14))
+                    .foregroundColor(.white)
                     .fixedSize(horizontal: false, vertical: true)
+
+                if let detail = entry.detail {
+                    Text(detail)
+                        .font(.plexSans(size: 12))
+                        .foregroundColor(.gray)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
+            .padding(.vertical, 12)
+
+            Spacer()
+
+            Rectangle()
+                .fill(Color(entry.severity.colorName))
+                .frame(width: 3, height: 20)
         }
-        .padding(.vertical, 12)
     }
 }
 
@@ -178,7 +194,7 @@ private struct LogEntryRow: View {
 
 private extension View {
     func shareSheet(isPresented: Binding<Bool>, text: String) -> some View {
-        self.sheet(isPresented: isPresented) {
+        sheet(isPresented: isPresented) {
             ActivityViewController(activityItems: [text])
                 .ignoresSafeArea()
         }
@@ -188,11 +204,11 @@ private extension View {
 private struct ActivityViewController: UIViewControllerRepresentable {
     let activityItems: [Any]
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
+    func makeUIViewController(context _: Context) -> UIActivityViewController {
         UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
     }
 
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+    func updateUIViewController(_: UIActivityViewController, context _: Context) {}
 }
 
 // MARK: - Preview

@@ -24,6 +24,30 @@ struct MachineMetricResponse: Decodable {
     let hostname: String?
 }
 
+struct DockerMetricsResponse: Decodable {
+    let uuid: String?
+    let capturedAt: String?
+    let containers: [ContainerStatResponse]?
+}
+
+struct ContainerStatResponse: Decodable, Identifiable {
+    let uuid: String?
+    let containerId: String?
+    let hostName: String?
+    let createdAt: Int64?
+    let status: String?
+    let running: Bool?
+    let runningForSeconds: Int64?
+    let imageName: String?
+    let networks: [String]?
+    let cpuUsagePercent: Double?
+    let memoryUsageBytes: Int64?
+
+    var id: String {
+        uuid ?? containerId ?? ""
+    }
+}
+
 struct DiskPayloadResponse: Decodable {
     let name: String?
     let total: Int64?
@@ -64,6 +88,20 @@ struct UpdateMachineRequest: Encodable {
     let name: String?
     let description: String?
     let location: String?
+}
+
+// MARK: - Notification Responses
+
+struct NotificationEntityResponse: Decodable, Identifiable {
+    let uuid: String
+    let severity: String?
+    let component: String?
+    let message: String?
+    let createdAt: String?
+
+    var id: String {
+        uuid
+    }
 }
 
 // MARK: - User Responses

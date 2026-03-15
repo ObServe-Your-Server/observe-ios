@@ -2,8 +2,7 @@ import SwiftUI
 
 enum MenuSection: String, CaseIterable {
     case dashboard = "DASHBOARD"
-    // case server = "SERVER"
-    // case alerts = "ALERTS"
+    case alerts = "ALERTS"
     case account = "ACCOUNT"
     case settings = "SETTINGS"
     case logout = "LOGOUT"
@@ -11,8 +10,7 @@ enum MenuSection: String, CaseIterable {
     var iconOff: String {
         switch self {
         case .dashboard: "dashboardIcon_off"
-        // case .server: return "serverIcon_off"
-        // case .alerts: return "alertsIcon_off"
+        case .alerts: "alertsIcon_off"
         case .account: "accountIcon_off"
         case .settings: "settingsIcon_off"
         case .logout: "logoutIcon_off"
@@ -22,8 +20,7 @@ enum MenuSection: String, CaseIterable {
     var iconOn: String {
         switch self {
         case .dashboard: "dashboardIcon_on"
-        // case .server: return "serverIcon_on"
-        // case .alerts: return "alertsIcon_on"
+        case .alerts: "alertsIcon_on"
         case .account: "accountIcon_on"
         case .settings: "settingsIcon_on"
         case .logout: "logoutIcon_on"
@@ -59,7 +56,7 @@ struct BurgerMenu: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("ObServe")
-                            .font(.system(size: 24, weight: .semibold))
+                            .font(.plexSans(size: 24, weight: .semibold))
                             .foregroundColor(.white)
                     }
 
@@ -141,7 +138,7 @@ struct MenuItemView: View {
                     .foregroundColor(isSelected ? .white : Color("ObServeGray"))
 
                 Text(section.rawValue)
-                    .font(.system(size: 18))
+                    .font(.plexSans(size: 18))
                     .foregroundColor(isSelected ? .white : Color("ObServeGray"))
 
                 Spacer()

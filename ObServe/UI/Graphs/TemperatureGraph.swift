@@ -1,10 +1,3 @@
-//
-//  TemperatureGraph.swift
-//  ObServe
-//
-//  Created by Daniel Schatz on 03.03.26.
-//
-
 import SwiftUI
 
 struct TemperatureGraph: View {
@@ -15,10 +8,10 @@ struct TemperatureGraph: View {
 
     private var activeColor: Color? {
         guard let t = temperature, t >= 30 else { return nil }
-        if t < 55 { return Color(red: 0x3A/255, green: 0x6F/255, blue: 0x8F/255) }
-        if t < 75 { return Color(red: 0xB0/255, green: 0x8A/255, blue: 0x3E/255) }
-        if t < 85 { return Color(red: 0xD4/255, green: 0x6A/255, blue: 0x3A/255) }
-        return Color(red: 0xC2/255, green: 0x3B/255, blue: 0x3B/255)
+        if t < 55 { return Color(red: 0x3A / 255, green: 0x6F / 255, blue: 0x8F / 255) }
+        if t < 75 { return Color(red: 0xB0 / 255, green: 0x8A / 255, blue: 0x3E / 255) }
+        if t < 85 { return Color(red: 0xD4 / 255, green: 0x6A / 255, blue: 0x3A / 255) }
+        return Color(red: 0xC2 / 255, green: 0x3B / 255, blue: 0x3B / 255)
     }
 
     private var filledCount: Int {
@@ -35,11 +28,11 @@ struct TemperatureGraph: View {
             HStack {
                 Text("AVG CORE TEMPERATURE")
                     .foregroundColor(Color.gray)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.plexSans(size: 12, weight: .medium))
                 Spacer()
                 Text(temperature != nil ? String(format: "%.2f", temperature!) : "--")
                     .foregroundColor(.white)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.plexSans(size: 16, weight: .medium))
             }
 
             GeometryReader { geo in
@@ -49,7 +42,7 @@ struct TemperatureGraph: View {
                     let gap: CGFloat = 6
                     let totalGap = gap * 3 // 3 gaps between 4 segments
                     let adjustedSegWidth = (totalWidth - totalGap) / 4.0
-                    for i in 0..<4 {
+                    for i in 0 ..< 4 {
                         let x = CGFloat(i) * (adjustedSegWidth + gap)
                         // Outer left/right edges are straight vertical; only internal dividers slant
                         let leftSlant: CGFloat = i == 0 ? 0 : slantOffset

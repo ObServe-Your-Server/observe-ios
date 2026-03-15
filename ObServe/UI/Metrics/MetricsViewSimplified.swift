@@ -29,7 +29,7 @@ struct MetricsViewSimplified: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("STATUS")
                             .foregroundColor(Color.gray)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.plexSans(size: 12, weight: .medium))
                         Text(metricsManager.machineStatus.rawValue)
                             .foregroundColor(.white)
                             .animation(.easeInOut, value: metricsManager.machineStatus.rawValue)
@@ -68,11 +68,6 @@ struct MetricsViewSimplified: View {
                     formattedText: formatBytes(metricsManager.avgNetworkOut)
                 )
             }
-        }
-        .alert("Metrics Error", isPresented: .constant(metricsManager.error != nil)) {
-            Button("OK") { metricsManager.error = nil }
-        } message: {
-            Text(metricsManager.error ?? "Unknown error")
         }
     }
 }
