@@ -54,13 +54,8 @@ class MetricsManager: ObservableObject {
     private var lastNetBytesOut: Int64?
     private var lastNetworkSampleTime: Date?
 
-    // MARK: - Logging State
-
-    private let logsManager = ServerLogsManager.shared
     private var previousMachineStatus: MachineStatus?
     private var wasOffline: Bool = false
-    private var lastLoggedAt: [String: Date] = [:]
-    private let logThrottleInterval: TimeInterval = 60
 
     private let serverId: UUID
     private let machineUUID: UUID
@@ -86,6 +81,14 @@ class MetricsManager: ObservableObject {
     init(server: ServerModuleItem) {
         serverId = server.id
         machineUUID = server.machineUUID
+        // Seed uptime from last known value so the display doesn't jump from 0 on first fetch
+        if let cached = SharedStorageManager.shared.getServer(byId: server.id),
+           let cachedUptime = cached.uptime, cachedUptime > 0
+        {
+            lastFetchedUptime = cachedUptime
+            lastUptimeFetchDate = Date()
+            uptime = cachedUptime
+        }
         setupPollingIntervalObserver()
         setupNetworkObserver()
     }
@@ -230,12 +233,13 @@ class MetricsManager: ObservableObject {
                 case let .success(metric):
                     self.consecutiveFailures = 0
                     if self.wasOffline {
-                        self.logsManager.addLog(
+                        self.wasOffline = false
+                        ServerLogsManager.shared.addFrontendEntry(
                             serverId: self.serverId,
                             severity: .info,
-                            title: "SERVER CAME BACK ONLINE"
+                            title: "MACHINE BACK ONLINE",
+                            detail: "Connection to the machine agent has been restored."
                         )
-                        self.wasOffline = false
                     }
                     self.processMetric(metric, appendToHistory: true)
                     self.error = nil
@@ -250,6 +254,14 @@ class MetricsManager: ObservableObject {
                             }
                     }
                 case let .failure(error):
+                    // 404 = machine exists but has no metrics yet; don't count as a failure.
+                    if case APIError.notFound = error {
+                        self.consecutiveFailures = 0
+                        self
+                            .scheduleNextFetch(delay: TimeInterval(self.overrideIntervalSeconds ?? SettingsManager
+                                    .shared.pollingIntervalSeconds))
+                        return
+                    }
                     self.error = error.localizedDescription
                     self.consecutiveFailures += 1
                     // Only declare offline after 3 consecutive failures to tolerate
@@ -257,13 +269,13 @@ class MetricsManager: ObservableObject {
                     let offlineThreshold = 3
                     if self.consecutiveFailures >= offlineThreshold {
                         if !self.wasOffline {
-                            self.logsManager.addLog(
+                            self.wasOffline = true
+                            ServerLogsManager.shared.addFrontendEntry(
                                 serverId: self.serverId,
                                 severity: .critical,
-                                title: "SERVER WENT OFFLINE",
-                                detail: error.localizedDescription
+                                title: "MACHINE WENT OFFLINE",
+                                detail: "Connection to the machine agent has ended."
                             )
-                            self.wasOffline = true
                         }
                         self.machineStatus = .offline
                         self.onStatusChanged?(.offline)
@@ -337,6 +349,7 @@ class MetricsManager: ObservableObject {
 
     // MARK: - Process a Single Metric Response
 
+    // swiftlint:disable:next cyclomatic_complexity
     private func processMetric(_ metric: MachineMetricResponse, appendToHistory: Bool, isHistorical: Bool = false) {
         let timestamp = Date().timeIntervalSince1970
 
@@ -493,10 +506,15 @@ class MetricsManager: ObservableObject {
             }
         }
 
-        // Uptime: only update the anchor; the tick timer drives the displayed value smoothly
-        if let uptimeSeconds = metric.uptime {
-            lastFetchedUptime = TimeInterval(uptimeSeconds)
-            lastUptimeFetchDate = Date()
+        // Uptime: only update the anchor from live fetches; skip historical data to avoid a stale anchor.
+        // Only accept a new server value if it's >= the current displayed uptime — this prevents the
+        // label from jumping backwards when the backend delivers a stale/out-of-sync snapshot.
+        if !isHistorical, let uptimeSeconds = metric.uptime {
+            let newUptime = TimeInterval(uptimeSeconds)
+            if newUptime >= uptime {
+                lastFetchedUptime = newUptime
+                lastUptimeFetchDate = Date()
+            }
         }
 
         // Compute and emit overall machine status
@@ -509,133 +527,7 @@ class MetricsManager: ObservableObject {
             machineStatus: status
         )
 
-        if !isHistorical {
-            logMetricAlerts(from: metric)
-            logStatusTransition(from: previousMachineStatus, to: status)
-        }
         previousMachineStatus = status
-    }
-
-    // MARK: - Logging Helpers
-
-    private func shouldLog(key: String) -> Bool {
-        let now = Date()
-        if let last = lastLoggedAt[key], now.timeIntervalSince(last) < logThrottleInterval {
-            return false
-        }
-        lastLoggedAt[key] = now
-        return true
-    }
-
-    private func logMetricAlerts(from metric: MachineMetricResponse) {
-        if let cpu = metric.cpuUsage {
-            if cpu >= 95, shouldLog(key: "cpu_critical") {
-                logsManager.addLog(
-                    serverId: serverId,
-                    severity: .critical,
-                    title: "CPU CRITICAL",
-                    detail: String(format: "CPU usage at %.1f%%", cpu)
-                )
-            } else if cpu >= 80, shouldLog(key: "cpu_warning") {
-                logsManager.addLog(
-                    serverId: serverId,
-                    severity: .warning,
-                    title: "CPU HIGH",
-                    detail: String(format: "CPU usage at %.1f%%", cpu)
-                )
-            }
-        }
-
-        if let temp = metric.cpuTemperature {
-            if temp >= 85, shouldLog(key: "temp_critical") {
-                logsManager.addLog(
-                    serverId: serverId,
-                    severity: .critical,
-                    title: "CPU TEMPERATURE CRITICAL",
-                    detail: String(format: "%.1f°C", temp)
-                )
-            } else if temp >= 75, shouldLog(key: "temp_warning") {
-                logsManager.addLog(
-                    serverId: serverId,
-                    severity: .warning,
-                    title: "CPU TEMPERATURE HIGH",
-                    detail: String(format: "%.1f°C", temp)
-                )
-            }
-        }
-
-        if let used = metric.memUsed, let total = metric.memTotal, total > 0 {
-            let pct = Double(used) / Double(total) * 100
-            if pct >= 95, shouldLog(key: "mem_critical") {
-                logsManager.addLog(
-                    serverId: serverId,
-                    severity: .critical,
-                    title: "MEMORY CRITICAL",
-                    detail: String(format: "Memory at %.1f%%", pct)
-                )
-            } else if pct >= 85, shouldLog(key: "mem_warning") {
-                logsManager.addLog(
-                    serverId: serverId,
-                    severity: .warning,
-                    title: "MEMORY HIGH",
-                    detail: String(format: "Memory at %.1f%%", pct)
-                )
-            }
-        }
-
-        for disk in metric.disks ?? [] {
-            if let used = disk.used, let total = disk.total, total > 0 {
-                let pct = Double(used) / Double(total) * 100
-                let name = (disk.name ?? "Disk").replacingOccurrences(of: "/dev/", with: "")
-                let keyBase = "disk_\(name)"
-                if pct >= 95, shouldLog(key: "\(keyBase)_critical") {
-                    logsManager.addLog(
-                        serverId: serverId,
-                        severity: .critical,
-                        title: "DISK CRITICAL",
-                        detail: String(format: "%@ at %.1f%%", name, pct)
-                    )
-                } else if pct >= 85, shouldLog(key: "\(keyBase)_warning") {
-                    logsManager.addLog(
-                        serverId: serverId,
-                        severity: .warning,
-                        title: "DISK HIGH",
-                        detail: String(format: "%@ at %.1f%%", name, pct)
-                    )
-                }
-            }
-        }
-    }
-
-    private func logStatusTransition(from previous: MachineStatus?, to current: MachineStatus) {
-        guard let previous, previous != current, previous != .unknown else { return }
-        // Offline transitions are handled in the fetch failure path
-        guard current != .offline else { return }
-
-        let severity: LogSeverity
-        let title: String
-
-        switch current {
-        case .critical:
-            severity = .critical
-            title = "STATUS CHANGED TO CRITICAL"
-        case .warning:
-            severity = .warning
-            title = "STATUS CHANGED TO WARNING"
-        case .healthy:
-            severity = .info
-            title = "STATUS RETURNED TO HEALTHY"
-        default:
-            severity = .info
-            title = "STATUS CHANGED TO \(current.rawValue.uppercased())"
-        }
-
-        logsManager.addLog(
-            serverId: serverId,
-            severity: severity,
-            title: title,
-            detail: "Previous: \(previous.rawValue)"
-        )
     }
 
     // MARK: - Uptime Tick

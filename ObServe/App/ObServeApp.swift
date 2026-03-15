@@ -1,24 +1,23 @@
-//
-//  ObServeApp.swift
-//  ObServe
-//
-//  Created by Daniel Schatz on 16.07.25.
-//
-
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @main
 struct ObServeApp: App {
     @StateObject private var authManager = AuthenticationManager()
     @State private var isCheckingAuth = true
+
+    private var isDemoMode: Bool {
+        ProcessInfo.processInfo.arguments.contains("SNAPSHOT_DEMO_MODE")
+    }
+
     @Environment(\.scenePhase) private var scenePhase
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            ServerModuleItem.self
+            ServerModuleItem.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let isDemoMode = ProcessInfo.processInfo.arguments.contains("SNAPSHOT_DEMO_MODE")
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: isDemoMode)
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
@@ -30,7 +29,12 @@ struct ObServeApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-                if isCheckingAuth {
+                if isDemoMode || authManager.isAuthenticated {
+                    OverView()
+                        .environmentObject(authManager)
+                        .environment(\.font, .custom("IBM Plex Sans", size: 17))
+                        .preferredColorScheme(.dark)
+                } else if isCheckingAuth {
                     // Loading state while checking authentication
                     VStack(spacing: 20) {
                         ProgressView()
@@ -42,11 +46,6 @@ struct ObServeApp: App {
                     .background(Color.black.ignoresSafeArea())
                     .environment(\.font, .custom("IBM Plex Sans", size: 17))
                     .preferredColorScheme(.dark)
-                } else if authManager.isAuthenticated {
-                    OverView()
-                        .environmentObject(authManager)
-                        .environment(\.font, .custom("IBM Plex Sans", size: 17))
-                        .preferredColorScheme(.dark)
                 } else {
                     LoginViewOAuth()
                         .environmentObject(authManager)
@@ -59,9 +58,15 @@ struct ObServeApp: App {
                 // Configure the API service with auth manager
                 WatchTowerAPI.shared.configure(authManager: authManager)
 
-                // Validate tokens on app startup
-                authManager.validateAndRefreshIfNeeded { success in
+                if ProcessInfo.processInfo.arguments.contains("SNAPSHOT_DEMO_MODE") {
+                    seedDemoServers()
+                    authManager.isAuthenticated = true
                     isCheckingAuth = false
+                } else {
+                    // Validate tokens on app startup
+                    authManager.validateAndRefreshIfNeeded { _ in
+                        isCheckingAuth = false
+                    }
                 }
             }
             .onOpenURL { url in
@@ -69,7 +74,7 @@ struct ObServeApp: App {
                 print("Received URL: \(url)")
                 // ASWebAuthenticationSession handles this automatically
             }
-            .onChange(of: scenePhase) { oldPhase, newPhase in
+            .onChange(of: scenePhase) { _, newPhase in
                 // Manage refresh timer based on app state
                 if newPhase == .active && authManager.isAuthenticated {
                     authManager.startRefreshTimer()
@@ -79,5 +84,23 @@ struct ObServeApp: App {
             }
         }
         .modelContainer(sharedModelContainer)
+    }
+
+    @MainActor
+    private func seedDemoServers() {
+        let context = sharedModelContainer.mainContext
+        let demoServers: [(name: String, type: String, status: MachineStatus)] = [
+            ("web-prod-01", "SERVER", .healthy),
+            ("db-primary", "DATABASE", .warning),
+            ("media-cdn", "SERVER", .offline),
+        ]
+        for demo in demoServers {
+            let item = ServerModuleItem(machineUUID: UUID(), name: demo.name, type: demo.type)
+            item.machineStatus = demo.status
+            item.isConnected = demo.status != .offline
+            item.lastConnected = demo.status != .offline ? Date() : nil
+            context.insert(item)
+        }
+        try? context.save()
     }
 }

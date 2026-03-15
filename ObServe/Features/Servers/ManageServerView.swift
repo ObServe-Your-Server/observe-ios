@@ -1,11 +1,15 @@
-//
-//  ManageServerView.swift
-//  ObServe
-//
-//  Created by Daniel Schatz on 14.10.25.
-//
-
 import SwiftUI
+import UIKit
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context _: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_: UIActivityViewController, context _: Context) {}
+}
 
 enum ManageStep {
     case overview
@@ -16,12 +20,18 @@ enum ManageStep {
 struct ManageServerView: View {
     var onDismiss: () -> Void
     var onSave: (ServerModuleItem) -> Void
-    var onDelete: (() -> Void)? = nil
+    var onDelete: (() -> Void)?
 
     @StateObject private var viewModel: ManageServerViewModel
     @State private var contentHasScrolled = false
+    @State private var showShareSheet = false
 
-    init(server: ServerModuleItem, onDismiss: @escaping () -> Void, onSave: @escaping (ServerModuleItem) -> Void, onDelete: (() -> Void)? = nil) {
+    init(
+        server: ServerModuleItem,
+        onDismiss: @escaping () -> Void,
+        onSave: @escaping (ServerModuleItem) -> Void,
+        onDelete: (() -> Void)? = nil
+    ) {
         self.onDismiss = onDismiss
         self.onSave = onSave
         self.onDelete = onDelete
@@ -35,7 +45,7 @@ struct ManageServerView: View {
 
             VStack(spacing: 0) {
                 AppBar(
-                    serverName: viewModel.headerTitle,
+                    title: "MANAGE",
                     contentHasScrolled: $contentHasScrolled,
                     onClose: {
                         if viewModel.currentStep != .overview {
@@ -43,7 +53,10 @@ struct ManageServerView: View {
                         } else {
                             onDismiss()
                         }
-                    }
+                    },
+                    secondaryImageName: "export",
+                    secondaryLabel: "SHARE MACHINE",
+                    secondaryAction: { showShareSheet = true }
                 )
 
                 contentView
@@ -54,7 +67,15 @@ struct ManageServerView: View {
             }
             .background(Color.black)
         }
-        .confirmationDialog("Delete Server", isPresented: $viewModel.showDeleteConfirmation, titleVisibility: .visible) {
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheet(items: [viewModel.shareSummary])
+                .ignoresSafeArea()
+        }
+        .confirmationDialog(
+            "Delete Server",
+            isPresented: $viewModel.showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
             Button("Delete \(viewModel.server.name)", role: .destructive) {
                 viewModel.deleteServer(onDelete: onDelete, onDismiss: onDismiss)
             }
@@ -62,17 +83,24 @@ struct ManageServerView: View {
         } message: {
             Text("Are you sure you want to delete \(viewModel.server.name)? This action cannot be undone.")
         }
-        .confirmationDialog("Refresh API Key", isPresented: $viewModel.showRefreshApiKeyConfirmation, titleVisibility: .visible) {
+        .confirmationDialog(
+            "Refresh API Key",
+            isPresented: $viewModel.showRefreshApiKeyConfirmation,
+            titleVisibility: .visible
+        ) {
             Button("Refresh API Key", role: .destructive) {
                 Task { await viewModel.refreshApiKey() }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will generate a new API key. The old key will stop working. You'll need to update the key on your machine agent.")
+            Text(
+                "This will generate a new API key. The old key will stop working. You'll need to update the key on your machine agent."
+            )
         }
     }
 
     // MARK: - Content Views
+
     private var contentView: some View {
         Group {
             switch viewModel.currentStep {
@@ -88,7 +116,7 @@ struct ManageServerView: View {
         .padding(.horizontal, 20)
     }
 
-    // Overview - Main Management View
+    /// Overview - Main Management View
     private var overviewView: some View {
         VStack(spacing: 24) {
             Spacer().frame(height: 5)
@@ -127,13 +155,41 @@ struct ManageServerView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                     .overlay(RoundedRectangle(cornerRadius: 0)
-                        .stroke(Color(red: 0x47/255, green: 0x47/255, blue: 0x4A/255)))
+                        .stroke(Color(red: 0x47 / 255, green: 0x47 / 255, blue: 0x4A / 255)))
                     .overlay(FocusCorners(color: Color.white, size: 8, thickness: 1))
                 }
-                RegularButton(Label: "CHANGE", action: {
+                VStack(spacing: 2) {
+                    HStack {
+                        Text("CREATION DATE")
+                            .foregroundColor(Color.gray)
+                            .font(.plexSans(size: 12, weight: .medium))
+                        Spacer()
+                        Text(viewModel.creationDateText)
+                            .foregroundColor(.white)
+                            .font(.plexSans(size: 14, weight: .medium))
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 6)
+                    .background(RoundedRectangle(cornerRadius: 0).fill(Color(red: 0.102, green: 0.102, blue: 0.102)))
+
+                    HStack {
+                        Text("OBSERVED FOR")
+                            .foregroundColor(Color.gray)
+                            .font(.plexSans(size: 12, weight: .medium))
+                        Spacer()
+                        Text(viewModel.observedForText)
+                            .foregroundColor(.white)
+                            .font(.plexSans(size: 14, weight: .medium))
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 6)
+                    .background(RoundedRectangle(cornerRadius: 0).fill(Color(red: 0.102, green: 0.102, blue: 0.102)))
+                }
+
+                RegularButtonWhite(Label: "EDIT", action: {
                     viewModel.currentStep = .editMachineType
                 }, color: "ObServeGray")
-                .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
@@ -145,7 +201,7 @@ struct ManageServerView: View {
                 HStack {
                     Text("MACHINE INFO")
                         .foregroundColor(.white)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.plexSans(size: 14, weight: .medium))
                 }
                 .padding(10)
                 .background(Color.black)
@@ -159,12 +215,12 @@ struct ManageServerView: View {
                     HStack(spacing: 0) {
                         Text("NEW API-KEY")
                             .foregroundColor(.gray)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.plexSans(size: 12, weight: .medium))
                             .frame(width: 80, alignment: .leading)
 
                         Text(newKey)
                             .foregroundColor(.white)
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(.plexSans(size: 12))
                             .textSelection(.enabled)
                     }
 
@@ -173,7 +229,7 @@ struct ManageServerView: View {
                             .foregroundColor(.yellow)
                         Text("Update this key on your machine agent")
                             .foregroundColor(.gray)
-                            .font(.system(size: 10))
+                            .font(.plexSans(size: 10))
                     }
                 }
             }
@@ -190,7 +246,7 @@ struct ManageServerView: View {
 
             // UNSAFE ZONE Section
             VStack(spacing: 16) {
-                RegularButton(Label: "REFRESH API KEY", action: {
+                RegularButtonWhite(Label: "REFRESH API KEY", action: {
                     viewModel.handleRefreshApiKeyTap()
                 }, color: "ObServeGray")
 
@@ -212,7 +268,7 @@ struct ManageServerView: View {
                 HStack {
                     Text("UNSAFE ZONE")
                         .foregroundColor(.white)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.plexSans(size: 14, weight: .medium))
                 }
                 .padding(10)
                 .background(Color.black)
@@ -220,22 +276,11 @@ struct ManageServerView: View {
                 .padding(.leading, 10)
             }
 
-            // Save and Discard Buttons
-            HStack(spacing: 18) {
-                RegularButton(Label: "SAVE", action: {
-                    Task { await viewModel.saveChanges(onSave: onSave, onDismiss: onDismiss) }
-                }, color: "ObServeGreen")
-                
-                RegularButton(Label: "DISCARD", action: {
-                    onDismiss()
-                }, color: "ObServeGray")
-            }
-
             Spacer()
         }
     }
 
-    // Machine Type Selection
+    /// Machine Type Selection
     private var machineTypeView: some View {
         VStack(spacing: 16) {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
@@ -271,13 +316,13 @@ struct ManageServerView: View {
                 .frame(width: 96, height: 96)
 
                 Text(type.rawValue)
-                    .font(.system(size: 18))
+                    .font(.plexSans(size: 18))
                     .foregroundColor(isSelected ? .white : .gray)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .aspectRatio(1, contentMode: .fit)
             .background(
-                Color(red: 15/255, green: 15/255, blue: 15/255)
+                Color(red: 15 / 255, green: 15 / 255, blue: 15 / 255)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 0)
@@ -287,7 +332,7 @@ struct ManageServerView: View {
         .buttonStyle(PlainButtonStyle())
     }
 
-    // Naming
+    /// Naming
     private var namingView: some View {
         VStack(spacing: 32) {
             Spacer()
@@ -304,12 +349,12 @@ struct ManageServerView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("MACHINE NAME")
                         .foregroundColor(.gray)
-                        .font(.system(size: 12))
+                        .font(.plexSans(size: 12))
 
                     TextField("My \(viewModel.selectedMachineType?.rawValue ?? "Machine")", text: $viewModel.name)
                         .textFieldStyle(PlainTextFieldStyle())
                         .padding(12)
-                        .background(Color(red: 15/255, green: 15/255, blue: 15/255))
+                        .background(Color(red: 15 / 255, green: 15 / 255, blue: 15 / 255))
                         .foregroundColor(.white)
                         .overlay(RoundedRectangle(cornerRadius: 0)
                             .stroke(Color.gray.opacity(0.3), lineWidth: 1))
@@ -321,18 +366,20 @@ struct ManageServerView: View {
     }
 
     // MARK: - Helper Views
+
     private func infoLabel(label: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .foregroundColor(Color.gray)
-                .font(.system(size: 12, weight: .medium))
+                .font(.plexSans(size: 12, weight: .medium))
             Text(value)
                 .foregroundColor(.white)
-                .font(.system(size: 14))
+                .font(.plexSans(size: 14))
         }
     }
 
     // MARK: - Navigation
+
     private var navigationView: some View {
         HStack(spacing: 16) {
             RegularButton(Label: "BACK", action: {

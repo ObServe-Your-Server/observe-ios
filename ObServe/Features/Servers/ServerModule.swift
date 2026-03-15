@@ -47,11 +47,17 @@ struct ServerModule: View {
             }
         }
 
-        // Use the metrics/latest endpoint as a health check
+        // Use the metrics/latest endpoint as a health check.
+        // A 404 means the machine exists but hasn't sent any metrics yet — treat as healthy (online).
         WatchTowerAPI.shared.fetchLatestMetric(machineUUID: server.machineUUID, timeoutInterval: 5) { result in
             DispatchQueue.main.async {
+                if case let .failure(err) = result {
+                    print("ServerModule: health check failed for \(server.machineUUID): \(err)")
+                }
                 let healthy = switch result {
                 case .success:
+                    true
+                case .failure(APIError.notFound):
                     true
                 case .failure:
                     false
@@ -84,9 +90,10 @@ struct ServerModule: View {
                 }
 
                 HStack(spacing: 24) {
-                    RegularButtonWhite(Label: "CONTROL", action: {}, color: "ObServeGray")
+                    RegularButtonWhite(Label: "MANAGE", action: {
+                        showManageView = true
+                    }, color: "ObServeGray")
                         .frame(maxWidth: .infinity)
-                        .disabled(isCheckingHealth)
                     CornerButton(label: "DASHBOARD", action: {
                         showDashboardView = true
                     })

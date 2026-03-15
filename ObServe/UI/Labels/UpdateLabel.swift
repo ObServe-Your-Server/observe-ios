@@ -58,7 +58,7 @@ struct UpdateLabel: View {
     var decimalPlaces: Int = 2
     var showPercent: Bool = false
     var showDaysInUptime: Bool = true
-    var formattedText: String? = nil
+    var formattedText: String?
     var forceDecimals: Bool = false
 
     @State private var oldValue: Double = 0.0
@@ -68,7 +68,7 @@ struct UpdateLabel: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(label)
                     .foregroundColor(Color.gray)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.plexSans(size: 12, weight: .medium))
                 if label.uppercased() == "UPTIME" {
                     Text(formatDuration(value, showDays: showDaysInUptime))
                         .foregroundColor(.white)
@@ -82,13 +82,15 @@ struct UpdateLabel: View {
                         .contentTransition(.numericText(countsDown: value < oldValue))
                         .animation(.easeInOut, value: value)
                 } else {
-                    Text("\(formatValue(value, decimalPlaces: decimalPlaces, forceDecimals: forceDecimals))\((max == 0) ? "" : " / \(formatValue(max, decimalPlaces: decimalPlaces, forceDecimals: forceDecimals))")\(unit.isEmpty ? "" : " \(unit)")")
-                        .foregroundColor(.white)
-                        .contentTransition(.numericText(countsDown: value < oldValue))
-                        .animation(.easeInOut, value: value)
+                    Text(
+                        "\(formatValue(value, decimalPlaces: decimalPlaces, forceDecimals: forceDecimals))\((max == 0) ? "" : " / \(formatValue(max, decimalPlaces: decimalPlaces, forceDecimals: forceDecimals))")\(unit.isEmpty ? "" : " \(unit)")"
+                    )
+                    .foregroundColor(.white)
+                    .contentTransition(.numericText(countsDown: value < oldValue))
+                    .animation(.easeInOut, value: value)
                 }
                 if showPercent {
-                    PercentLabel(value: value, maximum: (max==0) ? 100 : max)
+                    PercentLabel(value: value, maximum: (max == 0) ? 100 : max)
                         .animation(.easeInOut, value: value)
                 }
             }

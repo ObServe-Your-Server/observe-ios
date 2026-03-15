@@ -1,41 +1,62 @@
-//
-//  ObServeUITests.swift
-//  ObServeUITests
-//
-//  Created by Daniel Schatz on 16.07.25.
-//
-
 import XCTest
 
-final class ObServeUITests: XCTestCase {
-
+final class ObServeScreenshotTests: XCTestCase {
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
-    }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testTakeScreenshots() {
         let app = XCUIApplication()
+        setupSnapshot(app)
+        app.launchArguments += ["SNAPSHOT_DEMO_MODE"]
+        XCUIDevice.shared.orientation = .portrait
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        // Allow demo mode seeding and initial render to complete
+        sleep(2)
+
+        // MARK: - 01 Dashboard
+
+        snapshot("01_Dashboard")
+
+        // MARK: - 02 Settings
+
+        openBurgerMenu(app)
+        app.buttons["SETTINGS"].tap()
+        sleep(1)
+        snapshot("02_Settings")
+
+        // MARK: - 03 Account
+
+        openBurgerMenu(app)
+        app.buttons["ACCOUNT"].tap()
+        sleep(1)
+        snapshot("03_Account")
+
+        // MARK: - 04 Server detail
+
+        // Navigate back to dashboard via burger menu
+        openBurgerMenu(app)
+        app.buttons["DASHBOARD"].tap()
+        sleep(1)
+
+        // Tap the DASHBOARD corner button on the first server card to open ServerDetailView
+        app.buttons["DASHBOARD"].firstMatch.tap()
+        sleep(2)
+        snapshot("04_ServerDetail")
+
+        // MARK: - 05 CPU metric expanded
+
+        app.otherElements["expandableMetricBox_cpu"].tap()
+        sleep(1)
+        snapshot("05_CPUExpanded")
     }
 
-    @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+    // MARK: - Helpers
+
+    private func openBurgerMenu(_ app: XCUIApplication) {
+        app.otherElements["burgerMenuButton"].tap()
+        sleep(1)
     }
 }

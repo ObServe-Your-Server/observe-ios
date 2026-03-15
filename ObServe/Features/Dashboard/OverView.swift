@@ -6,11 +6,15 @@ struct OverView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var showAddServer = false
     @State private var showBurgermenu = false
-    @Query private var servers: [ServerModuleItem]
+    @Query(sort: \ServerModuleItem.sortOrder) private var servers: [ServerModuleItem]
 
     @State private var contentHasScrolled = false
     @State private var sortType: AppBar.SortType = .all
     @State private var refreshTrigger: Int = 0
+
+    // Drag-to-reorder float state (owned here so the card floats above AddMachineButton)
+    @State private var draggingServer: ServerModuleItem? = nil
+    @State private var floatOffsetY: CGFloat = 0
 
     @State private var router = Router()
 
@@ -23,7 +27,7 @@ struct OverView: View {
         ZStack {
             Text(label)
                 .foregroundColor(Color(color))
-                .font(.system(size: 12))
+                .font(.plexSans(size: 12))
                 .padding(.horizontal, 7)
                 .padding(.vertical, 10)
                 .frame(maxWidth: .infinity)
@@ -94,6 +98,17 @@ struct OverView: View {
         }
     }
 
+    private func reorderServers(from: Int, to: Int) {
+        var ordered = servers
+        let item = ordered.remove(at: from)
+        let insertAt = min(to, ordered.count)
+        ordered.insert(item, at: insertAt)
+        for (newIndex, server) in ordered.enumerated() {
+            server.sortOrder = newIndex
+        }
+        try? modelContext.save()
+    }
+
     private var dashboardPage: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
@@ -116,40 +131,58 @@ struct OverView: View {
 
                 ScrollView {
                     ScrollDetector(contentHasScrolled: $contentHasScrolled)
-                    VStack(spacing: 0) {
-                        if servers.isEmpty {
-                            VStack(spacing: 0) {
-                                Rectangle().frame(height: 60).opacity(0)
-                                Image("NoMachines")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .padding(.horizontal, 100)
-                                Rectangle()
-                                    .fill(Color("ObServeGray"))
-                                    .frame(width: 2, height: 200)
-                            }
-                        } else {
-                            withAnimation {
-                                ForEach(filteredServers) { server in
-                                    ServerModule(
-                                        server: server,
-                                        refreshTrigger: refreshTrigger,
-                                        onDelete: {
-                                            Task { await viewModel?.deleteServer(server, allServers: servers) }
-                                        }
-                                    )
+                    ZStack(alignment: .top) {
+                        VStack(spacing: 0) {
+                            if servers.isEmpty {
+                                VStack(spacing: 0) {
+                                    Rectangle().frame(height: 60).opacity(0)
+                                    Image("NoMachines")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .padding(.horizontal, 100)
+                                    Rectangle()
+                                        .fill(Color("ObServeGray"))
+                                        .frame(width: 2, height: 200)
                                 }
+                            } else {
+                                ReorderableServerList(
+                                    servers: filteredServers,
+                                    refreshTrigger: refreshTrigger,
+                                    onDelete: { server in
+                                        Task { await viewModel?.deleteServer(server, allServers: servers) }
+                                    },
+                                    onReorder: sortType == .all ? { from, to in
+                                        reorderServers(from: from, to: to)
+                                    } : nil,
+                                    draggingServer: $draggingServer,
+                                    floatOffsetY: $floatOffsetY
+                                )
+                            }
+
+                            AddMachineButton {
+                                withAnimation { showAddServer = true }
                             }
                         }
+                        .coordinateSpace(name: "reorderContainer")
 
-                        AddMachineButton {
-                            withAnimation { showAddServer = true }
+                        // Floating dragged card — sits above AddMachineButton
+                        if let server = draggingServer {
+                            ServerModule(
+                                server: server,
+                                refreshTrigger: refreshTrigger,
+                                onDelete: {}
+                            )
+                            .background(Color.black)
+                            .scaleEffect(1.04)
+                            .offset(y: floatOffsetY)
+                            .allowsHitTesting(false)
                         }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 20)
                 }
                 .coordinateSpace(name: "scroll")
+                .scrollDisabled(draggingServer != nil)
                 .refreshable {
                     await viewModel?.syncMachinesFromBackend(existingServers: servers)
                     refreshTrigger += 1
@@ -177,6 +210,7 @@ struct OverView: View {
                 MachineOnboardingModal(
                     onDismiss: { withAnimation { showAddServer = false } },
                     onComplete: { newServer, _ in
+                        newServer.sortOrder = servers.count
                         modelContext.insert(newServer)
                         try? modelContext.save()
                         viewModel?.syncServersToWidget(servers)

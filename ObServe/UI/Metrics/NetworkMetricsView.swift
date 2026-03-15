@@ -1,10 +1,3 @@
-//
-//  NetworkMetricsView.swift
-//  ObServe
-//
-//  Created by GitHub Copilot on 22.09.25.
-//
-
 import SwiftUI
 
 private func formatBytesUnit(_ bytes: Double) -> String {
@@ -31,11 +24,11 @@ struct NetworkMetricsView: View {
                     HStack {
                         Text("IP")
                             .foregroundColor(Color.gray)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.plexSans(size: 12, weight: .medium))
                         Spacer()
                         Text(metricsManager.localIp ?? "Unknown")
                             .foregroundColor(.white)
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.plexSans(size: 14, weight: .medium))
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 6)
@@ -47,20 +40,20 @@ struct NetworkMetricsView: View {
                     HStack {
                         Text("IN \(formatBytesUnit(metricsManager.avgNetworkIn))")
                             .foregroundColor(Color.gray)
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.plexSans(size: 10, weight: .medium))
                         Spacer()
                         Text(formatBytesNumber(metricsManager.avgNetworkIn))
                             .foregroundColor(.white)
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.plexSans(size: 18, weight: .bold))
                     }
                     HStack {
                         Text("OUT \(formatBytesUnit(metricsManager.avgNetworkOut))")
                             .foregroundColor(Color.gray)
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.plexSans(size: 10, weight: .medium))
                         Spacer()
                         Text(formatBytesNumber(metricsManager.avgNetworkOut))
                             .foregroundColor(.white)
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.plexSans(size: 18, weight: .bold))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -71,11 +64,11 @@ struct NetworkMetricsView: View {
                         HStack {
                             Text("PING MS")
                                 .foregroundColor(Color.gray)
-                                .font(.system(size: 10, weight: .medium))
+                                .font(.plexSans(size: 10, weight: .medium))
                             Spacer()
                             Text(metricsManager.ping.map { String(format: "%.0f", $0) } ?? "—")
                                 .foregroundColor(.white)
-                                .font(.system(size: 18, weight: .bold))
+                                .font(.plexSans(size: 18, weight: .bold))
                         }
                         PingHistoryBar(history: metricsManager.pingHistory)
                     }
@@ -87,14 +80,14 @@ struct NetworkMetricsView: View {
                             HStack {
                                 Text("DOWN MB/S")
                                     .foregroundColor(Color.gray)
-                                    .font(.system(size: 10, weight: .medium))
+                                    .font(.plexSans(size: 10, weight: .medium))
                                 Spacer()
                                 Image(systemName: "arrow.down.right")
                                     .foregroundColor(Color.gray)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.plexSans(size: 12, weight: .medium))
                                 Text(metricsManager.downloadSpeed.map { String(format: "%.0f", $0) } ?? "—")
                                     .foregroundColor(.white)
-                                    .font(.system(size: 18, weight: .bold))
+                                    .font(.plexSans(size: 18, weight: .bold))
                             }
                             SpeedMeter(current: metricsManager.downloadSpeed ?? 0)
                         }
@@ -102,14 +95,14 @@ struct NetworkMetricsView: View {
                             HStack {
                                 Text("UP MB/S")
                                     .foregroundColor(Color.gray)
-                                    .font(.system(size: 10, weight: .medium))
+                                    .font(.plexSans(size: 10, weight: .medium))
                                 Spacer()
                                 Image(systemName: "arrow.up.right")
                                     .foregroundColor(Color.gray)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.plexSans(size: 12, weight: .medium))
                                 Text(metricsManager.uploadSpeed.map { String(format: "%.0f", $0) } ?? "—")
                                     .foregroundColor(.white)
-                                    .font(.system(size: 18, weight: .bold))
+                                    .font(.plexSans(size: 18, weight: .bold))
                             }
                             SpeedMeter(current: metricsManager.uploadSpeed ?? 0)
                         }
@@ -128,7 +121,7 @@ struct NetworkMetricsView: View {
                 HStack {
                     Text("NETWORK")
                         .foregroundColor(.white)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.plexSans(size: 14, weight: .medium))
                 }
                 .padding(10)
                 .background(Color.black)
@@ -154,20 +147,20 @@ private struct PingHistoryBar: View {
     private let failThreshold: Double = 300.0
 
     private func isFailed(_ entry: MetricsManager.PingEntry?) -> Bool {
-        guard let entry = entry, let value = entry.value else { return true }
+        guard let entry, let value = entry.value else { return true }
         return value > failThreshold
     }
 
     var body: some View {
         HStack(spacing: 5) {
-            ForEach(0..<slotCount, id: \.self) { i in
+            ForEach(0 ..< slotCount, id: \.self) { i in
                 let offset = slotCount - history.count
                 let entry: MetricsManager.PingEntry? = i >= offset ? history[i - offset] : nil
                 let isCurrent = (i == slotCount - 1)
                 let failed = isFailed(entry)
                 let strokeColor: Color = isCurrent
                     ? .white
-                    : (failed ? Color(red: 0xD4/255, green: 0x6A/255, blue: 0x3A/255) : Color("ObServeGray"))
+                    : (failed ? Color(red: 0xD4 / 255, green: 0x6A / 255, blue: 0x3A / 255) : Color("ObServeGray"))
 
                 Rectangle()
                     .fill(strokeColor.opacity(0.25))
@@ -188,7 +181,7 @@ private struct SpeedMeter: View {
     }
 
     private var filledSegments: Int {
-        return min(Int((current / maximum) * Double(segments)), segments)
+        min(Int((current / maximum) * Double(segments)), segments)
     }
 
     var body: some View {
@@ -199,20 +192,29 @@ private struct SpeedMeter: View {
             let segWidth = (size.width - totalSpacing) / CGFloat(segments)
 
             // Draw filled segments edge-to-edge
-            for i in 0..<segments {
+            for i in 0 ..< segments {
                 let x = CGFloat(i) * (segWidth + spacing)
                 let rect = CGRect(x: x, y: 0, width: segWidth, height: size.height)
                 if i < filledSegments {
-                    context.fill(Rectangle().path(in: rect),
-                                 with: .color(Color(red: 0xCF/255, green: 0xCF/255, blue: 0xCF/255)))
+                    context.fill(
+                        Rectangle().path(in: rect),
+                        with: .color(Color(red: 0xCF / 255, green: 0xCF / 255, blue: 0xCF / 255))
+                    )
                 }
             }
 
             // Draw continuous outer stroke on top
-            let outerRect = CGRect(x: strokeWidth / 2, y: strokeWidth / 2,
-                                   width: size.width - strokeWidth, height: size.height - strokeWidth)
-            context.stroke(Rectangle().path(in: outerRect),
-                           with: .color(Color("ObServeGray")), lineWidth: strokeWidth)
+            let outerRect = CGRect(
+                x: strokeWidth / 2,
+                y: strokeWidth / 2,
+                width: size.width - strokeWidth,
+                height: size.height - strokeWidth
+            )
+            context.stroke(
+                Rectangle().path(in: outerRect),
+                with: .color(Color("ObServeGray")),
+                lineWidth: strokeWidth
+            )
         }
         .frame(height: 9)
     }

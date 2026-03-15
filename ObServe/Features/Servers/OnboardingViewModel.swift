@@ -111,6 +111,18 @@ class OnboardingViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Helpers
+
+    private static func parseISO8601(_ string: String) -> Date? {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        for format in ["yyyy-MM-dd'T'HH:mm:ss.SSSSSS", "yyyy-MM-dd'T'HH:mm:ss.SSS", "yyyy-MM-dd'T'HH:mm:ss"] {
+            f.dateFormat = format
+            if let date = f.date(from: string) { return date }
+        }
+        return ISO8601DateFormatter().date(from: string)
+    }
+
     // MARK: - Private
 
     private func buildCompletedServer() -> (ServerModuleItem, MachineType)? {
@@ -125,9 +137,11 @@ class OnboardingViewModel: ObservableObject {
             apiKey: created.apiKey ?? ""
         )
 
-        newServer.isConnected = true
-        newServer.isHealthy = true
-        newServer.lastConnected = Date()
+        newServer.isConnected = false
+        newServer.isHealthy = false
+        if let createdAtStr = created.createdAt {
+            newServer.createdAt = Self.parseISO8601(createdAtStr)
+        }
 
         return (newServer, machineType)
     }

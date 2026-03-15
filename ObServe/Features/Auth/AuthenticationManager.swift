@@ -1,12 +1,5 @@
-//
-//  Authentication.swift
-//  ObServe
-//
-//  Created by Daniel Schatz on 19.11.25.
-//
-
-import SwiftUI
 import Combine
+import SwiftUI
 
 class AuthenticationManager: ObservableObject {
     @Published var isAuthenticated: Bool = false
@@ -16,7 +9,12 @@ class AuthenticationManager: ObservableObject {
     private var refreshTimer: Timer?
     private let keychainManager = KeychainManager.shared
 
-    var bearerToken: String { return "Bearer \(accessToken ?? "")" }
+    private var isRefreshing = false
+    private var pendingRefreshCallbacks: [(Bool) -> Void] = []
+
+    var bearerToken: String {
+        "Bearer \(accessToken ?? "")"
+    }
 
     init() {
         loadTokensFromKeychain()
@@ -26,8 +24,8 @@ class AuthenticationManager: ObservableObject {
 
     private func loadTokensFromKeychain() {
         let tokens = keychainManager.loadTokens()
-        self.accessToken = tokens.accessToken
-        self.refreshToken = tokens.refreshToken
+        accessToken = tokens.accessToken
+        refreshToken = tokens.refreshToken
     }
 
     private func saveTokensToKeychain(accessToken: String, refreshToken: String) {
@@ -38,8 +36,8 @@ class AuthenticationManager: ObservableObject {
         keychainManager.clearTokens()
     }
 
-    public func validateAndRefreshIfNeeded(completion: @escaping (Bool) -> Void) {
-        guard let refreshToken = refreshToken, !refreshToken.isEmpty else {
+    func validateAndRefreshIfNeeded(completion: @escaping (Bool) -> Void) {
+        guard let refreshToken, !refreshToken.isEmpty else {
             print("No refresh token found - user needs to login")
             DispatchQueue.main.async {
                 self.isAuthenticated = false
@@ -65,7 +63,7 @@ class AuthenticationManager: ObservableObject {
 
     // MARK: - Token Refresh Timer
 
-    public func startRefreshTimer() {
+    func startRefreshTimer() {
         stopRefreshTimer()
         // Refresh every 5 minutes to keep the access token alive
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
@@ -77,16 +75,16 @@ class AuthenticationManager: ObservableObject {
         }
     }
 
-    public func stopRefreshTimer() {
+    func stopRefreshTimer() {
         refreshTimer?.invalidate()
         refreshTimer = nil
     }
 
     // MARK: - Logout
 
-    public func logout() {
+    func logout() {
         print("Logging out - clearing local tokens")
-        if let refreshToken = refreshToken {
+        if let refreshToken {
             revokeAuthentikToken(token: refreshToken)
         }
         DispatchQueue.main.async {
@@ -100,7 +98,10 @@ class AuthenticationManager: ObservableObject {
     }
 
     private func revokeAuthentikToken(token: String) {
-        guard let url = URL(string: OAuthConfiguration.tokenEndpoint.replacingOccurrences(of: "/token/", with: "/revoke/")) else {
+        guard let url = URL(string: OAuthConfiguration.tokenEndpoint.replacingOccurrences(
+            of: "/token/",
+            with: "/revoke/"
+        )) else {
             print("Invalid revoke URL")
             return
         }
@@ -112,7 +113,7 @@ class AuthenticationManager: ObservableObject {
         let parameters = [
             "token": token,
             "client_id": OAuthConfiguration.clientID,
-            "token_type_hint": "refresh_token"
+            "token_type_hint": "refresh_token",
         ]
 
         let bodyString = parameters
@@ -122,7 +123,7 @@ class AuthenticationManager: ObservableObject {
         request.httpBody = bodyString.data(using: .utf8)
 
         URLSession.shared.dataTask(with: request) { _, response, error in
-            if let error = error {
+            if let error {
                 print("Token revocation failed (non-critical): \(error)")
             } else if let httpResponse = response as? HTTPURLResponse {
                 print("Token revocation status: \(httpResponse.statusCode)")
@@ -132,7 +133,26 @@ class AuthenticationManager: ObservableObject {
 
     // MARK: - OAuth Token Refresh
 
-    private func refreshWithCompletion(completion: @escaping (Bool) -> Void) {
+    func refreshWithCompletion(completion: @escaping (Bool) -> Void) {
+        // Serialize all 401-triggered refresh attempts on the main queue
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if isRefreshing {
+                pendingRefreshCallbacks.append(completion)
+                return
+            }
+            isRefreshing = true
+            refreshWithCompletionInternal { success in
+                self.isRefreshing = false
+                completion(success)
+                let pending = self.pendingRefreshCallbacks
+                self.pendingRefreshCallbacks = []
+                pending.forEach { $0(success) }
+            }
+        }
+    }
+
+    private func refreshWithCompletionInternal(completion: @escaping (Bool) -> Void) {
         struct OAuthTokenResponse: Codable {
             let access_token: String
             let token_type: String
@@ -140,7 +160,7 @@ class AuthenticationManager: ObservableObject {
             let refresh_token: String?
         }
 
-        guard let refreshToken = refreshToken else {
+        guard let refreshToken else {
             print("No refresh token available")
             DispatchQueue.main.async {
                 self.clearTokensFromKeychain()
@@ -163,7 +183,7 @@ class AuthenticationManager: ObservableObject {
         let parameters = [
             "grant_type": "refresh_token",
             "refresh_token": refreshToken,
-            "client_id": OAuthConfiguration.clientID
+            "client_id": OAuthConfiguration.clientID,
         ]
 
         let bodyString = parameters
@@ -173,19 +193,20 @@ class AuthenticationManager: ObservableObject {
         request.httpBody = bodyString.data(using: .utf8)
 
         URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            guard let self = self else {
+            guard let self else {
                 completion(false)
                 return
             }
 
-            if let error = error {
+            if let error {
                 print("Network error during token refresh: \(error)")
                 completion(false)
                 return
             }
 
             guard let httpResponse = response as? HTTPURLResponse,
-                  let data = data else {
+                  let data
+            else {
                 print("Invalid response during token refresh")
                 completion(false)
                 return
@@ -221,7 +242,8 @@ class AuthenticationManager: ObservableObject {
                 }
             } else {
                 if let errorMessage = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let message = errorMessage["error"] as? String {
+                   let message = errorMessage["error"] as? String
+                {
                     print("Token refresh failed: \(message)")
                 } else {
                     print("Token refresh failed with status code: \(httpResponse.statusCode)")
@@ -233,12 +255,12 @@ class AuthenticationManager: ObservableObject {
 
     // MARK: - OAuth Authentication
 
-    public func storeOAuthTokens(accessToken: String, refreshToken: String) {
+    func storeOAuthTokens(accessToken: String, refreshToken: String) {
         print("Storing Authentik OAuth tokens")
         self.accessToken = accessToken
         self.refreshToken = refreshToken
         saveTokensToKeychain(accessToken: accessToken, refreshToken: refreshToken)
-        self.isAuthenticated = true
+        isAuthenticated = true
         startRefreshTimer()
     }
 }

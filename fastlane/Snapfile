@@ -1,0 +1,28 @@
+# Snapfile — fastlane screenshot configuration for ObServe
+
+devices([
+  "iPhone 16 Pro Max",
+  "iPhone 16e"
+])
+
+languages(["en-US"])
+
+scheme("ObServe")
+
+output_directory("./fastlane/screenshots")
+
+launch_arguments(["SNAPSHOT_DEMO_MODE"])
+
+clear_previous_screenshots(false)
+
+override_status_bar(true)
+
+erase_simulator(true)
+
+reinstall_app(false)
+
+number_of_retries(3)
+
+stop_after_first_error(false)
+
+skip_open_summary(false)

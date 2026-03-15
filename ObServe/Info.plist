@@ -30,25 +30,27 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>92</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 	</dict>
+	<key>UIAppFonts</key>
+	<array>
+		<string>IBMPlexSans-Italic-VariableFont_wdth,wght.ttf</string>
+		<string>IBMPlexSans-VariableFont_wdth,wght.ttf</string>
+	</array>
+	<key>UILaunchScreen</key>
+	<dict/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UILaunchScreen</key>
-	<dict/>
-	<key>UIAppFonts</key>
-	<array>
-		<string>IBMPlexSans-Italic-VariableFont_wdth,wght.ttf</string>
-		<string>IBMPlexSans-VariableFont_wdth,wght.ttf</string>
 	</array>
 </dict>
 </plist>

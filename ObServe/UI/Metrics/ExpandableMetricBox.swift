@@ -1,11 +1,31 @@
-//
-//  ExpandableMetricBox.swift
-//  ObServe
-//
-//  Created by GitHub Copilot on 22.09.25.
-//
-
 import SwiftUI
+
+@MainActor
+final class MetricHistoryModel: ObservableObject {
+    @Published var history: [Double] = []
+    private var loaded = false
+
+    func load(serverId: UUID, metricType: String) {
+        guard !loaded else { return }
+        loaded = true
+        WatchTowerAPI.shared.fetchMetrics(machineUUID: serverId, last: 30) { result in
+            guard case let .success(metrics) = result else { return }
+            let values = metrics.map { metric -> Double in
+                switch metricType {
+                case "CPU":
+                    return min(max(metric.cpuUsage ?? 0, 0), 100)
+                case "RAM":
+                    let used = Double(metric.memUsed ?? 0)
+                    let total = Double(metric.memTotal ?? 1)
+                    return total > 0 ? min(max((used / total) * 100, 0), 100) : 0
+                default:
+                    return 0
+                }
+            }
+            DispatchQueue.main.async { self.history = values }
+        }
+    }
+}
 
 struct ExpandableMetricBox: View {
     let title: String
@@ -18,9 +38,27 @@ struct ExpandableMetricBox: View {
     let metricType: String?
     let headerRows: [(label: String, value: String)]
     let cpuTemperature: Double?
+    let externalHistoryModel: MetricHistoryModel?
     @State private var isExpanded: Bool = false
+    @StateObject private var historyModel = MetricHistoryModel()
 
-    init(title: String, currentValue: Double, maximum: Double, unit: String? = nil, decimalPlaces: Int = 1, showPercent: Bool = false, serverId: UUID? = nil, metricType: String? = nil, headerRows: [(label: String, value: String)] = [], cpuTemperature: Double? = nil) {
+    private var activeHistory: MetricHistoryModel {
+        externalHistoryModel ?? historyModel
+    }
+
+    init(
+        title: String,
+        currentValue: Double,
+        maximum: Double,
+        unit: String? = nil,
+        decimalPlaces: Int = 1,
+        showPercent: Bool = false,
+        serverId: UUID? = nil,
+        metricType: String? = nil,
+        headerRows: [(label: String, value: String)] = [],
+        cpuTemperature: Double? = nil,
+        externalHistoryModel: MetricHistoryModel? = nil
+    ) {
         self.title = title
         self.currentValue = currentValue
         self.maximum = maximum
@@ -31,11 +69,11 @@ struct ExpandableMetricBox: View {
         self.metricType = metricType
         self.headerRows = headerRows
         self.cpuTemperature = cpuTemperature
+        self.externalHistoryModel = externalHistoryModel
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
-            // Always create the chart to keep collecting data
             if isExpanded {
                 if !headerRows.isEmpty {
                     VStack(spacing: 2) {
@@ -43,15 +81,19 @@ struct ExpandableMetricBox: View {
                             HStack {
                                 Text(row.label)
                                     .foregroundColor(Color.gray)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.plexSans(size: 12, weight: .medium))
                                 Spacer()
                                 Text(row.value)
                                     .foregroundColor(.white)
-                                    .font(.system(size: 14, weight: .medium))
+                                    .font(.plexSans(size: 14, weight: .medium))
                             }
                             .padding(.horizontal, 6)
                             .padding(.vertical, 6)
-                            .background(RoundedRectangle(cornerRadius: 0).fill(Color(red: 0.102, green: 0.102, blue: 0.102)))
+                            .background(RoundedRectangle(cornerRadius: 0).fill(Color(
+                                red: 0.102,
+                                green: 0.102,
+                                blue: 0.102
+                            )))
                         }
                     }
                     .padding(.horizontal, 20)
@@ -60,8 +102,7 @@ struct ExpandableMetricBox: View {
                 TimeSeriesGridChart(
                     currentValue: currentValue,
                     maximum: maximum,
-                    serverId: serverId,
-                    metricType: metricType
+                    preloadedHistory: activeHistory.history
                 )
                 .frame(maxWidth: .infinity)
                 .padding(.top, 12)
@@ -74,12 +115,10 @@ struct ExpandableMetricBox: View {
                 }
             }
 
-            // Content area
             if !isExpanded {
                 VStack(spacing: 0) {
                     Spacer().frame(height: 20)
 
-                    // Show metric info similar to UpdateLabel when collapsed
                     HStack {
                         PercentLabel(value: currentValue, maximum: maximum)
                             .frame(height: 8)
@@ -88,26 +127,28 @@ struct ExpandableMetricBox: View {
                             .frame(width: 20)
 
                         HStack(spacing: 4) {
-                            if showPercent && maximum > 0 {
-                                Text("\(String(format: "%.\(decimalPlaces)f", currentValue))/\(String(format: "%.\(decimalPlaces)f", maximum))")
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 16, weight: .medium))
-                                if let unit = unit {
+                            if showPercent, maximum > 0 {
+                                Text(
+                                    "\(String(format: "%.\(decimalPlaces)f", currentValue))/\(String(format: "%.\(decimalPlaces)f", maximum))"
+                                )
+                                .foregroundColor(.white)
+                                .font(.plexSans(size: 16, weight: .medium))
+                                if let unit {
                                     Text(unit)
                                         .foregroundColor(.white)
-                                        .font(.system(size: 16, weight: .medium))
+                                        .font(.plexSans(size: 16, weight: .medium))
                                 }
                                 Text("(\(String(format: "%.1f", (currentValue / maximum) * 100))%)")
                                     .foregroundColor(Color.gray)
-                                    .font(.system(size: 14))
+                                    .font(.plexSans(size: 14))
                             } else {
                                 Text(String(format: "%.\(decimalPlaces)f", currentValue))
                                     .foregroundColor(.white)
-                                    .font(.system(size: 16, weight: .medium))
-                                if let unit = unit {
+                                    .font(.plexSans(size: 16, weight: .medium))
+                                if let unit {
                                     Text(unit)
                                         .foregroundColor(.white)
-                                        .font(.system(size: 16, weight: .medium))
+                                        .font(.plexSans(size: 16, weight: .medium))
                                 }
                             }
                         }
@@ -125,8 +166,7 @@ struct ExpandableMetricBox: View {
             HStack {
                 Text(title.uppercased())
                     .foregroundColor(.white)
-                    .font(.system(size: 14, weight: .medium))
-
+                    .font(.plexSans(size: 14, weight: .medium))
             }
             .padding(10)
             .background(Color.black)
@@ -135,6 +175,12 @@ struct ExpandableMetricBox: View {
         }
         .overlay(alignment: .bottomTrailing) {
             ExpandCornerIndicator()
+        }
+        .accessibilityIdentifier("expandableMetricBox_\(title.lowercased())")
+        .onAppear {
+            if let serverId, let metricType {
+                activeHistory.load(serverId: serverId, metricType: metricType)
+            }
         }
         .onTapGesture {
             withAnimation(.easeInOut(duration: 0.3)) {
@@ -151,7 +197,7 @@ struct ExpandableMetricBox: View {
             currentValue: 45.3,
             maximum: 100.0
         )
-        
+
         ExpandableMetricBox(
             title: "RAM",
             currentValue: 25.4,

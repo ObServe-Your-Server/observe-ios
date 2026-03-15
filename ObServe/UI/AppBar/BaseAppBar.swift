@@ -1,10 +1,3 @@
-//
-//  BaseAppBar.swift
-//  ObServe
-//
-//  Created by Claude Code
-//
-
 import SwiftUI
 
 /// The type of right-side button displayed in the app bar.
@@ -75,13 +68,14 @@ struct BaseAppBar<SecondaryContent: View>: View {
                     .stroke(Color.gray.opacity(0.5), lineWidth: 1)
             )
             .contentShape(Rectangle())
+            .accessibilityIdentifier("burgerMenuButton")
             .onTapGesture { rightButtonAction() }
 
         case .close:
             Button(action: rightButtonAction) {
                 ZStack {
                     Image(systemName: "xmark")
-                        .font(.system(size: 30, weight: .light))
+                        .font(.plexSans(size: 30, weight: .light))
                         .foregroundColor(.white)
                 }
                 .frame(width: 40, height: 40)
@@ -95,7 +89,7 @@ struct BaseAppBar<SecondaryContent: View>: View {
     }
 }
 
-// Extension to support app bars without secondary content
+/// Extension to support app bars without secondary content
 extension BaseAppBar where SecondaryContent == EmptyView {
     init(
         title: String,
@@ -104,10 +98,10 @@ extension BaseAppBar where SecondaryContent == EmptyView {
         rightButtonAction: @escaping () -> Void
     ) {
         self.title = title
-        self._contentHasScrolled = contentHasScrolled
+        _contentHasScrolled = contentHasScrolled
         self.rightButtonType = rightButtonType
         self.rightButtonAction = rightButtonAction
-        self.secondaryContent = { EmptyView() }
+        secondaryContent = { EmptyView() }
     }
 }
 
@@ -120,7 +114,7 @@ extension BaseAppBar where SecondaryContent == EmptyView {
             rightButtonAction: {}
         ) {
             Text("Secondary content here")
-                .font(.system(size: 11))
+                .font(.plexSans(size: 11))
                 .foregroundColor(.white)
         }
 

@@ -1,13 +1,7 @@
-//
-//  ManageServerViewModel.swift
-//  ObServe
-//
-
 import SwiftUI
 
 @MainActor
 class ManageServerViewModel: ObservableObject {
-
     @Published var currentStep: ManageStep = .overview
     @Published var selectedMachineType: MachineType?
     @Published var name: String = ""
@@ -19,8 +13,8 @@ class ManageServerViewModel: ObservableObject {
 
     init(server: ServerModuleItem) {
         self.server = server
-        self.name = server.name
-        self.selectedMachineType = MachineType.allCases.first(where: {
+        name = server.name
+        selectedMachineType = MachineType.allCases.first(where: {
             $0.rawValue.uppercased() == server.type.uppercased()
         })
     }
@@ -30,11 +24,11 @@ class ManageServerViewModel: ObservableObject {
     var headerTitle: String {
         switch currentStep {
         case .overview:
-            return "MANAGE \(server.name.uppercased())"
+            "MANAGE \(server.name.uppercased())"
         case .editMachineType:
-            return "MACHINE TYPE"
+            "MACHINE TYPE"
         case .editNaming:
-            return "MACHINE NAME"
+            "MACHINE NAME"
         }
     }
 
@@ -42,14 +36,48 @@ class ManageServerViewModel: ObservableObject {
         name.isEmpty ? "My \(selectedMachineType?.rawValue ?? "Machine")" : name
     }
 
+    var shareSummary: String {
+        var lines = [
+            "ObServe",
+            "Name: \(resolvedName)",
+            "Type: \(selectedMachineType?.rawValue ?? server.type)",
+            "Status: \(server.machineStatus.rawValue.capitalized)",
+        ]
+        if !server.location.isEmpty {
+            lines.append("Location: \(server.location)")
+        }
+        if !server.machineDescription.isEmpty {
+            lines.append("Description: \(server.machineDescription)")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    var creationDateText: String {
+        guard let date = server.createdAt else { return "—" }
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .none
+        return f.string(from: date)
+    }
+
+    var observedForText: String {
+        guard let date = server.createdAt else { return "—" }
+        let diff = max(0, Int(Date().timeIntervalSince(date)))
+        let days = diff / 86400
+        let hours = (diff % 86400) / 3600
+        let minutes = (diff % 3600) / 60
+        let seconds = diff % 60
+        return String(format: "%02d:%02d:%02d:%02d", days, hours, minutes, seconds)
+    }
+
     var canProceed: Bool {
         switch currentStep {
         case .editMachineType:
-            return selectedMachineType != nil
+            selectedMachineType != nil
         case .editNaming:
-            return true
+            true
         default:
-            return true
+            true
         }
     }
 

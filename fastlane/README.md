@@ -23,6 +23,14 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 Run unit and UI tests
 
+### ios screenshots
+
+```sh
+[bundle exec] fastlane ios screenshots
+```
+
+Capture App Store screenshots using fastlane snapshot
+
 ### ios beta
 
 ```sh
@@ -30,6 +38,14 @@ Run unit and UI tests
 ```
 
 Build and upload to TestFlight
+
+### ios beta_local
+
+```sh
+[bundle exec] fastlane ios beta_local
+```
+
+Build and upload to TestFlight (local, plist-based versioning)
 
 ### ios release
 

@@ -1,12 +1,5 @@
-//
-//  ResetObServeView.swift
-//  ObServe
-//
-//  Created by Daniel Schatz
-//
-
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct ResetObServeView: View {
     @State private var contentHasScrolled = false
@@ -41,7 +34,7 @@ struct ResetObServeView: View {
                     VStack(spacing: 10) {
                         // Clear Cached Metrics
                         sectionHeader("CLEAR CACHED METRICS")
-                        
+
                         resetOption(
                             title: "Remove all stored metric history for all servers",
                             action: { showClearMetricsConfirmation = true }
@@ -50,38 +43,38 @@ struct ResetObServeView: View {
 
                     VStack(spacing: 10) {
                         sectionHeader("CLEAR WIDGET DATA")
-                        
+
                         resetOption(
                             title: "Remove all cached data from widgets",
                             action: { showClearWidgetDataConfirmation = true }
                         )
                     }
-                    
+
                     VStack(spacing: 10) {
                         // Remove All Servers
                         sectionHeader("REMOVE ALL SERVERS")
-                        
+
                         resetOption(
                             title: "Delete all configured servers (\(servers.count) servers)",
                             action: { showRemoveServersConfirmation = true },
                             disabled: servers.isEmpty
                         )
                     }
-                    
+
                     VStack(spacing: 10) {
                         // Reset Settings
                         sectionHeader("RESET SETTINGS")
-                        
+
                         resetOption(
                             title: "Restore all settings to default values",
                             action: { showResetSettingsConfirmation = true }
                         )
                     }
-                    
+
                     VStack(spacing: 10) {
                         // Nuclear Option
                         sectionHeader("RESET EVERYTHING")
-                        
+
                         resetOption(
                             title: "Clear all data, remove all servers, and reset settings",
                             action: { showResetAllConfirmation = true }
@@ -100,7 +93,11 @@ struct ResetObServeView: View {
         .onAppear {
             fetchServers()
         }
-        .confirmationDialog("Clear Cached Metrics", isPresented: $showClearMetricsConfirmation, titleVisibility: .visible) {
+        .confirmationDialog(
+            "Clear Cached Metrics",
+            isPresented: $showClearMetricsConfirmation,
+            titleVisibility: .visible
+        ) {
             Button("Clear Metrics", role: .destructive) {
                 clearCachedMetrics()
             }
@@ -108,7 +105,11 @@ struct ResetObServeView: View {
         } message: {
             Text("This will remove all stored metric history for all servers.")
         }
-        .confirmationDialog("Clear Widget Data", isPresented: $showClearWidgetDataConfirmation, titleVisibility: .visible) {
+        .confirmationDialog(
+            "Clear Widget Data",
+            isPresented: $showClearWidgetDataConfirmation,
+            titleVisibility: .visible
+        ) {
             Button("Clear Widget Data", role: .destructive) {
                 clearWidgetData()
             }
@@ -116,7 +117,11 @@ struct ResetObServeView: View {
         } message: {
             Text("This will remove all cached data from widgets.")
         }
-        .confirmationDialog("Remove All Servers", isPresented: $showRemoveServersConfirmation, titleVisibility: .visible) {
+        .confirmationDialog(
+            "Remove All Servers",
+            isPresented: $showRemoveServersConfirmation,
+            titleVisibility: .visible
+        ) {
             Button("Remove \(servers.count) Servers", role: .destructive) {
                 removeAllServers()
             }
@@ -124,7 +129,11 @@ struct ResetObServeView: View {
         } message: {
             Text("This will permanently delete all \(servers.count) configured servers.")
         }
-        .confirmationDialog("Reset All Settings", isPresented: $showResetSettingsConfirmation, titleVisibility: .visible) {
+        .confirmationDialog(
+            "Reset All Settings",
+            isPresented: $showResetSettingsConfirmation,
+            titleVisibility: .visible
+        ) {
             Button("Reset Settings", role: .destructive) {
                 resetAllSettings()
             }
@@ -190,7 +199,6 @@ struct ResetObServeView: View {
 
     // MARK: - UI Components
 
-    @ViewBuilder
     private func sectionHeader(_ text: String) -> some View {
         HStack {
             Text(text)
@@ -202,17 +210,18 @@ struct ResetObServeView: View {
         }
     }
 
-    @ViewBuilder
     private func resetOption(
         title: String,
         action: @escaping () -> Void,
         disabled: Bool = false
-    ) -> some View {
+    )
+        -> some View
+    {
         Button(action: action) {
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(title.uppercased())
-                        .font(.system(size: 11))
+                        .font(.plexSans(size: 11))
                         .foregroundColor(disabled ? .gray : .gray)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
@@ -220,7 +229,7 @@ struct ResetObServeView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
+                    .font(.plexSans(size: 12))
                     .foregroundColor(.gray)
             }
         }

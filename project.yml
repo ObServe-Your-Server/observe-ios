@@ -56,6 +56,9 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.com.dev.ObServe
+    dependencies:
+      - target: observeMetricsWidget
+        embed: true
     preBuildScripts:
       - name: SwiftLint
         script: |
@@ -77,6 +80,7 @@ targets:
     info:
       path: observeMetricsWidget/Info.plist
       properties:
+        CFBundleDisplayName: ObServe Widget
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
         NSExtension:
@@ -94,9 +98,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: vision.observe.observe-ios.observeMetricsWidget
         INFOPLIST_FILE: observeMetricsWidget/Info.plist
         CODE_SIGN_ENTITLEMENTS: observeMetricsWidgetExtension.entitlements
-    dependencies:
-      - target: ObServe
-        embed: false
 
   ObServeTests:
     type: bundle.unit-test
@@ -128,3 +129,26 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: ObServe
+
+schemes:
+  ObServe:
+    build:
+      targets:
+        ObServe: all
+        observeMetricsWidget: all
+        ObServeUITests: [test]
+        ObServeTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - ObServeUITests
+        - ObServeTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+    shared: true

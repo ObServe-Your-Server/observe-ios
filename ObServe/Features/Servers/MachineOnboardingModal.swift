@@ -110,7 +110,7 @@ struct MachineOnboardingModal: View {
                 .frame(width: 96, height: 96)
 
                 Text(type.rawValue)
-                    .font(.system(size: 18))
+                    .font(.plexSans(size: 18))
                     .foregroundColor(isSelected ? .white : .gray)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -145,7 +145,7 @@ struct MachineOnboardingModal: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("MACHINE NAME")
                         .foregroundColor(.gray)
-                        .font(.system(size: 12))
+                        .font(.plexSans(size: 12))
 
                     TextField("My \(viewModel.selectedMachineType?.rawValue ?? "Machine")", text: $viewModel.name)
                         .textFieldStyle(PlainTextFieldStyle())
@@ -173,14 +173,14 @@ struct MachineOnboardingModal: View {
                     .scaleEffect(1.5)
                 Text("CREATING MACHINE...")
                     .foregroundColor(.gray)
-                    .font(.system(size: 14))
+                    .font(.plexSans(size: 14))
 
             case .success:
                 if let apiKey = viewModel.createdMachine?.apiKey, !apiKey.isEmpty {
                     VStack(spacing: 8) {
                         Text(apiKey)
                             .foregroundColor(.white)
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(.plexSans(size: 12))
                             .padding(12)
                             .background(Color(red: 15 / 255, green: 15 / 255, blue: 15 / 255))
                             .overlay(RoundedRectangle(cornerRadius: 0)
@@ -189,7 +189,7 @@ struct MachineOnboardingModal: View {
 
                         Text("Copy this key and configure it on your machine agent")
                             .foregroundColor(.gray)
-                            .font(.system(size: 10))
+                            .font(.plexSans(size: 10))
                     }
                 }
 
@@ -200,11 +200,7 @@ struct MachineOnboardingModal: View {
                     .foregroundColor(.red)
                 Text("CREATION FAILED")
                     .foregroundColor(.white)
-                    .font(.system(size: 14, weight: .medium))
-                Text(viewModel.errorMessage)
-                    .foregroundColor(.gray)
-                    .font(.system(size: 12))
-                    .multilineTextAlignment(.center)
+                    .font(.plexSans(size: 14, weight: .medium))
 
                 RegularButton(Label: "TRY AGAIN", action: {
                     Task { await viewModel.createMachineOnBackend() }
@@ -266,7 +262,7 @@ struct MachineOnboardingModal: View {
                 HStack {
                     Text("MACHINE INFO")
                         .foregroundColor(.white)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.plexSans(size: 14, weight: .medium))
                 }
                 .padding(10)
                 .background(Color.black)
@@ -279,12 +275,12 @@ struct MachineOnboardingModal: View {
                     HStack(spacing: 0) {
                         Text("API-KEY")
                             .foregroundColor(.gray)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.plexSans(size: 12, weight: .medium))
                             .frame(width: 60, alignment: .leading)
                     }
                     Text(apiKey)
                         .foregroundColor(.white)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.plexSans(size: 11))
                         .padding(12)
                         .background(Color(red: 15 / 255, green: 15 / 255, blue: 15 / 255))
                         .overlay(RoundedRectangle(cornerRadius: 0)
@@ -296,7 +292,7 @@ struct MachineOnboardingModal: View {
                             .foregroundColor(.white)
                         Text("configure this API key on your machine agent")
                             .foregroundColor(.gray)
-                            .font(.system(size: 10))
+                            .font(.plexSans(size: 10))
                     }
                 }
                 .padding(.horizontal, 20)
@@ -309,7 +305,7 @@ struct MachineOnboardingModal: View {
                     HStack {
                         Text("CONNECTION")
                             .foregroundColor(.white)
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.plexSans(size: 14, weight: .medium))
                     }
                     .padding(10)
                     .background(Color.black)
@@ -326,10 +322,10 @@ struct MachineOnboardingModal: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .foregroundColor(Color.gray)
-                .font(.system(size: 12, weight: .medium))
+                .font(.plexSans(size: 12, weight: .medium))
             Text(value)
                 .foregroundColor(.white)
-                .font(.system(size: 14))
+                .font(.plexSans(size: 14))
         }
     }
 

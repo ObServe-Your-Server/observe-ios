@@ -1,16 +1,3 @@
-//
-//  AppBar.swift
-//  ObServe
-//
-//  Unified app bar replacing 6 specialized wrappers around BaseAppBar.
-//  Provides convenience initializers for each usage pattern:
-//    - Dashboard (sort cycle button, hamburger menu)
-//    - Detail (interval cycle button, close button)
-//    - Onboarding (progress indicator, close button)
-//    - Icon+Label secondary button (About, Account, Settings, Reset)
-//    - Plain (no secondary content)
-//
-
 import SwiftUI
 
 // MARK: - Secondary Content Configuration
@@ -22,12 +9,12 @@ enum AppBarSecondary {
     case intervalCycle(Binding<AppBar.Interval>)
     case progress(currentStep: Int, totalSteps: Int)
     case iconLabel(icon: String, label: String, action: () -> Void)
+    case customIconLabel(imageName: String, label: String, action: () -> Void)
 }
 
 // MARK: - AppBar
 
 struct AppBar: View {
-
     // MARK: Shared Enums
 
     enum SortType: String, CaseIterable {
@@ -40,16 +27,17 @@ struct AppBar: View {
         case s2, s5, s10
         var label: String {
             switch self {
-            case .s2:  return "2S"
-            case .s5:  return "5S"
-            case .s10: return "10S"
+            case .s2: "2S"
+            case .s5: "5S"
+            case .s10: "10S"
             }
         }
+
         var seconds: Double {
             switch self {
-            case .s2:  return 2
-            case .s5:  return 5
-            case .s10: return 10
+            case .s2: 2
+            case .s5: 5
+            case .s10: 10
             }
         }
     }
@@ -81,38 +69,20 @@ struct AppBar: View {
         case .none:
             EmptyView()
 
-        case .sortCycle(let binding):
+        case let .sortCycle(binding):
             Button {
                 let allCases = SortType.allCases
                 if let idx = allCases.firstIndex(of: binding.wrappedValue) {
                     binding.wrappedValue = allCases[(idx + 1) % allCases.count]
                 }
             } label: {
-                Text("SORT: \(binding.wrappedValue.rawValue)")
-                    .font(.system(size: 11))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 3)
-                    .background(Color("ButtonBackground"))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 0)
-                            .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                    )
-            }
-
-        case .intervalCycle(let binding):
-            Button {
-                let all = Interval.allCases
-                if let i = all.firstIndex(of: binding.wrappedValue) {
-                    binding.wrappedValue = all[(i + 1) % all.count]
-                }
-            } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.white)
-                    Text("INTERVALL: \(binding.wrappedValue.label)")
-                        .font(.system(size: 11))
+                    Image("filter")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 11, height: 11)
+                    Text("SORT: \(binding.wrappedValue.rawValue)")
+                        .font(.plexSans(size: 11))
                         .foregroundColor(.white)
                 }
                 .padding(.horizontal, 5)
@@ -124,9 +94,33 @@ struct AppBar: View {
                 )
             }
 
-        case .progress(let currentStep, let totalSteps):
+        case let .intervalCycle(binding):
+            Button {
+                let all = Interval.allCases
+                if let i = all.firstIndex(of: binding.wrappedValue) {
+                    binding.wrappedValue = all[(i + 1) % all.count]
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "clock")
+                        .font(.plexSans(size: 11, weight: .medium))
+                        .foregroundColor(.white)
+                    Text("INTERVALL: \(binding.wrappedValue.label)")
+                        .font(.plexSans(size: 11))
+                        .foregroundColor(.white)
+                }
+                .padding(.horizontal, 5)
+                .padding(.vertical, 3)
+                .background(Color("ButtonBackground"))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 0)
+                        .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+                )
+            }
+
+        case let .progress(currentStep, totalSteps):
             HStack(spacing: 4) {
-                ForEach(0..<totalSteps, id: \.self) { index in
+                ForEach(0 ..< totalSteps, id: \.self) { index in
                     Rectangle()
                         .fill(index <= currentStep ? Color.white : Color.gray.opacity(0.3))
                         .frame(width: 18, height: 18)
@@ -136,14 +130,34 @@ struct AppBar: View {
             .padding(.horizontal, 5)
             .padding(.vertical, 3)
 
-        case .iconLabel(let icon, let label, let action):
+        case let .iconLabel(icon, label, action):
             Button(action: action) {
                 HStack(spacing: 8) {
                     Image(systemName: icon)
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.plexSans(size: 11, weight: .semibold))
                         .foregroundColor(.white.opacity(0.9))
                     Text(label)
-                        .font(.system(size: 11))
+                        .font(.plexSans(size: 11))
+                        .foregroundColor(.white)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(Color("ButtonBackground"))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 0)
+                        .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+                )
+            }
+
+        case let .customIconLabel(imageName, label, action):
+            Button(action: action) {
+                HStack(spacing: 8) {
+                    Image(imageName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 11, height: 11)
+                    Text(label)
+                        .font(.plexSans(size: 11))
                         .foregroundColor(.white)
                 }
                 .padding(.horizontal, 8)
@@ -161,7 +175,6 @@ struct AppBar: View {
 // MARK: - Convenience Initializers
 
 extension AppBar {
-
     /// Dashboard: shows machine count, sort cycle button, hamburger menu
     init(
         machineCount: Int,
@@ -169,11 +182,11 @@ extension AppBar {
         showBurgerMenu: Binding<Bool>,
         selectedSortType: Binding<SortType>
     ) {
-        self.title = "\(machineCount) \(machineCount == 1 ? "MACHINE" : "MACHINES")"
-        self._contentHasScrolled = contentHasScrolled
-        self.rightButtonType = .hamburgerMenu
-        self.rightButtonAction = { showBurgerMenu.wrappedValue = true }
-        self.secondary = .sortCycle(selectedSortType)
+        title = "\(machineCount) \(machineCount == 1 ? "MACHINE" : "MACHINES")"
+        _contentHasScrolled = contentHasScrolled
+        rightButtonType = .hamburgerMenu
+        rightButtonAction = { showBurgerMenu.wrappedValue = true }
+        secondary = .sortCycle(selectedSortType)
     }
 
     /// Detail: shows server name, interval cycle button, close button
@@ -183,11 +196,11 @@ extension AppBar {
         selectedInterval: Binding<Interval>,
         onClose: @escaping () -> Void
     ) {
-        self.title = serverName.uppercased()
-        self._contentHasScrolled = contentHasScrolled
-        self.rightButtonType = .close
-        self.rightButtonAction = onClose
-        self.secondary = .intervalCycle(selectedInterval)
+        title = serverName.uppercased()
+        _contentHasScrolled = contentHasScrolled
+        rightButtonType = .close
+        rightButtonAction = onClose
+        secondary = .intervalCycle(selectedInterval)
     }
 
     /// Detail with progress indicator (onboarding): shows title, progress steps, close button
@@ -198,11 +211,11 @@ extension AppBar {
         totalSteps: Int,
         onClose: @escaping () -> Void
     ) {
-        self.title = serverName.uppercased()
-        self._contentHasScrolled = contentHasScrolled
-        self.rightButtonType = .close
-        self.rightButtonAction = onClose
-        self.secondary = .progress(currentStep: currentStep, totalSteps: totalSteps)
+        title = serverName.uppercased()
+        _contentHasScrolled = contentHasScrolled
+        rightButtonType = .close
+        rightButtonAction = onClose
+        secondary = .progress(currentStep: currentStep, totalSteps: totalSteps)
     }
 
     /// Detail with no secondary content (manage server): shows title, close button
@@ -211,11 +224,11 @@ extension AppBar {
         contentHasScrolled: Binding<Bool>,
         onClose: @escaping () -> Void
     ) {
-        self.title = serverName.uppercased()
-        self._contentHasScrolled = contentHasScrolled
-        self.rightButtonType = .close
-        self.rightButtonAction = onClose
-        self.secondary = .none
+        title = serverName.uppercased()
+        _contentHasScrolled = contentHasScrolled
+        rightButtonType = .close
+        rightButtonAction = onClose
+        secondary = .none
     }
 
     /// Icon+Label with close button (About, Reset)
@@ -228,10 +241,26 @@ extension AppBar {
         secondaryAction: @escaping () -> Void
     ) {
         self.title = title
-        self._contentHasScrolled = contentHasScrolled
-        self.rightButtonType = .close
-        self.rightButtonAction = onClose
-        self.secondary = .iconLabel(icon: secondaryIcon, label: secondaryLabel, action: secondaryAction)
+        _contentHasScrolled = contentHasScrolled
+        rightButtonType = .close
+        rightButtonAction = onClose
+        secondary = .iconLabel(icon: secondaryIcon, label: secondaryLabel, action: secondaryAction)
+    }
+
+    /// Custom image+Label with close button (Manage Server)
+    init(
+        title: String,
+        contentHasScrolled: Binding<Bool>,
+        onClose: @escaping () -> Void,
+        secondaryImageName: String,
+        secondaryLabel: String,
+        secondaryAction: @escaping () -> Void
+    ) {
+        self.title = title
+        _contentHasScrolled = contentHasScrolled
+        rightButtonType = .close
+        rightButtonAction = onClose
+        secondary = .customIconLabel(imageName: secondaryImageName, label: secondaryLabel, action: secondaryAction)
     }
 
     /// Icon+Label with hamburger menu (Account, Settings)
@@ -244,10 +273,10 @@ extension AppBar {
         secondaryAction: @escaping () -> Void = {}
     ) {
         self.title = title
-        self._contentHasScrolled = contentHasScrolled
-        self.rightButtonType = .hamburgerMenu
-        self.rightButtonAction = { showBurgerMenu.wrappedValue = true }
-        self.secondary = .iconLabel(icon: secondaryIcon, label: secondaryLabel, action: secondaryAction)
+        _contentHasScrolled = contentHasScrolled
+        rightButtonType = .hamburgerMenu
+        rightButtonAction = { showBurgerMenu.wrappedValue = true }
+        secondary = .iconLabel(icon: secondaryIcon, label: secondaryLabel, action: secondaryAction)
     }
 }
 

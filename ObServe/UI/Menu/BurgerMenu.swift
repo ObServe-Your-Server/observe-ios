@@ -1,39 +1,29 @@
-//
-//  BurgerMenu.swift
-//  ObServe
-//
-//  Created by Carlo Derouaux on 20.07.25.
-//
-
 import SwiftUI
 
 enum MenuSection: String, CaseIterable {
     case dashboard = "DASHBOARD"
-    //case server = "SERVER"
-    //case alerts = "ALERTS"
+    case alerts = "ALERTS"
     case account = "ACCOUNT"
     case settings = "SETTINGS"
     case logout = "LOGOUT"
 
     var iconOff: String {
         switch self {
-        case .dashboard: return "dashboardIcon_off"
-        //case .server: return "serverIcon_off"
-        //case .alerts: return "alertsIcon_off"
-        case .account: return "accountIcon_off"
-        case .settings: return "settingsIcon_off"
-        case .logout: return "logoutIcon_off"
+        case .dashboard: "dashboardIcon_off"
+        case .alerts: "alertsIcon_off"
+        case .account: "accountIcon_off"
+        case .settings: "settingsIcon_off"
+        case .logout: "logoutIcon_off"
         }
     }
 
     var iconOn: String {
         switch self {
-        case .dashboard: return "dashboardIcon_on"
-        //case .server: return "serverIcon_on"
-        //case .alerts: return "alertsIcon_on"
-        case .account: return "accountIcon_on"
-        case .settings: return "settingsIcon_on"
-        case .logout: return "logoutIcon_on"
+        case .dashboard: "dashboardIcon_on"
+        case .alerts: "alertsIcon_on"
+        case .account: "accountIcon_on"
+        case .settings: "settingsIcon_on"
+        case .logout: "logoutIcon_on"
         }
     }
 }
@@ -52,7 +42,6 @@ struct BurgerMenu: View {
 
     var body: some View {
         ZStack(alignment: .trailing) {
-
             Color.clear
                 .contentShape(Rectangle())
                 .ignoresSafeArea()
@@ -67,11 +56,8 @@ struct BurgerMenu: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("ObServe")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.plexSans(size: 24, weight: .semibold))
                             .foregroundColor(.white)
-                        Text("Version 1.0.0")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color("ObServeGray"))
                     }
 
                     Spacer()
@@ -113,6 +99,7 @@ struct BurgerMenu: View {
     }
 
     // MARK: - Helpers
+
     private func dismiss(after action: (() -> Void)? = nil) {
         isOpen = false
         if let action {
@@ -135,6 +122,7 @@ struct BurgerMenu: View {
 }
 
 // MARK: - Menu Item View
+
 struct MenuItemView: View {
     let section: MenuSection
     let isSelected: Bool
@@ -150,7 +138,7 @@ struct MenuItemView: View {
                     .foregroundColor(isSelected ? .white : Color("ObServeGray"))
 
                 Text(section.rawValue)
-                    .font(.system(size: 18))
+                    .font(.plexSans(size: 18))
                     .foregroundColor(isSelected ? .white : Color("ObServeGray"))
 
                 Spacer()

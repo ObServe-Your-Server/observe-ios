@@ -1,10 +1,3 @@
-//
-//  ViewExtension.swift
-//  ObServe
-//
-//  Created by Daniel Schatz
-//
-
 import SwiftUI
 
 extension View {
@@ -25,41 +18,42 @@ extension View {
         offsetY: CGFloat = 0,
         opacity: Double = 0.5,
         cornerRadius: CGFloat = 0
-    ) -> some View {
-        self
-            .overlay(
-                GeometryReader { geometry in
-                    let width = geometry.size.width
-                    let height = geometry.size.height
+    )
+        -> some View
+    {
+        overlay(
+            GeometryReader { geometry in
+                let width = geometry.size.width
+                let height = geometry.size.height
 
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .fill(color.opacity(opacity))
-                        .frame(
-                            width: width + spread * 2,
-                            height: height + spread * 2
-                        )
-                        .blur(radius: blur)
-                        .offset(x: offsetX - spread, y: offsetY - spread)
-                        .mask(
-                            ZStack {
-                                Rectangle()
-                                    .fill(Color.black)
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(color.opacity(opacity))
+                    .frame(
+                        width: width + spread * 2,
+                        height: height + spread * 2
+                    )
+                    .blur(radius: blur)
+                    .offset(x: offsetX - spread, y: offsetY - spread)
+                    .mask(
+                        ZStack {
+                            Rectangle()
+                                .fill(Color.black)
 
-                                RoundedRectangle(cornerRadius: cornerRadius)
-                                    .fill(Color.white)
-                                    .frame(
-                                        width: width + spread * 2,
-                                        height: height + spread * 2
-                                    )
-                                    .blur(radius: blur)
-                                    .offset(x: offsetX - spread, y: offsetY - spread)
-                            }
-                            .compositingGroup()
-                            .luminanceToAlpha()
-                        )
-                }
-            )
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+                            RoundedRectangle(cornerRadius: cornerRadius)
+                                .fill(Color.white)
+                                .frame(
+                                    width: width + spread * 2,
+                                    height: height + spread * 2
+                                )
+                                .blur(radius: blur)
+                                .offset(x: offsetX - spread, y: offsetY - spread)
+                        }
+                        .compositingGroup()
+                        .luminanceToAlpha()
+                    )
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
 }
 
@@ -75,13 +69,12 @@ struct InnerShadowPreview: View {
     var body: some View {
         VStack(spacing: 20) {
             ZStack {
-                Button(action: {
-                    }
+                Button(action: {}
                 ) {
                     ZStack {
                         Text("Test")
                             .foregroundColor(Color.blue)
-                            .font(.system(size: 12))
+                            .font(.plexSans(size: 12))
                             .padding(.horizontal, 7)
                             .padding(.vertical, 10)
                             .frame(maxWidth: 120)
@@ -105,7 +98,7 @@ struct InnerShadowPreview: View {
                     Text("Blur: \(String(format: "%.1f", blur))")
                         .foregroundColor(.white)
                         .font(.caption)
-                    Slider(value: $blur, in: 0...50)
+                    Slider(value: $blur, in: 0 ... 50)
                         .tint(.blue)
                 }
 
@@ -113,7 +106,7 @@ struct InnerShadowPreview: View {
                     Text("Spread: \(String(format: "%.1f", spread))")
                         .foregroundColor(.white)
                         .font(.caption)
-                    Slider(value: $spread, in: -20...20)
+                    Slider(value: $spread, in: -20 ... 20)
                         .tint(.blue)
                 }
 
@@ -121,7 +114,7 @@ struct InnerShadowPreview: View {
                     Text("Opacity: \(String(format: "%.2f", opacity))")
                         .foregroundColor(.white)
                         .font(.caption)
-                    Slider(value: $opacity, in: 0...1)
+                    Slider(value: $opacity, in: 0 ... 1)
                         .tint(.blue)
                 }
             }

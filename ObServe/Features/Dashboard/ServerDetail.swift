@@ -74,7 +74,6 @@ struct ServerDetailView: View {
             )
         }
         .onAppear {
-            metricsManager.startUptimeSyncTimer()
             if server.isConnected {
                 metricsManager.startFetching()
                 metricsManager.setOverrideInterval(Int(selectedInterval.seconds))
